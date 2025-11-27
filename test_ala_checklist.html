@@ -90,71 +90,107 @@
 
         /* Mobile specific optimizations */
         @media (max-width: 768px) {
+            body {
+                overflow: hidden !important; /* Prevent body scrolling on mobile */
+            }
+
             #mobile-menu-toggle {
-                display: block;
+                display: block !important;
+            }
+
+            #breadcrumb {
+                display: none !important; /* Hide by default, show only when menu is open */
+            }
+
+            #back-button {
+                display: none !important; /* Hide by default, show only when menu is open */
             }
 
             #controls {
-                position: fixed;
-                bottom: 10px;
-                left: 70px;
-                right: 10px;
-                max-width: none;
-                padding: 12px;
-                border-radius: 12px;
-                font-size: 14px;
-                z-index: 1000;
+                position: fixed !important;
+                bottom: 10px !important;
+                left: 70px !important; /* Leave space for hamburger button */
+                right: 10px !important;
+                max-width: none !important;
+                padding: 12px !important;
+                border-radius: 12px !important;
+                font-size: 14px !important;
+                z-index: 1000 !important;
+                background: rgba(255,255,255,0.95) !important;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+                max-height: 40vh !important; /* Limit height to prevent overlap */
+                overflow-y: auto !important; /* Allow scrolling if needed */
             }
 
             #checklist {
-                position: fixed;
-                top: 0;
-                left: -100%;
-                width: 80%;
-                max-width: 300px;
-                height: 100vh;
-                border-radius: 0;
-                padding: 20px;
-                font-size: 13px;
-                transition: left 0.3s ease;
-                z-index: 1000;
-                overflow-y: auto;
+                position: fixed !important;
+                top: 0 !important;
+                left: -100% !important; /* Hidden by default */
+                width: 80% !important;
+                max-width: 300px !important;
+                height: 100vh !important;
+                border-radius: 0 !important;
+                padding: 20px !important;
+                font-size: 13px !important;
+                transition: left 0.3s ease !important;
+                z-index: 1000 !important;
+                overflow-y: auto !important;
+                background: rgba(255,255,255,0.98) !important;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1) !important;
             }
 
             #checklist.open {
-                left: 0;
+                left: 0 !important;
+            }
+
+            #mobile-overlay {
+                display: none !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                background: rgba(0, 0, 0, 0.5) !important;
+                z-index: 999 !important;
+                opacity: 0 !important;
+                transition: opacity 0.3s ease !important;
+            }
+
+            #mobile-overlay.show {
+                display: block !important;
+                opacity: 1 !important;
             }
 
             #controls input[type="range"] {
-                width: 100%;
-                height: 8px;
-                margin: 10px 0;
+                width: 100% !important;
+                height: 8px !important;
+                margin: 10px 0 !important;
             }
 
             #controls button {
-                width: 48%;
-                padding: 12px;
-                margin: 2px;
-                font-size: 14px;
-                min-height: 44px;
+                width: 48% !important;
+                padding: 12px !important;
+                margin: 2px !important;
+                font-size: 14px !important;
+                min-height: 44px !important;
             }
 
             #controls label {
-                display: block;
-                margin: 8px 0;
-                font-size: 14px;
+                display: block !important;
+                margin: 8px 0 !important;
+                font-size: 14px !important;
             }
 
             #controls input[type="checkbox"] {
-                width: 20px;
-                height: 20px;
-                margin-right: 8px;
+                width: 20px !important;
+                height: 20px !important;
+                margin-right: 8px !important;
             }
 
             .check-item {
-                padding: 8px;
-                margin: 6px 0;
-                font-size: 12px;
+                padding: 8px !important;
+                margin: 6px 0 !important;
+                font-size: 12px !important;
             }
         }
 
@@ -584,6 +620,68 @@
         let touchEndX = 0;
         let touchEndY = 0;
 
+        function initSwipeGestures() {
+            // Add touch event listeners to the document
+            document.addEventListener('touchstart', handleTouchStart, { passive: false });
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd, { passive: false });
+        }
+
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }
+
+        function handleTouchMove(e) {
+            if (!touchStartX || !touchStartY) return;
+
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            const diffX = touchStartX - touchEndX;
+            const diffY = touchStartY - touchEndY;
+
+            // Only prevent default if it's a horizontal swipe near the edges
+            const isNearEdge = touchStartX < 50 || touchStartX > window.innerWidth - 50;
+            const isHorizontalSwipe = Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50;
+
+            if (isNearEdge && isHorizontalSwipe) {
+                e.preventDefault();
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchStartX || !touchStartY) return;
+
+            const touchEndX = e.changedTouches[0].screenX;
+            const touchEndY = e.changedTouches[0].screenY;
+            const diffX = touchStartX - touchEndX;
+            const diffY = touchStartY - touchEndY;
+
+            // Reset touch coordinates
+            touchStartX = null;
+            touchStartY = null;
+
+            handleSwipeGesture(diffX, diffY);
+        }
+
+        function handleSwipeGesture(diffX, diffY) {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            if (!isMobile) return;
+
+            const minSwipeDistance = 50;
+            const checklist = document.getElementById('checklist');
+            const isOpen = checklist.classList.contains('open');
+
+            // Swipe from left edge to open menu
+            if (diffX < -minSwipeDistance && !isOpen && touchStartX < 50) {
+                openMobileMenu();
+            }
+            // Swipe right to close menu
+            else if (diffX > minSwipeDistance && isOpen) {
+                closeMobileMenu();
+            }
+        }
+
         function setup() {
             // Detect mobile devices
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -593,7 +691,7 @@
 
             if (isMobile) {
                 canvasWidth = window.innerWidth;
-                canvasHeight = window.innerHeight - 180; // Leave space for controls
+                canvasHeight = window.innerHeight - 200; // Leave more space for controls at bottom
                 scaleFactor = min(canvasWidth / 800, canvasHeight / 500); // Smaller base for mobile
             } else {
                 canvasWidth = min(windowWidth - 300, 1200);
@@ -620,10 +718,31 @@
             if (isMobile) {
                 initSwipeGestures();
                 initOrientationChange();
+                // Ensure mobile layout is applied initially
+                updateMobileLayout();
+                // Initialize mobile UI state
+                initMobileUI();
             }
 
             // Initialize lazy loading for any images
             initLazyLoading();
+        }
+
+        function initMobileUI() {
+            // Ensure mobile elements are in correct initial state
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+            if (isMobile) {
+                const menuToggle = document.getElementById('mobile-menu-toggle');
+                const breadcrumb = document.getElementById('breadcrumb');
+                const backBtn = document.getElementById('back-button');
+                const checklist = document.getElementById('checklist');
+
+                if (menuToggle) menuToggle.style.display = 'block';
+                if (breadcrumb) breadcrumb.style.display = 'none';
+                if (backBtn) backBtn.style.display = 'none';
+                if (checklist) checklist.classList.remove('open');
+            }
         }
 
         function initOrientationChange() {
@@ -662,7 +781,7 @@
 
             if (isMobile) {
                 canvasWidth = window.innerWidth;
-                canvasHeight = window.innerHeight - 180;
+                canvasHeight = window.innerHeight - 200; // Leave space for controls at bottom
                 scaleFactor = min(canvasWidth / 800, canvasHeight / 500);
             } else {
                 canvasWidth = min(windowWidth - 300, 1200);
@@ -672,7 +791,7 @@
 
             resizeCanvas(canvasWidth, canvasHeight);
 
-            // Update mobile layout based on orientation
+            // Update mobile layout based on orientation and screen size
             updateMobileLayout();
         }
 
@@ -683,30 +802,44 @@
             if (isMobile) {
                 const controls = document.getElementById('controls');
                 const checklist = document.getElementById('checklist');
+                const menuToggle = document.getElementById('mobile-menu-toggle');
 
                 if (isLandscape) {
                     // Landscape: controls on left, checklist hidden by default
                     controls.style.bottom = '10px';
-                    controls.style.left = '10px';
-                    controls.style.right = 'auto';
-                    controls.style.maxWidth = 'calc(50vw - 20px)';
+                    controls.style.left = '70px';
+                    controls.style.right = '10px';
+                    controls.style.maxWidth = 'none';
                     controls.style.maxHeight = 'calc(100vh - 20px)';
 
                     checklist.style.left = '-100%';
-                    checklist.style.width = '40%';
-                    checklist.style.maxWidth = '300px';
+                    checklist.style.width = '70%';
+                    checklist.style.maxWidth = '400px';
+
+                    menuToggle.style.display = 'block';
                 } else {
                     // Portrait: controls at bottom, checklist as overlay
                     controls.style.bottom = '10px';
-                    controls.style.left = '10px';
+                    controls.style.left = '70px';
                     controls.style.right = '10px';
                     controls.style.maxWidth = 'none';
-                    controls.style.maxHeight = '150px';
+                    controls.style.maxHeight = '35vh';
 
                     checklist.style.left = '-100%';
                     checklist.style.width = '80%';
                     checklist.style.maxWidth = '300px';
+
+                    menuToggle.style.display = 'block';
                 }
+            } else {
+                // Desktop: hide mobile elements
+                const menuToggle = document.getElementById('mobile-menu-toggle');
+                const breadcrumb = document.getElementById('breadcrumb');
+                const backBtn = document.getElementById('back-button');
+
+                if (menuToggle) menuToggle.style.display = 'none';
+                if (breadcrumb) breadcrumb.style.display = 'none';
+                if (backBtn) backBtn.style.display = 'none';
             }
         }
 
@@ -726,11 +859,11 @@
         }
 
         function toggleMobileMenu() {
-            const checklist = select('#checklist');
-            const overlay = select('#mobile-overlay');
-            const breadcrumb = select('#breadcrumb');
-            const backBtn = select('#back-button');
-            const isOpen = checklist.hasClass('open');
+            const checklist = document.getElementById('checklist');
+            const overlay = document.getElementById('mobile-overlay');
+            const breadcrumb = document.getElementById('breadcrumb');
+            const backBtn = document.getElementById('back-button');
+            const isOpen = checklist.classList.contains('open');
 
             if (isOpen) {
                 closeMobileMenu();
@@ -740,40 +873,34 @@
         }
 
         function openMobileMenu() {
-            const checklist = select('#checklist');
-            const overlay = select('#mobile-overlay');
-            const breadcrumb = select('#breadcrumb');
-            const backBtn = select('#back-button');
+            const checklist = document.getElementById('checklist');
+            const overlay = document.getElementById('mobile-overlay');
+            const breadcrumb = document.getElementById('breadcrumb');
+            const backBtn = document.getElementById('back-button');
 
-            checklist.addClass('open');
-            overlay.style('display', 'block');
-            setTimeout(() => {
-                overlay.style('opacity', '1');
-            }, 10);
+            checklist.classList.add('open');
+            overlay.classList.add('show');
 
             // Show breadcrumb and back button on mobile
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
             if (isMobile) {
-                breadcrumb.style('display', 'block');
-                backBtn.style('display', 'block');
+                breadcrumb.style.display = 'block';
+                backBtn.style.display = 'block';
             }
         }
 
         function closeMobileMenu() {
-            const checklist = select('#checklist');
-            const overlay = select('#mobile-overlay');
-            const breadcrumb = select('#breadcrumb');
-            const backBtn = select('#back-button');
+            const checklist = document.getElementById('checklist');
+            const overlay = document.getElementById('mobile-overlay');
+            const breadcrumb = document.getElementById('breadcrumb');
+            const backBtn = document.getElementById('back-button');
 
-            checklist.removeClass('open');
-            overlay.style('opacity', '0');
-            setTimeout(() => {
-                overlay.style('display', 'none');
-            }, 300);
+            checklist.classList.remove('open');
+            overlay.classList.remove('show');
 
             // Hide breadcrumb and back button
-            breadcrumb.style('display', 'none');
-            backBtn.style('display', 'none');
+            breadcrumb.style.display = 'none';
+            backBtn.style.display = 'none';
         }
 
         function goBack() {
