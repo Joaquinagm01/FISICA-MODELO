@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "fisica-modelo",
+  "builds": [
+    {
+      "src": "**/*.html",
+      "use": "@vercel/static"
+    }
+  ]
+}

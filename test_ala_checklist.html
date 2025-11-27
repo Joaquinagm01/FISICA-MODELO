@@ -256,27 +256,115 @@
             transform: scale(0.95);
         }
 
-        #mobile-overlay {
+        #breadcrumb {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-            opacity: 0;
-            transition: opacity 0.3s ease;
+            top: 10px;
+            left: 80px;
+            right: 80px;
+            background: rgba(255,255,255,0.95);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        #breadcrumb span {
+            color: #666;
+        }
+
+        #breadcrumb strong {
+            color: #2196F3;
+        }
+
+        #back-button {
+            display: none;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1001;
+        }
+
+        #back-button button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        #back-button button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+
+        #back-button button:active {
+            transform: scale(0.95);
         }
 
         #checklist-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
             margin-bottom: 10px;
         }
 
+        #checklist-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        #search-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        #checklist-search {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        #checklist-search:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        #clear-search {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        #clear-search:hover {
+            background: #e0e0e0;
+        }
+
         #close-menu-btn {
+            align-self: flex-end;
             background: none;
             border: none;
             font-size: 20px;
@@ -291,13 +379,85 @@
             justify-content: center;
         }
 
-        #close-menu-btn:hover {
-            background: rgba(0,0,0,0.1);
+        #quick-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        #quick-actions button {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        #quick-actions button:hover {
+            background: #f5f5f5;
+            border-color: #2196F3;
+        }
+
+        #quick-actions button:active {
+            transform: scale(0.95);
         }
         .check-item { margin: 8px 0; padding: 5px; border-radius: 5px; }
         .check-item.completed { background: #e8f5e8; border-left: 4px solid #4CAF50; }
         .check-item.pending { background: #fff3cd; border-left: 4px solid #ffc107; }
         .check-item.improvement { background: #e3f2fd; border-left: 4px solid #2196F3; }
+
+        /* Collapsible checklist styles */
+        .checklist-category {
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .category-header {
+            background: #f5f5f5;
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .category-header:hover {
+            background: #e8f4fd;
+        }
+
+        .category-header h4 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .toggle-icon {
+            font-size: 12px;
+            color: #666;
+            transition: transform 0.2s ease;
+        }
+
+        .category-content {
+            padding: 0;
+        }
+
+        .category-content .check-item {
+            border-bottom: 1px solid #f0f0f0;
+            margin: 0;
+            border-radius: 0;
+        }
+
+        .category-content .check-item:last-child {
+            border-bottom: none;
+        }
         .status { font-weight: bold; font-size: 12px; }
         .completed { color: #4CAF50; }
         .pending { color: #ff9800; }
@@ -307,6 +467,14 @@
 <body>
     <div id="mobile-menu-toggle">
         <button id="menu-btn" onclick="toggleMobileMenu()">☰</button>
+    </div>
+
+    <div id="breadcrumb">
+        <span>Simulador</span> > <strong>Checklist de Mejoras</strong>
+    </div>
+
+    <div id="back-button">
+        <button onclick="goBack()">←</button>
     </div>
 
     <div id="mobile-overlay" onclick="closeMobileMenu()"></div>
@@ -320,13 +488,20 @@
         <input type="checkbox" id="show-pressure" checked> Presiones<br>
         <input type="checkbox" id="show-flows" checked> Flujos<br>
         <input type="checkbox" id="show-forces" checked> Fuerzas<br><br>
-        <button onclick="resetTest()">Reiniciar</button>
-        <button onclick="exportChecklist()">Exportar Checklist</button>
+        <div id="quick-actions">
+            <button onclick="quickPreset('all')">Mostrar Todo</button>
+            <button onclick="quickPreset('minimal')">Mínimo</button>
+            <button onclick="quickPreset('physics')">Solo Física</button>
+        </div>
     </div>
 
     <div id="checklist">
         <div id="checklist-header">
             <h3>Checklist de Mejoras del Ala</h3>
+            <div id="search-container">
+                <input type="text" id="checklist-search" placeholder="Buscar..." oninput="filterChecklist(this.value)">
+                <button id="clear-search" onclick="clearSearch()" style="display: none;">✕</button>
+            </div>
             <button id="close-menu-btn" onclick="closeMobileMenu()">✕</button>
         </div>
         <div id="checklist-items"></div>
@@ -404,6 +579,11 @@
             return max(8, baseSize * scaleFactor);
         }
 
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
         function setup() {
             // Detect mobile devices
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -435,6 +615,42 @@
             updateAngle(); // Initialize
 
             displayChecklist();
+
+            // Add swipe gesture support for mobile
+            if (isMobile) {
+                initSwipeGestures();
+                initOrientationChange();
+            }
+
+            // Initialize lazy loading for any images
+            initLazyLoading();
+        }
+
+        function initOrientationChange() {
+            window.addEventListener('orientationchange', function() {
+                // Wait for orientation change to complete
+                setTimeout(function() {
+                    updateMobileLayout();
+                    windowResized();
+                }, 500);
+            });
+        }
+
+        function initLazyLoading() {
+            // Basic lazy loading for images (if any are added later)
+            const images = document.querySelectorAll('img[data-src]');
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.classList.remove('lazy');
+                        observer.unobserve(img);
+                    }
+                });
+            });
+
+            images.forEach(img => imageObserver.observe(img));
         }
 
         function windowResized() {
@@ -455,6 +671,43 @@
             }
 
             resizeCanvas(canvasWidth, canvasHeight);
+
+            // Update mobile layout based on orientation
+            updateMobileLayout();
+        }
+
+        function updateMobileLayout() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isLandscape = window.innerWidth > window.innerHeight;
+
+            if (isMobile) {
+                const controls = document.getElementById('controls');
+                const checklist = document.getElementById('checklist');
+
+                if (isLandscape) {
+                    // Landscape: controls on left, checklist hidden by default
+                    controls.style.bottom = '10px';
+                    controls.style.left = '10px';
+                    controls.style.right = 'auto';
+                    controls.style.maxWidth = 'calc(50vw - 20px)';
+                    controls.style.maxHeight = 'calc(100vh - 20px)';
+
+                    checklist.style.left = '-100%';
+                    checklist.style.width = '40%';
+                    checklist.style.maxWidth = '300px';
+                } else {
+                    // Portrait: controls at bottom, checklist as overlay
+                    controls.style.bottom = '10px';
+                    controls.style.left = '10px';
+                    controls.style.right = '10px';
+                    controls.style.maxWidth = 'none';
+                    controls.style.maxHeight = '150px';
+
+                    checklist.style.left = '-100%';
+                    checklist.style.width = '80%';
+                    checklist.style.maxWidth = '300px';
+                }
+            }
         }
 
         function updateAngle() {
@@ -475,6 +728,8 @@
         function toggleMobileMenu() {
             const checklist = select('#checklist');
             const overlay = select('#mobile-overlay');
+            const breadcrumb = select('#breadcrumb');
+            const backBtn = select('#back-button');
             const isOpen = checklist.hasClass('open');
 
             if (isOpen) {
@@ -487,23 +742,133 @@
         function openMobileMenu() {
             const checklist = select('#checklist');
             const overlay = select('#mobile-overlay');
+            const breadcrumb = select('#breadcrumb');
+            const backBtn = select('#back-button');
 
             checklist.addClass('open');
             overlay.style('display', 'block');
             setTimeout(() => {
                 overlay.style('opacity', '1');
             }, 10);
+
+            // Show breadcrumb and back button on mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            if (isMobile) {
+                breadcrumb.style('display', 'block');
+                backBtn.style('display', 'block');
+            }
         }
 
         function closeMobileMenu() {
             const checklist = select('#checklist');
             const overlay = select('#mobile-overlay');
+            const breadcrumb = select('#breadcrumb');
+            const backBtn = select('#back-button');
 
             checklist.removeClass('open');
             overlay.style('opacity', '0');
             setTimeout(() => {
                 overlay.style('display', 'none');
             }, 300);
+
+            // Hide breadcrumb and back button
+            breadcrumb.style('display', 'none');
+            backBtn.style('display', 'none');
+        }
+
+        function goBack() {
+            // Simple back navigation - could be enhanced for more complex navigation
+            closeMobileMenu();
+        }
+
+        function initSwipeGestures() {
+            // Add touch event listeners to the document
+            document.addEventListener('touchstart', handleTouchStart, { passive: false });
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleTouchEnd, { passive: false });
+        }
+
+        function handleTouchStart(e) {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }
+
+        function handleTouchMove(e) {
+            // Prevent scrolling when swiping horizontally near the edges
+            if (Math.abs(e.changedTouches[0].screenX - touchStartX) > 10) {
+                e.preventDefault();
+            }
+        }
+
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipeGesture();
+        }
+
+        function filterChecklist(searchTerm) {
+            const items = selectAll('.check-item');
+            const categories = selectAll('.checklist-category');
+            const clearBtn = select('#clear-search');
+
+            if (searchTerm.trim() === '') {
+                // Show all items and categories
+                items.forEach(item => item.style('display', 'block'));
+                categories.forEach(cat => cat.style('display', 'block'));
+                clearBtn.style('display', 'none');
+                return;
+            }
+
+            clearBtn.style('display', 'block');
+            searchTerm = searchTerm.toLowerCase();
+
+            items.forEach(item => {
+                const text = item.elt.textContent.toLowerCase();
+                const matches = text.includes(searchTerm);
+                item.style('display', matches ? 'block' : 'none');
+            });
+
+            // Show/hide categories based on whether they have visible items
+            categories.forEach(cat => {
+                const categoryItems = cat.elt.querySelectorAll('.check-item');
+                const hasVisibleItems = Array.from(categoryItems).some(item =>
+                    item.style.display !== 'none'
+                );
+                cat.style('display', hasVisibleItems ? 'block' : 'none');
+
+                // Expand category if it has matching items
+                if (hasVisibleItems) {
+                    const content = cat.elt.querySelector('.category-content');
+                    const toggleIcon = cat.elt.querySelector('.toggle-icon');
+                    if (content && toggleIcon) {
+                        content.style.display = 'block';
+                        toggleIcon.textContent = '▼';
+                    }
+                }
+            });
+        }
+
+        function quickPreset(preset) {
+            switch(preset) {
+                case 'all':
+                    select('#show-details').checked(true);
+                    select('#show-pressure').checked(true);
+                    select('#show-flows').checked(true);
+                    select('#show-forces').checked(true);
+                    break;
+                case 'minimal':
+                    select('#show-details').checked(false);
+                    select('#show-pressure').checked(false);
+                    select('#show-flows').checked(true);
+                    select('#show-forces').checked(true);
+                    break;
+                case 'physics':
+                    select('#show-details').checked(false);
+                    select('#show-pressure').checked(true);
+                    select('#show-flows').checked(false);
+                    select('#show-forces').checked(true);
+                    break;
+            }
         }
 
         function exportChecklist() {
@@ -540,7 +905,17 @@
             const categories = [...new Set(allChecklistItems.map(item => item.category))];
 
             categories.forEach(category => {
-                container.html(container.html() + `<h4>${category}</h4>`);
+                const categoryId = category.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                const isExpanded = localStorage.getItem(`checklist-${categoryId}-expanded`) !== 'false'; // Default to expanded
+
+                container.html(container.html() +
+                    `<div class="checklist-category">
+                        <div class="category-header" onclick="toggleChecklistCategory('${categoryId}')">
+                            <h4>${category}</h4>
+                            <span class="toggle-icon">${isExpanded ? '▼' : '▶'}</span>
+                        </div>
+                        <div class="category-content" id="category-${categoryId}" style="display: ${isExpanded ? 'block' : 'none'};">`
+                );
 
                 allChecklistItems.filter(item => item.category === category).forEach(item => {
                     const statusClass = item.status;
@@ -556,6 +931,8 @@
                             <small>${item.description}</small>
                         </div>`);
                 });
+
+                container.html(container.html() + `</div></div>`);
             });
         }
 

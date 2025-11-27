@@ -1,0 +1,14 @@
+{
+  "name": "fisica-modelo",
+  "version": "1.0.0",
+  "description": "Simulador Interactivo de Sustentación Aerodinámica",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 3000",
+    "build": "echo 'No build step required for static files'",
+    "start": "python3 -m http.server 3000"
+  },
+  "keywords": ["aerodynamics", "physics", "simulation", "p5.js"],
+  "author": "Joaquin Gomez Mann",
+  "license": "MIT"
+}
