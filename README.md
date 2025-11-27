@@ -9,6 +9,7 @@ Este proyecto es una simulación web interactiva de la sustentación en un ala d
 - **Datos en Tiempo Real**: Panel con ecuaciones de Bernoulli y valores calculados.
 - **Idioma**: Todo en castellano.
 - **Compatibilidad Multi-dispositivo**: Diseño responsivo que se adapta a diferentes tamaños de pantalla y ordenadores.
+- **Optimización Móvil**: Controles táctiles mejorados, canvas adaptativo y experiencia optimizada para smartphones y tablets.
 
 ## Mejoras Recientes
 - ✅ **Compatibilidad mejorada**: Canvas responsivo que se adapta automáticamente al tamaño de la ventana

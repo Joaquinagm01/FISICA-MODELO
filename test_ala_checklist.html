@@ -2,7 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Test del Ala - Checklist de Mejoras</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
@@ -40,8 +43,15 @@
 
         /* Responsive adjustments */
         @media (max-width: 1200px) {
-            #controls { max-width: 200px; }
-            #checklist { max-width: 300px; right: 5px; }
+            #controls {
+                max-width: 200px;
+                padding: 12px;
+            }
+            #checklist {
+                max-width: 300px;
+                right: 5px;
+                padding: 12px;
+            }
         }
 
         @media (max-width: 900px) {
@@ -51,6 +61,8 @@
                 bottom: 10px;
                 left: 10px;
                 max-width: calc(100vw - 20px);
+                padding: 15px;
+                border-radius: 12px;
             }
             #checklist {
                 position: absolute;
@@ -58,7 +70,118 @@
                 right: 10px;
                 left: 10px;
                 max-width: calc(100vw - 20px);
-                max-height: 40vh;
+                max-height: 35vh;
+                padding: 15px;
+                border-radius: 12px;
+            }
+            #controls input[type="range"] {
+                width: 100%;
+                height: 8px;
+                margin: 10px 0;
+            }
+            #controls button {
+                width: 100%;
+                padding: 12px;
+                margin: 5px 0;
+                font-size: 16px;
+                min-height: 44px;
+            }
+        }
+
+        /* Mobile specific optimizations */
+        @media (max-width: 768px) {
+            #controls {
+                bottom: 5px;
+                left: 5px;
+                right: 5px;
+                padding: 12px;
+                font-size: 14px;
+            }
+            #checklist {
+                top: 5px;
+                left: 5px;
+                right: 5px;
+                max-height: 30vh;
+                padding: 12px;
+                font-size: 13px;
+            }
+            #controls label {
+                display: block;
+                margin: 8px 0;
+                font-size: 14px;
+            }
+            #controls input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+                margin-right: 8px;
+            }
+            .check-item {
+                padding: 8px;
+                margin: 6px 0;
+            }
+        }
+
+        /* Small mobile devices */
+        @media (max-width: 480px) {
+            #controls {
+                padding: 10px;
+                font-size: 13px;
+            }
+            #checklist {
+                padding: 10px;
+                max-height: 25vh;
+                font-size: 12px;
+            }
+            #controls button {
+                padding: 10px;
+                font-size: 14px;
+            }
+            .check-item {
+                padding: 6px;
+                font-size: 11px;
+            }
+        }
+
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            #controls input[type="range"] {
+                height: 12px;
+                -webkit-appearance: none;
+                appearance: none;
+                background: #ddd;
+                border-radius: 6px;
+            }
+            #controls input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: #2196F3;
+                cursor: pointer;
+            }
+            #controls button {
+                -webkit-tap-highlight-color: rgba(33, 150, 243, 0.3);
+            }
+            #checklist {
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        /* Prevent text selection on touch */
+        @media (hover: none) {
+            * {
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            input, button, textarea, select {
+                -webkit-user-select: text;
+                -moz-user-select: text;
+                -ms-user-select: text;
+                user-select: text;
             }
         }
 
@@ -165,14 +288,24 @@
         }
 
         function setup() {
-            // Create responsive canvas
-            let canvasWidth = min(windowWidth - 300, 1200);
-            let canvasHeight = min(windowHeight - 100, 700);
+            // Detect mobile devices
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+            // Calculate canvas size based on device
+            let canvasWidth, canvasHeight;
+
+            if (isMobile) {
+                canvasWidth = window.innerWidth;
+                canvasHeight = window.innerHeight - 180; // Leave space for controls
+                scaleFactor = min(canvasWidth / 800, canvasHeight / 500); // Smaller base for mobile
+            } else {
+                canvasWidth = min(windowWidth - 300, 1200);
+                canvasHeight = min(windowHeight - 100, 700);
+                scaleFactor = min(canvasWidth / 1000, canvasHeight / 600);
+            }
+
             createCanvas(canvasWidth, canvasHeight);
             smooth();
-
-            // Calculate scale factor based on canvas size
-            scaleFactor = min(canvasWidth / 1000, canvasHeight / 600);
 
             // Initialize controls
             angleSlider = select('#angle-slider');
@@ -188,10 +321,23 @@
         }
 
         function windowResized() {
-            let canvasWidth = min(windowWidth - 300, 1200);
-            let canvasHeight = min(windowHeight - 100, 700);
+            // Detect mobile devices
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+
+            // Recalculate canvas size
+            let canvasWidth, canvasHeight;
+
+            if (isMobile) {
+                canvasWidth = window.innerWidth;
+                canvasHeight = window.innerHeight - 180;
+                scaleFactor = min(canvasWidth / 800, canvasHeight / 500);
+            } else {
+                canvasWidth = min(windowWidth - 300, 1200);
+                canvasHeight = min(windowHeight - 100, 700);
+                scaleFactor = min(canvasWidth / 1000, canvasHeight / 600);
+            }
+
             resizeCanvas(canvasWidth, canvasHeight);
-            scaleFactor = min(canvasWidth / 1000, canvasHeight / 600);
         }
 
         function updateAngle() {
