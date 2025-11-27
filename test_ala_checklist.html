@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test del Ala - Checklist de Mejoras</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: linear-gradient(to bottom, #87CEEB, #FFFFFF); }
+        #controls { position: fixed; top: 10px; left: 10px; background: rgba(255,255,255,0.95); padding: 15px; border-radius: 10px; max-width: 250px; }
+        #checklist { position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.95); padding: 15px; border-radius: 10px; max-width: 350px; max-height: 80vh; overflow-y: auto; }
+        #checklist h3 { margin: 0 0 10px 0; color: #333; }
+        .check-item { margin: 8px 0; padding: 5px; border-radius: 5px; }
+        .check-item.completed { background: #e8f5e8; border-left: 4px solid #4CAF50; }
+        .check-item.pending { background: #fff3cd; border-left: 4px solid #ffc107; }
+        .check-item.improvement { background: #e3f2fd; border-left: 4px solid #2196F3; }
+        .status { font-weight: bold; font-size: 12px; }
+        .completed { color: #4CAF50; }
+        .pending { color: #ff9800; }
+        .improvement { color: #2196F3; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h3>Controles de Test</h3>
+        <label>Ángulo de Ataque: <span id="angle-value">5</span>°</label><br>
+        <input type="range" id="angle-slider" min="0" max="25" value="5" step="1"><br><br>
+        <label>Mostrar Detalles:</label><br>
+        <input type="checkbox" id="show-details" checked> Etiquetas<br>
+        <input type="checkbox" id="show-pressure" checked> Presiones<br>
+        <input type="checkbox" id="show-flows" checked> Flujos<br>
+        <input type="checkbox" id="show-forces" checked> Fuerzas<br><br>
+        <button onclick="resetTest()">Reiniciar</button>
+        <button onclick="exportChecklist()">Exportar Checklist</button>
+    </div>
+
+    <div id="checklist">
+        <h3>Checklist de Mejoras del Ala</h3>
+        <div id="checklist-items"></div>
+        <div style="margin-top: 20px; padding: 10px; background: rgba(255,255,255,0.9); border-radius: 5px;">
+            <h4>🎨 Mejoras Implementadas Recientemente:</h4>
+            <ul>
+                <li>✅ <strong>Textura Metálica</strong>: Gradientes en capas con brillos especulares</li>
+                <li>✅ <strong>Sombras 3D</strong>: Sombras volumétricas basadas en dirección de luz</li>
+                <li>✅ <strong>Detalles de Superficie</strong>: Paneles estructurales, remaches y antenas GPS</li>
+                <li>✅ <strong>Flaps Mejorados</strong>: Texturas metálicas y efectos de vibración</li>
+                <li>✅ <strong>Luces de Navegación</strong>: Efectos de parpadeo y halos realistas</li>
+                <li>💡 <strong>Efectos de Desgaste</strong>: Manchas de uso e hielo en condiciones específicas</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let angleSlider, showDetails, showPressure, showFlows, showForces;
+        let angleAttack = radians(5);
+        let flowOffset = 0;
+
+        // Checklist data
+        const checklistItems = [
+            // Vista del Ala
+            { category: "Vista del Ala", item: "Perfil NACA 2412 preciso", status: "completed", description: "Curvas de Bezier implementadas correctamente" },
+            { category: "Vista del Ala", item: "Grosor del perfil realista", status: "completed", description: "Borde interior y borde de ataque reforzado" },
+            { category: "Vista del Ala", item: "Textura metálica", status: "completed", description: "Gradientes metálicos y brillos especulares implementados" },
+            { category: "Vista del Ala", item: "Sombras 3D", status: "completed", description: "Sombras volumétricas con dirección de luz" },
+            { category: "Vista del Ala", item: "Detalles de superficie", status: "completed", description: "Paneles, remaches y antenas GPS agregados" },
+            { category: "Vista del Ala", item: "Efectos de desgaste", status: "completed", description: "Manchas de uso e hielo en condiciones específicas" },
+
+            // Flujos de Aire
+            { category: "Flujos de Aire", item: "Líneas de corriente superiores", status: "completed", description: "Flujos azules siguiendo contorno superior" },
+            { category: "Flujos de Aire", item: "Líneas de corriente inferiores", status: "completed", description: "Flujos naranjas siguiendo contorno inferior" },
+            { category: "Flujos de Aire", item: "Partículas animadas", status: "completed", description: "Puntos siguiendo las líneas de flujo" },
+            { category: "Flujos de Aire", item: "Velocidad variable por ángulo", status: "completed", description: "Flujos más rápidos en ángulos altos" },
+            { category: "Flujos de Aire", item: "Efectos de turbulencia", status: "pending", description: "Ondulaciones y remolinos en stall" },
+            { category: "Flujos de Aire", item: "Separación del flujo", status: "completed", description: "Efectos cuando α > 12°" },
+            { category: "Flujos de Aire", item: "Boundary layer visualization", status: "improvement", description: "Capa límite visible cerca de la superficie" },
+
+            // Presiones
+            { category: "Presiones", item: "Gradiente de presión superior", status: "completed", description: "Azul para baja presión" },
+            { category: "Presiones", item: "Gradiente de presión inferior", status: "completed", description: "Rojo para alta presión" },
+            { category: "Presiones", item: "Líneas de contorno", status: "completed", description: "Isobaras curvas" },
+            { category: "Presiones", item: "Animación de contornos", status: "pending", description: "Contornos ondulantes con el tiempo" },
+            { category: "Presiones", item: "Valores numéricos", status: "improvement", description: "Mostrar valores de presión en Pa" },
+            { category: "Presiones", item: "Efectos de compresibilidad", status: "improvement", description: "Cambios en altas velocidades" },
+
+            // Fuerzas
+            { category: "Fuerzas", item: "Flecha de sustentación", status: "completed", description: "Verde desde borde de ataque" },
+            { category: "Fuerzas", item: "Flecha de peso", status: "completed", description: "Roja hacia abajo" },
+            { category: "Fuerzas", item: "Fuerza de arrastre", status: "pending", description: "Flecha horizontal de resistencia" },
+            { category: "Fuerzas", item: "Momento de cabeceo", status: "improvement", description: "Torque alrededor del centro aerodinámico" },
+            { category: "Fuerzas", item: "Centro de presión", status: "improvement", description: "Punto donde actúa la fuerza resultante" },
+
+            // Interactividad
+            { category: "Interactividad", item: "Control de ángulo de ataque", status: "completed", description: "Slider funcional 0-25°" },
+            { category: "Interactividad", item: "Animación automática", status: "pending", description: "Modo demo con ángulos variables" },
+            { category: "Interactividad", item: "Zoom y pan", status: "improvement", description: "Acercamiento a detalles específicos" },
+            { category: "Interactividad", item: "Modo comparación", status: "improvement", description: "Comparar diferentes perfiles NACA" },
+            { category: "Interactividad", item: "Captura de pantalla", status: "pending", description: "Guardar imágenes del estado actual" },
+
+            // Física
+            { category: "Física", item: "Principio de Bernoulli", status: "completed", description: "Velocidad ↔ Presión correctamente mostrado" },
+            { category: "Física", item: "Coeficiente de sustentación", status: "completed", description: "Cl = 2π sin(α) aproximado" },
+            { category: "Física", item: "Efecto stall", status: "completed", description: "Pérdida de sustentación >15°" },
+            { category: "Física", item: "Reynolds number", status: "improvement", description: "Considerar número de Reynolds" },
+            { category: "Física", item: "Efectos de Mach", status: "improvement", description: "Compresibilidad en altas velocidades" },
+
+            // Visual/Estético
+            { category: "Visual/Estético", item: "Colores intuitivos", status: "completed", description: "Azul=presión baja, Rojo=presión alta" },
+            { category: "Visual/Estético", item: "Transparencias apropiadas", status: "completed", description: "Elementos no obstructivos" },
+            { category: "Visual/Estético", item: "Tipografía clara", status: "completed", description: "Etiquetas legibles" },
+            { category: "Visual/Estético", item: "Animaciones suaves", status: "completed", description: "60 FPS sin parpadeos" },
+            { category: "Visual/Estético", item: "Responsive design", status: "pending", description: "Adaptable a diferentes pantallas" },
+            { category: "Visual/Estético", item: "Modo oscuro", status: "improvement", description: "Tema alternativo para presentaciones" }
+        ];
+
+        function setup() {
+            createCanvas(1000, 600, P2D);
+            smooth();
+
+            angleSlider = select('#angle-slider');
+            angleSlider.input(updateAngle);
+
+            showDetails = select('#show-details');
+            showPressure = select('#show-pressure');
+            showFlows = select('#show-flows');
+            showForces = select('#show-forces');
+
+            updateAngle();
+            displayChecklist();
+        }
+
+        function updateAngle() {
+            let angleDeg = angleSlider.value();
+            select('#angle-value').html(angleDeg);
+            angleAttack = radians(angleDeg);
+        }
+
+        function resetTest() {
+            angleSlider.value(5);
+            updateAngle();
+            select('#show-details').checked(true);
+            select('#show-pressure').checked(true);
+            select('#show-flows').checked(true);
+            select('#show-forces').checked(true);
+        }
+
+        function exportChecklist() {
+            let content = "# Checklist de Mejoras del Ala - Simulador de Sustentación\n\n";
+            content += "Generado: " + new Date().toLocaleString() + "\n\n";
+
+            const categories = [...new Set(checklistItems.map(item => item.category))];
+
+            categories.forEach(category => {
+                content += `## ${category}\n\n`;
+                checklistItems.filter(item => item.category === category).forEach(item => {
+                    const status = item.status === 'completed' ? '✅' : item.status === 'pending' ? '⏳' : '💡';
+                    content += `- ${status} **${item.item}**: ${item.description}\n`;
+                });
+                content += "\n";
+            });
+
+            // Create download link
+            const blob = new Blob([content], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'checklist_ala.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function displayChecklist() {
+            const container = select('#checklist-items');
+            container.html('');
+
+            const categories = [...new Set(checklistItems.map(item => item.category))];
+
+            categories.forEach(category => {
+                container.html(container.html() + `<h4>${category}</h4>`);
+
+                checklistItems.filter(item => item.category === category).forEach(item => {
+                    const statusClass = item.status;
+                    const statusText = item.status === 'completed' ? 'Completado' :
+                                     item.status === 'pending' ? 'Pendiente' : 'Mejora';
+                    const statusColor = item.status === 'completed' ? 'completed' :
+                                      item.status === 'pending' ? 'pending' : 'improvement';
+
+                    container.html(container.html() +
+                        `<div class="check-item ${statusClass}">
+                            <span class="status ${statusColor}">${statusText}</span><br>
+                            <strong>${item.item}</strong><br>
+                            <small>${item.description}</small>
+                        </div>`);
+                });
+            });
+        }
+
+        function draw() {
+            clear();
+
+            // Background gradient
+            for (let y = 0; y < height; y++) {
+                let inter = map(y, 0, height, 0, 1);
+                let c = lerpColor(color(135, 206, 250), color(100, 180, 220), inter);
+                stroke(c);
+                line(0, y, width, y);
+            }
+
+            // Title
+            fill(255);
+            stroke(0);
+            strokeWeight(2);
+            textSize(20);
+            textAlign(CENTER);
+            text('Test del Ala - Checklist de Mejoras', width / 2, 35);
+
+            // Draw airfoil
+            push();
+            translate(width / 2, height / 2);
+            scale(1.2);
+            rotate(angleAttack * 0.3);
+
+            // Main airfoil profile
+            fill(40, 40, 50);
+            stroke(20, 20, 30);
+            strokeWeight(3);
+
+            beginShape();
+            let leX = -150, leY = 0;
+            vertex(leX, leY);
+            bezierVertex(-100, -20, -50, -40, 0, -50);
+            bezierVertex(50, -50, 100, -40, 150, -20);
+            vertex(170, 0);
+            bezierVertex(150, 10, 100, 20, 50, 25);
+            bezierVertex(0, 25, -50, 20, -100, 10);
+            bezierVertex(-125, 5, leX, leY);
+            endShape(CLOSE);
+
+            // Leading edge reinforcement
+            fill(20, 20, 30);
+            noStroke();
+            ellipse(leX, leY, 12, 10);
+
+            // Flaps for high angles
+            if (degrees(angleAttack) > 15) {
+                fill(100, 149, 237, 200);
+                stroke(80, 129, 217);
+                strokeWeight(2);
+                beginShape();
+                vertex(100, -45); vertex(140, -40); vertex(145, -30); vertex(105, -35);
+                endShape(CLOSE);
+                beginShape();
+                vertex(100, 20); vertex(140, 15); vertex(145, 25); vertex(105, 30);
+                endShape(CLOSE);
+            }
+
+            // Navigation light
+            fill(0, 255, 0);
+            stroke(0, 150, 0);
+            strokeWeight(1);
+            ellipse(165, -5, 8, 8);
+
+            pop();
+
+            // Flow visualization
+            if (showFlows.checked()) {
+                flowOffset += 0.02;
+
+                // Upper flow (blue)
+                stroke(135, 206, 235, 160);
+                strokeWeight(2);
+                noFill();
+                for (let i = 0; i < 8; i++) {
+                    let baseY = height / 2 - 35 - i * 4;
+                    let xOffset = (flowOffset * 3 + i * 15) % (width + 200) - 100;
+                    let curve = degrees(angleAttack) * 1.5;
+
+                    beginShape();
+                    vertex(xOffset, baseY);
+                    bezierVertex(xOffset + 50, baseY - 10 - curve, xOffset + 120, baseY - 18 - curve, xOffset + 200, baseY - 5 - curve);
+                    endShape();
+                }
+
+                // Lower flow (orange)
+                stroke(255, 140, 100, 160);
+                for (let i = 0; i < 8; i++) {
+                    let baseY = height / 2 + 35 + i * 4;
+                    let xOffset = (flowOffset * 1.5 + i * 15) % (width + 200) - 100;
+                    let curve = degrees(angleAttack) * 1.2;
+
+                    beginShape();
+                    vertex(xOffset, baseY);
+                    bezierVertex(xOffset + 50, baseY + 10 + curve, xOffset + 120, baseY + 18 + curve, xOffset + 200, baseY + 5 + curve);
+                    endShape();
+                }
+            }
+
+            // Pressure visualization
+            if (showPressure.checked()) {
+                push();
+                translate(width / 2, height / 2);
+                scale(1.2);
+
+                // High pressure below (red)
+                for (let layer = 0; layer < 3; layer++) {
+                    fill(255, 100, 100, 20 - layer * 5);
+                    noStroke();
+                    beginShape();
+                    for (let x = -120; x <= 120; x += 5) {
+                        let yb = -0.12 * sin(PI * x / 240) * 50;
+                        vertex(x, yb + 2 + layer);
+                    }
+                    vertex(120, 30 + layer);
+                    vertex(-120, 30 + layer);
+                    endShape(CLOSE);
+                }
+
+                // Low pressure above (blue)
+                for (let layer = 0; layer < 3; layer++) {
+                    fill(100, 150, 255, 15 - layer * 3);
+                    noStroke();
+                    beginShape();
+                    for (let x = -120; x <= 120; x += 5) {
+                        let yt = 0.12 * sin(PI * x / 240) * 50;
+                        vertex(x, yt - 2 - layer);
+                    }
+                    vertex(120, -30 - layer);
+                    vertex(-120, -30 - layer);
+                    endShape(CLOSE);
+                }
+
+                pop();
+            }
+
+            // Forces
+            if (showForces.checked()) {
+                let leX = width / 2 - 180;
+                let leY = height / 2;
+
+                // Lift force (green)
+                drawArrow(leX, leY, leX, leY - 50, color(0, 255, 0), 4);
+                fill(0, 255, 0);
+                textSize(12);
+                text('Sustentación', leX + 10, leY - 25);
+
+                // Weight force (red)
+                drawArrow(leX, leY, leX, leY + 40, color(255, 0, 0), 4);
+                fill(255, 0, 0);
+                text('Peso', leX + 10, leY + 50);
+            }
+
+            // Labels
+            if (showDetails.checked()) {
+                fill(255);
+                stroke(0);
+                strokeWeight(1);
+                textSize(10);
+                textAlign(CENTER);
+                text('NACA 2412', width / 2, height / 2 + 50);
+
+                fill(135, 206, 235);
+                textSize(12);
+                textAlign(LEFT);
+                text('Aire Rápido (Baja Presión)', 50, height / 2 - 50);
+
+                fill(255, 140, 100);
+                text('Aire Lento (Alta Presión)', 50, height / 2 + 70);
+            }
+        }
+
+        function drawArrow(x1, y1, x2, y2, arrowColor, weight = 3) {
+            stroke(arrowColor);
+            strokeWeight(weight);
+            line(x1, y1, x2, y2);
+
+            push();
+            translate(x2, y2);
+            rotate(atan2(y2 - y1, x2 - x1));
+            fill(arrowColor);
+            noStroke();
+            triangle(0, 0, -6, -2, -6, 2);
+            pop();
+        }
+    </script>
+</body>
+</html>

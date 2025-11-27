@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test del Ala - Simulador de Sustentación</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: linear-gradient(to bottom, #87CEEB, #FFFFFF); }
+        #controls { position: fixed; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 10px; }
+        #controls h3 { margin: 0 0 10px 0; color: #333; }
+        #info { position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.9); padding: 15px; border-radius: 10px; max-width: 300px; }
+        #info h3 { margin: 0 0 10px 0; color: #333; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <h3>Controles de Test</h3>
+        <label>Ángulo de Ataque: <span id="angle-value">5</span>°</label><br>
+        <input type="range" id="angle-slider" min="0" max="20" value="5" step="1"><br><br>
+        <button onclick="resetTest()">Reiniciar</button>
+    </div>
+
+    <div id="info">
+        <h3>Información del Test</h3>
+        <div id="test-info">
+            <strong>Perfil del Ala:</strong> NACA 2412<br>
+            <strong>Velocidad del Viento:</strong> 70 m/s<br>
+            <strong>Densidad del Aire:</strong> 1.225 kg/m³<br><br>
+            <strong>Elementos a verificar:</strong><br>
+            • Forma del perfil aerodinámico<br>
+            • Flujos de aire superiores (azul claro)<br>
+            • Flujos de aire inferiores (naranja)<br>
+            • Gradientes de presión (rojo/azul)<br>
+            • Flechas de fuerza<br>
+            • Partículas en movimiento
+        </div>
+    </div>
+
+    <script>
+        let angleSlider;
+        let angleAttack = radians(5);
+        let flowOffset = 0;
+
+        function setup() {
+            createCanvas(1000, 600, P2D);
+            smooth();
+
+            angleSlider = select('#angle-slider');
+            angleSlider.input(updateAngle);
+
+            updateAngle(); // Initialize
+        }
+
+        function updateAngle() {
+            let angleDeg = angleSlider.value();
+            select('#angle-value').html(angleDeg);
+            angleAttack = radians(angleDeg);
+        }
+
+        function resetTest() {
+            angleSlider.value(5);
+            updateAngle();
+        }
+
+        function draw() {
+            clear();
+
+            // Background gradient
+            for (let y = 0; y < height; y++) {
+                let inter = map(y, 0, height, 0, 1);
+                let c = lerpColor(color(135, 206, 250), color(100, 180, 220), inter);
+                stroke(c);
+                line(0, y, width, y);
+            }
+
+            // Title
+            fill(255);
+            stroke(0);
+            strokeWeight(2);
+            textSize(24);
+            textAlign(CENTER);
+            text('Test del Ala - Simulador de Sustentación', width / 2, 40);
+
+            // Draw airfoil
+            push();
+            translate(width / 2, height / 2);
+            scale(1.2);
+            rotate(angleAttack * 0.5);
+
+            // Airfoil profile using Bezier curves (NACA 2412 approximation)
+            fill(40, 40, 50);
+            stroke(20, 20, 30);
+            strokeWeight(3);
+
+            beginShape();
+            // Leading edge
+            let leX = -150;
+            let leY = 0;
+
+            // Upper surface (suction side)
+            vertex(leX, leY);
+            bezierVertex(-100, -20, -50, -40, 0, -50);
+            bezierVertex(50, -50, 100, -40, 150, -20);
+
+            // Trailing edge upper
+            vertex(170, 0);
+
+            // Lower surface (pressure side)
+            vertex(170, 0);
+            bezierVertex(150, 10, 100, 20, 50, 25);
+            bezierVertex(0, 25, -50, 20, -100, 10);
+            bezierVertex(-125, 5, leX, leY);
+
+            endShape(CLOSE);
+
+            // Leading edge reinforcement
+            fill(20, 20, 30);
+            noStroke();
+            ellipse(leX, leY, 12, 8);
+
+            // Wing tips
+            fill(0, 255, 0);
+            ellipse(165, -5, 6, 6); // Green navigation light
+
+            pop();
+
+            // Flow visualization
+            flowOffset += 0.03;
+
+            // Upper surface flow (fast air, low pressure)
+            stroke(135, 206, 235, 180);
+            strokeWeight(2);
+            noFill();
+
+            for (let i = 0; i < 12; i++) {
+                let baseY = height / 2 - 40 - i * 5;
+                let xOffset = (flowOffset * 3 + i * 15) % (width + 200) - 100;
+                let curveOffset = degrees(angleAttack) * 2;
+
+                beginShape();
+                vertex(xOffset, baseY);
+                bezierVertex(xOffset + 60, baseY - 12 - curveOffset, xOffset + 140, baseY - 20 - curveOffset, xOffset + 220, baseY - 8 - curveOffset);
+                endShape();
+
+                // Particles following flow
+                for (let p = 0; p < 5; p++) {
+                    let t = (frameCount * 0.02 + p * 0.3 + i * 0.1) % TWO_PI;
+                    let particleX = xOffset + 40 + t * 40;
+                    let particleY = baseY - 15 - curveOffset + sin(t * 2) * 3;
+                    let alpha = map(sin(t * 3), -1, 1, 30, 120);
+
+                    fill(135, 206, 235, alpha);
+                    noStroke();
+                    ellipse(particleX, particleY, 2, 2);
+                }
+            }
+
+            // Lower surface flow (slow air, high pressure)
+            stroke(255, 140, 100, 180);
+            strokeWeight(2);
+
+            for (let i = 0; i < 12; i++) {
+                let baseY = height / 2 + 40 + i * 5;
+                let xOffset = (flowOffset * 1.2 + i * 15) % (width + 200) - 100;
+                let curveOffset = degrees(angleAttack) * 1.5;
+
+                beginShape();
+                vertex(xOffset, baseY);
+                bezierVertex(xOffset + 60, baseY + 12 + curveOffset, xOffset + 140, baseY + 20 + curveOffset, xOffset + 220, baseY + 8 + curveOffset);
+                endShape();
+
+                // Particles following flow
+                for (let p = 0; p < 4; p++) {
+                    let t = (frameCount * 0.015 + p * 0.4 + i * 0.1) % TWO_PI;
+                    let particleX = xOffset + 40 + t * 30;
+                    let particleY = baseY + 15 + curveOffset + sin(t * 1.5) * 2;
+                    let alpha = map(sin(t * 2.5), -1, 1, 25, 100);
+
+                    fill(255, 140, 100, alpha);
+                    noStroke();
+                    ellipse(particleX, particleY, 2, 2);
+                }
+            }
+
+            // Pressure visualization
+            push();
+            translate(width / 2, height / 2);
+            scale(1.2);
+
+            // High pressure region (red gradient below wing)
+            for (let layer = 0; layer < 4; layer++) {
+                let alpha = map(layer, 0, 3, 30, 8);
+                fill(255, 100, 100, alpha);
+                noStroke();
+                beginShape();
+                for (let x = -120; x <= 120; x += 5) {
+                    let localX = x;
+                    let yb = -0.12 * (0.2969 * sqrt(abs(localX/240)) - 0.126 * (localX/240) - 0.3516 * pow(localX/240, 2) + 0.2843 * pow(localX/240, 3) - 0.1015 * pow(localX/240, 4)) * 60;
+                    let pressureY = yb + 3 + layer * 1.5;
+                    vertex(x, pressureY);
+                }
+                vertex(120, 40 + layer * 1.5);
+                vertex(-120, 40 + layer * 1.5);
+                endShape(CLOSE);
+            }
+
+            // Low pressure region (blue gradient above wing)
+            for (let layer = 0; layer < 4; layer++) {
+                let alpha = map(layer, 0, 3, 25, 6);
+                fill(100, 150, 255, alpha);
+                noStroke();
+                beginShape();
+                for (let x = -120; x <= 120; x += 5) {
+                    let localX = x;
+                    let yt = 0.12 * (0.2969 * sqrt(abs(localX/240)) - 0.126 * (localX/240) - 0.3516 * pow(localX/240, 2) + 0.2843 * pow(localX/240, 3) - 0.1015 * pow(localX/240, 4)) * 60;
+                    let pressureY = yt - 3 - layer * 1.5;
+                    vertex(x, pressureY);
+                }
+                vertex(120, -40 - layer * 1.5);
+                vertex(-120, -40 - layer * 1.5);
+                endShape(CLOSE);
+            }
+
+            pop();
+
+            // Force arrows
+            let liftLength = 60;
+            let leadingEdgeX = width / 2 - 180;
+            let leadingEdgeY = height / 2;
+
+            // Lift arrow (green, upward)
+            drawArrow(leadingEdgeX, leadingEdgeY, leadingEdgeX, leadingEdgeY - liftLength, color(0, 255, 0), 4);
+            fill(0, 255, 0);
+            textSize(14);
+            text('Sustentación', leadingEdgeX + 15, leadingEdgeY - liftLength / 2);
+
+            // Weight arrow (red, downward)
+            drawArrow(leadingEdgeX, leadingEdgeY, leadingEdgeX, leadingEdgeY + 50, color(255, 0, 0), 4);
+            fill(255, 0, 0);
+            text('Peso', leadingEdgeX + 15, leadingEdgeY + 60);
+
+            // Labels
+            textAlign(LEFT);
+            fill(135, 206, 235);
+            textSize(12);
+            text('Aire Rápido (Presión Baja)', 50, height / 2 - 60);
+
+            fill(255, 140, 100);
+            text('Aire Lento (Presión Alta)', 50, height / 2 + 90);
+        }
+
+        function drawArrow(x1, y1, x2, y2, arrowColor, weight = 3) {
+            // Shaft
+            stroke(arrowColor);
+            strokeWeight(weight);
+            line(x1, y1, x2, y2);
+
+            // Arrowhead
+            push();
+            translate(x2, y2);
+            let angle = atan2(y2 - y1, x2 - x1);
+            rotate(angle);
+            fill(arrowColor);
+            noStroke();
+            triangle(0, 0, -8, -3, -8, 3);
+            pop();
+        }
+    </script>
+</body>
+</html>

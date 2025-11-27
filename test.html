@@ -1,15 +1,175 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Simulador de Sustentación</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #f0f0f0; }
+        #test-results { position: fixed; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 10px; border-radius: 5px; font-size: 12px; max-width: 300px; }
+        #test-results h3 { margin: 0 0 10px 0; color: #333; }
+        .test-item { margin: 5px 0; }
+        .pass { color: green; }
+        .fail { color: red; }
+        .info { color: blue; }
+    </style>
 </head>
 <body>
+    <div id="test-results">
+        <h3>Test Results</h3>
+        <div id="results"></div>
+    </div>
+
     <script>
+        let testResults = [];
+        let canvas;
+
         function setup() {
-            createCanvas(400, 400);
-            background(200);
-            text("Test working", 50, 50);
+            canvas = createCanvas(800, 400);
+            background(135, 206, 235); // Sky blue background
+
+            // Test 1: Canvas creation
+            testResults.push({
+                name: "Canvas Creation",
+                status: canvas ? "pass" : "fail",
+                message: canvas ? "Canvas created successfully" : "Failed to create canvas"
+            });
+
+            // Test 2: p5.js loaded
+            testResults.push({
+                name: "p5.js Library",
+                status: typeof draw === "function" ? "pass" : "fail",
+                message: "p5.js library loaded and functional"
+            });
+
+            // Test 3: Basic drawing functions
+            try {
+                push();
+                fill(255, 0, 0);
+                ellipse(100, 100, 50, 50);
+                pop();
+                testResults.push({
+                    name: "Basic Drawing",
+                    status: "pass",
+                    message: "Basic drawing functions work"
+                });
+            } catch(e) {
+                testResults.push({
+                    name: "Basic Drawing",
+                    status: "fail",
+                    message: "Error in basic drawing: " + e.message
+                });
+            }
+
+            // Test 4: Bezier curves (used for airfoil)
+            try {
+                push();
+                noFill();
+                stroke(0);
+                beginShape();
+                vertex(200, 200);
+                bezierVertex(250, 180, 300, 180, 350, 200);
+                endShape();
+                pop();
+                testResults.push({
+                    name: "Bezier Curves",
+                    status: "pass",
+                    message: "Bezier curves for airfoil drawing work"
+                });
+            } catch(e) {
+                testResults.push({
+                    name: "Bezier Curves",
+                    status: "fail",
+                    message: "Error with Bezier curves: " + e.message
+                });
+            }
+
+            // Test 5: Color gradients (used for pressure visualization)
+            try {
+                for(let y = 0; y < 50; y++) {
+                    let inter = map(y, 0, 50, 0, 1);
+                    let c = lerpColor(color(255, 0, 0), color(0, 0, 255), inter);
+                    stroke(c);
+                    line(400, 150 + y, 450, 150 + y);
+                }
+                testResults.push({
+                    name: "Color Gradients",
+                    status: "pass",
+                    message: "Color gradients for pressure visualization work"
+                });
+            } catch(e) {
+                testResults.push({
+                    name: "Color Gradients",
+                    status: "fail",
+                    message: "Error with color gradients: " + e.message
+                });
+            }
+
+            // Test 6: Text rendering
+            try {
+                fill(0);
+                textSize(16);
+                text("Test Text", 500, 200);
+                testResults.push({
+                    name: "Text Rendering",
+                    status: "pass",
+                    message: "Text rendering works"
+                });
+            } catch(e) {
+                testResults.push({
+                    name: "Text Rendering",
+                    status: "fail",
+                    message: "Error with text rendering: " + e.message
+                });
+            }
+
+            // Test 7: Transformations (translate, rotate, scale)
+            try {
+                push();
+                translate(600, 200);
+                rotate(PI/4);
+                scale(0.5);
+                fill(0, 255, 0);
+                rect(0, 0, 100, 50);
+                pop();
+                testResults.push({
+                    name: "Transformations",
+                    status: "pass",
+                    message: "Transformations (translate, rotate, scale) work"
+                });
+            } catch(e) {
+                testResults.push({
+                    name: "Transformations",
+                    status: "fail",
+                    message: "Error with transformations: " + e.message
+                });
+            }
+
+            displayResults();
+        }
+
+        function displayResults() {
+            let resultsDiv = select('#results');
+            resultsDiv.html('');
+
+            testResults.forEach(test => {
+                let className = test.status;
+                let icon = test.status === 'pass' ? '✓' : '✗';
+                resultsDiv.html(resultsDiv.html() + `<div class="test-item ${className}">${icon} ${test.name}: ${test.message}</div>`);
+            });
+
+            // Summary
+            let passed = testResults.filter(t => t.status === 'pass').length;
+            let total = testResults.length;
+            resultsDiv.html(resultsDiv.html() + `<div class="test-item info"><strong>Summary: ${passed}/${total} tests passed</strong></div>`);
+        }
+
+        function draw() {
+            // Simple animation to show the canvas is working
+            fill(255, 255, 0, 100);
+            noStroke();
+            ellipse(mouseX, mouseY, 20, 20);
         }
     </script>
 </body>

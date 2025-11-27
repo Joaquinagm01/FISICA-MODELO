@@ -45,6 +45,9 @@
 - [x] **Detalles de flaps extendidos**: Mostrar flaps bajados en ángulos altos para mayor realismo
 - [x] **Luces de navegación**: Agregar luces rojas/verde/blanca en alas y cola
 - [x] **Efectos de motor**: Partículas de escape y calor de motores
+- [x] **Texturas procedurales**: Materiales metálicos generados proceduralmente (sin dependencias externas)
+- [x] **Corrección de errores JS**: bezierVertex argumentos y variables P1/P2 corregidas
+- [x] **Variables de clima**: currentWeather, rainDrops, snowFlakes, lightningFlash declaradas globalmente
 - [x] **Antenas y sensores**: Detalles como pitot tube, antenas GPS
 
 ### ☁️ Mejoras de Nubes y Fondo
@@ -150,5 +153,79 @@
 - [x] **Depth of field**: Enfoque en el avión, desenfoque en fondo
 - [x] **Motion blur**: Efectos de movimiento en elementos rápidos
 - [x] **LOD (Level of Detail)**: Menos detalle en elementos lejanos
+
+---
+
+# 🛩️ Checklist Completa de Mejoras del Ala
+
+## Vista del Ala
+- [x] **Perfil NACA 2412 preciso**: Curvas de Bezier implementadas correctamente
+- [x] **Grosor del perfil realista**: Borde interior y borde de ataque reforzado
+- [x] **Textura metálica**: Agregar gradientes metálicos y brillos
+- [x] **Sombras 3D**: Efectos de iluminación y sombras volumétricas
+- [x] **Detalles de superficie**: Remaches, paneles, antenas GPS
+- [💡] **Efectos de desgaste**: Manchas de uso, hielo en bordes
+
+## Flujos de Aire
+- [x] **Líneas de corriente superiores**: Flujos azules siguiendo contorno superior
+- [x] **Líneas de corriente inferiores**: Flujos naranjas siguiendo contorno inferior
+- [x] **Partículas animadas**: Puntos siguiendo las líneas de flujo
+- [x] **Velocidad variable por ángulo**: Flujos más rápidos en ángulos altos
+- [ ] **Efectos de turbulencia**: Ondulaciones y remolinos en stall
+- [x] **Separación del flujo**: Efectos cuando α > 12°
+- [💡] **Boundary layer visualization**: Capa límite visible cerca de la superficie
+
+## Presiones
+- [x] **Gradiente de presión superior**: Azul para baja presión
+- [x] **Gradiente de presión inferior**: Rojo para alta presión
+- [x] **Líneas de contorno**: Isobaras curvas
+- [ ] **Animación de contornos**: Contornos ondulantes con el tiempo
+- [💡] **Valores numéricos**: Mostrar valores de presión en Pa
+- [💡] **Efectos de compresibilidad**: Cambios en altas velocidades
+
+## Fuerzas
+- [x] **Flecha de sustentación**: Verde desde borde de ataque
+- [x] **Flecha de peso**: Roja hacia abajo
+- [ ] **Fuerza de arrastre**: Flecha horizontal de resistencia
+- [💡] **Momento de cabeceo**: Torque alrededor del centro aerodinámico
+- [💡] **Centro de presión**: Punto donde actúa la fuerza resultante
+
+## Interactividad
+- [x] **Control de ángulo de ataque**: Slider funcional 0-25°
+- [ ] **Animación automática**: Modo demo con ángulos variables
+- [💡] **Zoom y pan**: Acercamiento a detalles específicos
+- [💡] **Modo comparación**: Comparar diferentes perfiles NACA
+- [ ] **Captura de pantalla**: Guardar imágenes del estado actual
+
+## Física
+- [x] **Principio de Bernoulli**: Velocidad ↔ Presión correctamente mostrado
+- [x] **Coeficiente de sustentación**: Cl = 2π sin(α) aproximado
+- [x] **Efecto stall**: Pérdida de sustentación >15°
+- [💡] **Reynolds number**: Considerar número de Reynolds
+- [💡] **Efectos de Mach**: Compresibilidad en altas velocidades
+
+## Visual/Estético
+- [x] **Colores intuitivos**: Azul=presión baja, Rojo=presión alta
+- [x] **Transparencias apropiadas**: Elementos no obstructivos
+- [x] **Tipografía clara**: Etiquetas legibles
+- [x] **Animaciones suaves**: 60 FPS sin parpadeos
+- [ ] **Responsive design**: Adaptable a diferentes pantallas
+- [💡] **Modo oscuro**: Tema alternativo para presentaciones
+
+---
+
+## 📋 Leyenda de Estados
+- ✅ **[x] Completado**: Funcionalidad implementada y probada
+- ⏳ **[ ] Pendiente**: Importante para la próxima versión
+- 💡 **[💡] Mejora**: Enhancement opcional para versiones futuras
+
+## 🧪 Archivo de Test
+- **test_ala_checklist.html**: Test interactivo con checklist integrada
+- **test_ala.html**: Test simplificado del ala
+- **test.html**: Verificación básica de funcionalidades p5.js
+
+---
+
+*Checklist generada automáticamente desde test_ala_checklist.html - Última actualización: $(date)*
 
 

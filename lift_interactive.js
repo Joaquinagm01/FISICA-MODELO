@@ -8,6 +8,12 @@ let mass = 80; // kg
 let rho = 1.225; // kg/m³
 let weight = mass * 9.81; // N
 let bgImage;
+let P1 = 101325; // Upper surface pressure
+let P2 = 101325; // Lower surface pressure
+let currentWeather = 'clear'; // Current weather condition
+let rainDrops = []; // Array of raindrop objects
+let snowFlakes = []; // Array of snowflake objects
+let lightningFlash = 0; // Lightning flash intensity
 
 // Bloom effect variables
 let bloomEnabled = true;
@@ -191,8 +197,8 @@ function updateParameters() {
   let v2 = windSpeed - delta_v; // Below (slower)
 
   // Pressures using Bernoulli
-  let P1 = 101325 - 0.5 * rho * (v1**2 - windSpeed**2);
-  let P2 = 101325 - 0.5 * rho * (v2**2 - windSpeed**2);
+  P1 = 101325 - 0.5 * rho * (v1**2 - windSpeed**2);
+  P2 = 101325 - 0.5 * rho * (v2**2 - windSpeed**2);
 
   select('#p1').html(P1.toFixed(0));
   select('#p2').html(P2.toFixed(0));
@@ -435,35 +441,59 @@ function updateAirplaneDisplay() {
 async function loadMaterialTextures() {
   try {
     console.log('Loading material textures...');
-    
-    // Load different material textures for airplane parts
-    const textureUrls = {
-      fuselage: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300', // Metallic surface
-      wings: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300', // Aircraft aluminum
-      engine: 'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=300' // Engine material
-    };
-    
-    // Load fuselage texture
-    fuselageTexture = loadImage(textureUrls.fuselage, 
-      () => console.log('Fuselage texture loaded'),
-      () => console.error('Failed to load fuselage texture')
-    );
-    
-    // Load wing texture
-    wingTexture = loadImage(textureUrls.wings, 
-      () => console.log('Wing texture loaded'),
-      () => console.error('Failed to load wing texture')
-    );
-    
-    // Load engine texture
-    engineTexture = loadImage(textureUrls.engine, 
-      () => console.log('Engine texture loaded'),
-      () => console.error('Failed to load engine texture')
-    );
-    
+
+    // Create procedural textures instead of loading external images
+    const textureSize = 256;
+
+    // Create fuselage texture (metallic surface)
+    fuselageTexture = createGraphics(textureSize, textureSize);
+    fuselageTexture.loadPixels();
+    for (let i = 0; i < textureSize * textureSize * 4; i += 4) {
+      let x = (i / 4) % textureSize;
+      let y = Math.floor((i / 4) / textureSize);
+      let noiseVal = noise(x * 0.01, y * 0.01) * 50;
+      fuselageTexture.pixels[i] = 120 + noiseVal;     // R - metallic gray
+      fuselageTexture.pixels[i + 1] = 125 + noiseVal; // G
+      fuselageTexture.pixels[i + 2] = 135 + noiseVal; // B
+      fuselageTexture.pixels[i + 3] = 255;            // A
+    }
+    fuselageTexture.updatePixels();
+    console.log('Fuselage texture created');
+
+    // Create wing texture (aircraft aluminum)
+    wingTexture = createGraphics(textureSize, textureSize);
+    wingTexture.loadPixels();
+    for (let i = 0; i < textureSize * textureSize * 4; i += 4) {
+      let x = (i / 4) % textureSize;
+      let y = Math.floor((i / 4) / textureSize);
+      let noiseVal = noise(x * 0.02, y * 0.02) * 30;
+      wingTexture.pixels[i] = 140 + noiseVal;     // R - lighter metallic
+      wingTexture.pixels[i + 1] = 145 + noiseVal; // G
+      wingTexture.pixels[i + 2] = 155 + noiseVal; // B
+      wingTexture.pixels[i + 3] = 255;            // A
+    }
+    wingTexture.updatePixels();
+    console.log('Wing texture created');
+
+    // Create engine texture (procedural engine material)
+    engineTexture = createGraphics(textureSize, textureSize);
+    engineTexture.loadPixels();
+    for (let i = 0; i < textureSize * textureSize * 4; i += 4) {
+      let x = (i / 4) % textureSize;
+      let y = Math.floor((i / 4) / textureSize);
+      let noiseVal = noise(x * 0.03, y * 0.03) * 40;
+      // Darker metallic for engine
+      engineTexture.pixels[i] = 80 + noiseVal;     // R
+      engineTexture.pixels[i + 1] = 85 + noiseVal; // G
+      engineTexture.pixels[i + 2] = 95 + noiseVal; // B
+      engineTexture.pixels[i + 3] = 255;           // A
+    }
+    engineTexture.updatePixels();
+    console.log('Engine texture created');
+
     return true;
   } catch (error) {
-    console.error('Failed to load material textures:', error);
+    console.error('Failed to create material textures:', error);
     return false;
   }
 }
@@ -646,69 +676,193 @@ function draw() {
   noStroke();
   text('Ángulo de Ataque: ' + angleSlider.value() + ' grados', 20, 15);
 
+  // Variables para el ala (definidas fuera del push para scope global)
+  let leadingEdgeX = -180;
+  let leadingEdgeY = 0;
+
   // Dibujar ala aerodinámica sólida y profesional (perfil NACA 2412 mejorado)
   push();
   translate(width / 2, height / 2); // Centrar el ala en el canvas
   scale(1.4); // Hacer el ala más grande para mejor visibilidad
   rotate(angleAttack * 0.3); // Rotación sutil
 
-  // Perfil aerodinámico NACA 2412 mejorado - sólido y grueso
-  fill(40, 40, 50); // Gris oscuro sólido
-  stroke(20, 20, 30); // Borde negro
-  strokeWeight(4);
+  // Variables para efectos visuales mejorados
+  let lightDirection = createVector(0.5, -0.8, 0.3).normalize(); // Dirección de la luz
+  let wingNormal = createVector(0, 0, 1); // Normal del ala (hacia arriba)
 
-  // Dibujar el perfil del ala usando curvas de Bezier para bordes suaves
+  // Calcular intensidad de luz para efectos 3D
+  let lightIntensity = max(0, lightDirection.dot(wingNormal));
+
+  // ===== TEXTURA METÁLICA CON GRADIENTES =====
+  // Base metálica con gradiente
+  for (let layer = 0; layer < 3; layer++) {
+    let alpha = map(layer, 0, 2, 255, 180);
+    let metallicColor = color(
+      map(layer, 0, 2, 80, 120),  // Más claro en capas superiores
+      map(layer, 0, 2, 85, 125),
+      map(layer, 0, 2, 95, 135)
+    );
+
+    fill(red(metallicColor), green(metallicColor), blue(metallicColor), alpha);
+    stroke(red(metallicColor) * 0.8, green(metallicColor) * 0.8, blue(metallicColor) * 0.8, alpha * 0.8);
+    strokeWeight(1);
+
+    // Dibujar perfil con gradiente metálico
+    beginShape();
+    vertex(leadingEdgeX, leadingEdgeY);
+    bezierVertex(-120 + layer * 2, -25 + layer, -60 + layer, -45 + layer, 0, -55 + layer);
+    bezierVertex(60 - layer, -55 + layer, 120 - layer * 2, -45 + layer, 180 - layer * 3, -25 + layer);
+    vertex(200 - layer * 4, layer * 0.5);
+    bezierVertex(180 - layer * 3, 15 - layer, 120 - layer * 2, 25 - layer, 60 - layer, 30 - layer);
+    bezierVertex(0, 30 - layer, -60 + layer, 25 - layer, -120 + layer * 2, 15 - layer);
+    bezierVertex(-150 + layer * 3, 8 - layer, -120 + layer * 2, 10 - layer, -90 + layer, 12 - layer, leadingEdgeX, leadingEdgeY);
+    endShape(CLOSE);
+  }
+
+  // ===== BRILLOS METÁLICOS =====
+  // Brillos especulares en la superficie
+  stroke(255, 255, 255, 150);
+  strokeWeight(1);
+  noFill();
+
+  // Brillo principal (highlight)
   beginShape();
+  vertex(leadingEdgeX + 10, leadingEdgeY - 5);
+  bezierVertex(-80, -15, -20, -25, 20, -30);
+  bezierVertex(80, -30, 140, -20, 170, -10);
+  endShape();
 
-  // Borde de ataque (punto más grueso del perfil)
-  let leadingEdgeX = -180;
-  let leadingEdgeY = 0;
+  // Brillos secundarios
+  stroke(255, 255, 255, 80);
+  beginShape();
+  vertex(leadingEdgeX + 20, leadingEdgeY - 2);
+  bezierVertex(-60, -8, 0, -12, 40, -15);
+  bezierVertex(100, -15, 150, -8, 180, -3);
+  endShape();
 
-  // Curva superior (extrados) - usando Bezier para suavidad
+  // ===== SOMBRAS 3D =====
+  // Sombras volumétricas basadas en dirección de luz
+  push();
+  translate(3, 3); // Offset para sombra
+  fill(0, 0, 0, 40 * (1 - lightIntensity));
+  noStroke();
+
+  // Sombra del perfil principal
+  beginShape();
   vertex(leadingEdgeX, leadingEdgeY);
-
-  // Primera sección superior
   bezierVertex(-120, -25, -60, -45, 0, -55);
-  // Segunda sección superior
   bezierVertex(60, -55, 120, -45, 180, -25);
-
-  // Punta del ala (trailing edge superior)
-  vertex(200, 0);
-
-  // Curva inferior (intrados) - simétrica pero más plana
   vertex(200, 0);
   bezierVertex(180, 15, 120, 25, 60, 30);
   bezierVertex(0, 30, -60, 25, -120, 15);
-  bezierVertex(-150, 8, leadingEdgeX, leadingEdgeY);
-
+  bezierVertex(-150, 8, -120, 10, -90, 12, leadingEdgeX, leadingEdgeY);
   endShape(CLOSE);
+  pop();
 
-  // Añadir grosor adicional al perfil con un borde interior
-  stroke(60, 60, 70);
+  // ===== DETALLES DE SUPERFICIE =====
+  // Paneles estructurales
+  stroke(30, 30, 40, 120);
+  strokeWeight(1);
+  for (let i = 0; i < 6; i++) {
+    let panelX = leadingEdgeX + 30 + i * 30;
+    if (panelX < 180) {
+      line(panelX, -40, panelX, 20);
+    }
+  }
+
+  // Remaches en los paneles
+  fill(60, 60, 70);
+  noStroke();
+  for (let i = 0; i < 8; i++) {
+    let rivetX = leadingEdgeX + 20 + i * 25;
+    let rivetY = -35;
+    if (rivetX < 170) {
+      ellipse(rivetX, rivetY, 2, 2);
+      ellipse(rivetX, rivetY + 10, 2, 2);
+      ellipse(rivetX, rivetY + 20, 2, 2);
+      ellipse(rivetX, rivetY + 30, 2, 2);
+      ellipse(rivetX, rivetY + 40, 2, 2);
+    }
+  }
+
+  // Antenas GPS/VOR en la superficie superior
+  stroke(80, 80, 90);
+  strokeWeight(2);
+  // Antena principal
+  line(50, -45, 50, -55);
+  fill(100, 100, 110);
+  ellipse(50, -55, 4, 4);
+
+  // Antena secundaria
+  line(120, -40, 120, -50);
+  ellipse(120, -50, 3, 3);
+
+  // ===== EFECTOS DE DESGASTE (OPCIONALES) =====
+  // Manchas de uso en áreas de alto estrés
+  if (angleAttack > radians(10)) { // Solo mostrar en ángulos altos
+    // Mancha de desgaste en borde de ataque
+    fill(45, 45, 55, 80);
+    noStroke();
+    ellipse(leadingEdgeX + 15, leadingEdgeY, 25, 8);
+
+    // Mancha de desgaste en flaps
+    ellipse(160, -42, 15, 6);
+    ellipse(160, 17, 15, 6);
+  }
+
+  // Hielo en bordes (simulado para altitudes altas)
+  if (altitude > 5000) {
+    stroke(200, 220, 255, 120);
+    strokeWeight(2);
+    noFill();
+
+    // Hielo en borde de ataque
+    beginShape();
+    vertex(leadingEdgeX, leadingEdgeY - 3);
+    bezierVertex(leadingEdgeX + 20, leadingEdgeY - 5, leadingEdgeX + 40, leadingEdgeY - 4, leadingEdgeX + 60, leadingEdgeY - 3);
+    endShape();
+
+    // Hielo en borde de salida
+    beginShape();
+    vertex(180, -3);
+    bezierVertex(185, -5, 190, -4, 195, -2);
+    endShape();
+  }
+
+  // ===== BORDES MEJORADOS =====
+  // Borde exterior con efecto metálico
+  stroke(100, 110, 120, 200);
   strokeWeight(2);
   noFill();
   beginShape();
-  vertex(leadingEdgeX + 5, leadingEdgeY);
-  bezierVertex(-115, -20, -55, -38, 5, -48);
-  bezierVertex(65, -48, 125, -38, 185, -20);
-  vertex(195, 0);
-  bezierVertex(185, 10, 125, 18, 65, 23);
-  bezierVertex(5, 23, -55, 18, -115, 10);
-  bezierVertex(-145, 6, leadingEdgeX + 5, leadingEdgeY);
+  vertex(leadingEdgeX, leadingEdgeY);
+  bezierVertex(-120, -25, -60, -45, 0, -55);
+  bezierVertex(60, -55, 120, -45, 180, -25);
+  vertex(200, 0);
+  bezierVertex(180, 15, 120, 25, 60, 30);
+  bezierVertex(0, 30, -60, 25, -120, 15);
+  bezierVertex(-150, 8, -120, 10, -90, 12, leadingEdgeX, leadingEdgeY);
   endShape();
 
-  // Borde de ataque reforzado (zona más gruesa)
-  fill(20, 20, 30);
-  noStroke();
+  // Borde de ataque reforzado con textura metálica
+  fill(60, 70, 80);
+  stroke(40, 50, 60);
+  strokeWeight(1);
   ellipse(leadingEdgeX, leadingEdgeY, 16, 12);
 
-  // Detalles del ala
-  // Flaps cuando ángulo > 15° - más prominentes
+  // Detalle del borde de ataque
+  fill(80, 90, 100);
+  ellipse(leadingEdgeX, leadingEdgeY, 10, 8);
+
+  // Detalles del ala con mejoras visuales
+  // Flaps cuando ángulo > 15° - más prominentes y realistas
   if (angleAttack > radians(15)) {
-    fill(100, 149, 237);
-    stroke(80, 129, 217);
-    strokeWeight(3);
-    // Flaps superiores
+    // Flaps superiores con textura metálica
+    fill(90, 140, 220);
+    stroke(70, 120, 200);
+    strokeWeight(2);
+
+    // Flap superior con detalles
     beginShape();
     vertex(120, -50);
     vertex(170, -45);
@@ -716,36 +870,92 @@ function draw() {
     vertex(125, -40);
     endShape(CLOSE);
 
-    // Flaps inferiores
+    // Detalles del flap superior
+    stroke(60, 100, 180);
+    strokeWeight(1);
+    line(140, -47, 140, -38);
+    line(155, -45, 155, -37);
+
+    // Flaps inferiores con textura metálica
+    fill(85, 135, 215);
+    stroke(65, 115, 195);
+    strokeWeight(2);
+
     beginShape();
     vertex(120, 25);
     vertex(170, 20);
     vertex(175, 30);
     vertex(125, 35);
     endShape(CLOSE);
+
+    // Detalles del flap inferior
+    stroke(55, 95, 175);
+    strokeWeight(1);
+    line(140, 22, 140, 33);
+    line(155, 20, 155, 32);
+
+    // Efectos de movimiento en flaps
+    if (angleAttack > radians(20)) {
+      // Vibración sutil en flaps desplegados
+      let flapVibration = sin(frameCount * 0.5) * 0.5;
+      stroke(255, 255, 255, 100);
+      strokeWeight(1);
+      line(170 + flapVibration, -42, 175 + flapVibration, -35);
+      line(170 + flapVibration, 23, 175 + flapVibration, 30);
+    }
   }
 
-  // Luz de navegación en la punta del ala - más visible
+  // Luz de navegación en la punta del ala - más visible y realista
+  // Base de la luz
+  fill(30, 30, 40);
+  stroke(20, 20, 30);
+  strokeWeight(1);
+  ellipse(195, -8, 12, 12);
+
+  // Luz verde de navegación
   fill(0, 255, 0);
   stroke(0, 150, 0);
   strokeWeight(2);
-  ellipse(195, -8, 10, 10);
-  fill(100, 255, 100, 150);
-  noStroke();
-  ellipse(195, -8, 20, 20);
+  ellipse(195, -8, 8, 8);
 
-  // Número de serie del ala - más visible
+  // Halo de la luz
+  fill(100, 255, 100, 120);
+  noStroke();
+  ellipse(195, -8, 16, 16);
+
+  // Efecto de parpadeo sutil
+  if (frameCount % 60 < 30) {
+    fill(150, 255, 150, 80);
+    ellipse(195, -8, 20, 20);
+  }
+
+  // Número de serie del ala - más visible con efecto 3D
+  // Sombra del texto
+  fill(0, 0, 0, 100);
+  textSize(10);
+  textAlign(CENTER);
+  text('NACA 2412', 1, 46);
+
+  // Texto principal
   fill(255);
   stroke(0);
   strokeWeight(1);
-  textSize(10);
-  textAlign(CENTER);
   text('NACA 2412', 0, 45);
 
-  // Etiqueta del borde de ataque
+  // Etiqueta del borde de ataque con mejor diseño
   fill(255, 255, 0);
+  stroke(150, 150, 0);
+  strokeWeight(1);
   textSize(8);
   text('Borde de Ataque', leadingEdgeX - 20, leadingEdgeY - 15);
+
+  // Indicador de dirección de vuelo
+  stroke(255, 255, 0, 150);
+  strokeWeight(2);
+  let arrowLength = 15;
+  line(leadingEdgeX - arrowLength, leadingEdgeY, leadingEdgeX - 5, leadingEdgeY);
+  line(leadingEdgeX - 8, leadingEdgeY - 3, leadingEdgeX - 5, leadingEdgeY);
+  line(leadingEdgeX - 8, leadingEdgeY + 3, leadingEdgeX - 5, leadingEdgeY);
 
   pop();
 
