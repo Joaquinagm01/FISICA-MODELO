@@ -6,9 +6,62 @@
     <title>Test del Ala - Checklist de Mejoras</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; background: linear-gradient(to bottom, #87CEEB, #FFFFFF); }
-        #controls { position: fixed; top: 10px; left: 10px; background: rgba(255,255,255,0.95); padding: 15px; border-radius: 10px; max-width: 250px; }
-        #checklist { position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.95); padding: 15px; border-radius: 10px; max-width: 350px; max-height: 80vh; overflow-y: auto; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #FFFFFF);
+            overflow: hidden;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 250px;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #checklist {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            #controls { max-width: 200px; }
+            #checklist { max-width: 300px; right: 5px; }
+        }
+
+        @media (max-width: 900px) {
+            #controls {
+                position: absolute;
+                top: auto;
+                bottom: 10px;
+                left: 10px;
+                max-width: calc(100vw - 20px);
+            }
+            #checklist {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: calc(100vw - 20px);
+                max-height: 40vh;
+            }
+        }
+
         #checklist h3 { margin: 0 0 10px 0; color: #333; }
         .check-item { margin: 8px 0; padding: 5px; border-radius: 5px; }
         .check-item.completed { background: #e8f5e8; border-left: 4px solid #4CAF50; }
@@ -37,17 +90,6 @@
     <div id="checklist">
         <h3>Checklist de Mejoras del Ala</h3>
         <div id="checklist-items"></div>
-        <div style="margin-top: 20px; padding: 10px; background: rgba(255,255,255,0.9); border-radius: 5px;">
-            <h4>🎨 Mejoras Implementadas Recientemente:</h4>
-            <ul>
-                <li>✅ <strong>Textura Metálica</strong>: Gradientes en capas con brillos especulares</li>
-                <li>✅ <strong>Sombras 3D</strong>: Sombras volumétricas basadas en dirección de luz</li>
-                <li>✅ <strong>Detalles de Superficie</strong>: Paneles estructurales, remaches y antenas GPS</li>
-                <li>✅ <strong>Flaps Mejorados</strong>: Texturas metálicas y efectos de vibración</li>
-                <li>✅ <strong>Luces de Navegación</strong>: Efectos de parpadeo y halos realistas</li>
-                <li>💡 <strong>Efectos de Desgaste</strong>: Manchas de uso e hielo en condiciones específicas</li>
-            </ul>
-        </div>
     </div>
 
     <script>
@@ -101,31 +143,55 @@
             { category: "Física", item: "Coeficiente de sustentación", status: "completed", description: "Cl = 2π sin(α) aproximado" },
             { category: "Física", item: "Efecto stall", status: "completed", description: "Pérdida de sustentación >15°" },
             { category: "Física", item: "Reynolds number", status: "improvement", description: "Considerar número de Reynolds" },
-            { category: "Física", item: "Efectos de Mach", status: "improvement", description: "Compresibilidad en altas velocidades" },
-
-            // Visual/Estético
-            { category: "Visual/Estético", item: "Colores intuitivos", status: "completed", description: "Azul=presión baja, Rojo=presión alta" },
-            { category: "Visual/Estético", item: "Transparencias apropiadas", status: "completed", description: "Elementos no obstructivos" },
-            { category: "Visual/Estético", item: "Tipografía clara", status: "completed", description: "Etiquetas legibles" },
-            { category: "Visual/Estético", item: "Animaciones suaves", status: "completed", description: "60 FPS sin parpadeos" },
-            { category: "Visual/Estético", item: "Responsive design", status: "pending", description: "Adaptable a diferentes pantallas" },
-            { category: "Visual/Estético", item: "Modo oscuro", status: "improvement", description: "Tema alternativo para presentaciones" }
+            { category: "Física", item: "Efectos de Mach", status: "improvement", description: "Compresibilidad en altas velocidades" }
         ];
 
+        // Nuevas Características a Probar
+        const newFeaturesToTest = [
+            { category: "Nuevas Características a Probar", item: "Pruebas específicas para el sistema de flujo aerodinámico con curvas Bézier", status: "pending", description: "Validar comportamiento de flujos con las nuevas curvas NACA precisas" },
+            { category: "Nuevas Características a Probar", item: "Validación de la física de partículas en diferentes condiciones climáticas", status: "pending", description: "Probar partículas en lluvia, nieve y condiciones normales" },
+            { category: "Nuevas Características a Probar", item: "Pruebas de estabilidad del sistema de sombras 3D y texturas metálicas", status: "pending", description: "Verificar rendimiento y estabilidad de efectos visuales avanzados" },
+            { category: "Nuevas Características a Probar", item: "Verificación de la correcta separación de flujos superior/inferior del ala", status: "pending", description: "Confirmar que los flujos se separan correctamente en la superficie del ala" }
+        ];
+
+        // Combine all checklist items
+        const allChecklistItems = [...checklistItems, ...newFeaturesToTest];
+
+        let cloudOffset = 0;
+        let scaleFactor = 1;
+
+        function getResponsiveTextSize(baseSize) {
+            return max(8, baseSize * scaleFactor);
+        }
+
         function setup() {
-            createCanvas(1000, 600, P2D);
+            // Create responsive canvas
+            let canvasWidth = min(windowWidth - 300, 1200);
+            let canvasHeight = min(windowHeight - 100, 700);
+            createCanvas(canvasWidth, canvasHeight);
             smooth();
 
-            angleSlider = select('#angle-slider');
-            angleSlider.input(updateAngle);
+            // Calculate scale factor based on canvas size
+            scaleFactor = min(canvasWidth / 1000, canvasHeight / 600);
 
+            // Initialize controls
+            angleSlider = select('#angle-slider');
             showDetails = select('#show-details');
             showPressure = select('#show-pressure');
             showFlows = select('#show-flows');
             showForces = select('#show-forces');
 
-            updateAngle();
+            angleSlider.input(updateAngle);
+            updateAngle(); // Initialize
+
             displayChecklist();
+        }
+
+        function windowResized() {
+            let canvasWidth = min(windowWidth - 300, 1200);
+            let canvasHeight = min(windowHeight - 100, 700);
+            resizeCanvas(canvasWidth, canvasHeight);
+            scaleFactor = min(canvasWidth / 1000, canvasHeight / 600);
         }
 
         function updateAngle() {
@@ -147,11 +213,11 @@
             let content = "# Checklist de Mejoras del Ala - Simulador de Sustentación\n\n";
             content += "Generado: " + new Date().toLocaleString() + "\n\n";
 
-            const categories = [...new Set(checklistItems.map(item => item.category))];
+            const categories = [...new Set(allChecklistItems.map(item => item.category))];
 
             categories.forEach(category => {
                 content += `## ${category}\n\n`;
-                checklistItems.filter(item => item.category === category).forEach(item => {
+                allChecklistItems.filter(item => item.category === category).forEach(item => {
                     const status = item.status === 'completed' ? '✅' : item.status === 'pending' ? '⏳' : '💡';
                     content += `- ${status} **${item.item}**: ${item.description}\n`;
                 });
@@ -174,12 +240,12 @@
             const container = select('#checklist-items');
             container.html('');
 
-            const categories = [...new Set(checklistItems.map(item => item.category))];
+            const categories = [...new Set(allChecklistItems.map(item => item.category))];
 
             categories.forEach(category => {
                 container.html(container.html() + `<h4>${category}</h4>`);
 
-                checklistItems.filter(item => item.category === category).forEach(item => {
+                allChecklistItems.filter(item => item.category === category).forEach(item => {
                     const statusClass = item.status;
                     const statusText = item.status === 'completed' ? 'Completado' :
                                      item.status === 'pending' ? 'Pendiente' : 'Mejora';
@@ -210,15 +276,15 @@
             // Title
             fill(255);
             stroke(0);
-            strokeWeight(2);
-            textSize(20);
+            strokeWeight(max(1, 2 * scaleFactor));
+            textSize(max(12, 20 * scaleFactor));
             textAlign(CENTER);
-            text('Test del Ala - Checklist de Mejoras', width / 2, 35);
+            text('Test del Ala - Checklist de Mejoras', width / 2, 35 * scaleFactor);
 
             // Draw airfoil
             push();
             translate(width / 2, height / 2);
-            scale(1.2);
+            scale(1.2 * scaleFactor);
             rotate(angleAttack * 0.3);
 
             // Main airfoil profile
@@ -338,16 +404,111 @@
                 let leX = width / 2 - 180;
                 let leY = height / 2;
 
-                // Lift force (green)
-                drawArrow(leX, leY, leX, leY - 50, color(0, 255, 0), 4);
-                fill(0, 255, 0);
-                textSize(12);
-                text('Sustentación', leX + 10, leY - 25);
+                // Calculate lift magnitude based on angle of attack (simplified)
+                let liftMagnitude = max(35, degrees(angleAttack) * 3.5 + 35);
+                let weightMagnitude = 45; // Constant weight
 
-                // Weight force (red)
-                drawArrow(leX, leY, leX, leY + 40, color(255, 0, 0), 4);
+                // Lift force (green) - upward arrow from center of wing
+                let liftEndY = leY - liftMagnitude;
+                drawArrow(leX, leY, leX, liftEndY, color(0, 255, 0), 5, 1.3);
+
+                // Lift label with better visibility
+                fill(0);
+                stroke(255);
+                strokeWeight(2);
+                textSize(getResponsiveTextSize(13));
+                textAlign(LEFT);
+                text('Sustentación', leX + 18, leY - liftMagnitude/2);
+
+                fill(0, 255, 0);
+                noStroke();
+                textSize(getResponsiveTextSize(13));
+                text('Sustentación', leX + 18, leY - liftMagnitude/2);
+
+                // Add lift value
+                fill(0);
+                stroke(255, 255, 255, 200);
+                strokeWeight(1);
+                textSize(getResponsiveTextSize(11));
+                text((liftMagnitude * 0.08).toFixed(1) + ' N', leX + 18, leY - liftMagnitude/2 + 18);
+
+                fill(0, 200, 0);
+                noStroke();
+                textSize(getResponsiveTextSize(11));
+                text((liftMagnitude * 0.08).toFixed(1) + ' N', leX + 18, leY - liftMagnitude/2 + 18);
+
+                // Weight force (red) - downward arrow from center
+                let weightEndY = leY + weightMagnitude;
+                drawArrow(leX, leY, leX, weightEndY, color(255, 0, 0), 5, 1.1);
+
+                // Weight label with high contrast for better visibility
+                fill(0);
+                stroke(255);
+                strokeWeight(3);
+                textSize(getResponsiveTextSize(14));
+                textAlign(LEFT);
+                text('Peso', leX + 18, leY + weightMagnitude/2);
+
                 fill(255, 0, 0);
-                text('Peso', leX + 10, leY + 50);
+                stroke(255, 255, 255, 150);
+                strokeWeight(1);
+                textSize(getResponsiveTextSize(14));
+                text('Peso', leX + 18, leY + weightMagnitude/2);
+
+                // Add weight value
+                fill(0);
+                stroke(255, 255, 255, 200);
+                strokeWeight(1);
+                textSize(getResponsiveTextSize(11));
+                text((weightMagnitude * 0.08).toFixed(1) + ' N', leX + 18, leY + weightMagnitude/2 + 18);
+
+                fill(200, 0, 0);
+                noStroke();
+                textSize(getResponsiveTextSize(11));
+                text((weightMagnitude * 0.08).toFixed(1) + ' N', leX + 18, leY + weightMagnitude/2 + 18);
+
+                // Drag force (orange) - horizontal arrow to the left
+                let dragMagnitude = degrees(angleAttack) * 0.6 + 8; // Drag increases with angle
+                let dragEndX = leX - dragMagnitude;
+                drawArrow(leX, leY, dragEndX, leY, color(255, 140, 0), 4, 0.9);
+
+                // Drag label
+                fill(0);
+                stroke(255);
+                strokeWeight(2);
+                textSize(getResponsiveTextSize(12));
+                textAlign(CENTER);
+                text('Resistencia', leX - dragMagnitude/2, leY - 10);
+
+                fill(255, 140, 0);
+                noStroke();
+                textSize(getResponsiveTextSize(12));
+                text('Resistencia', leX - dragMagnitude/2, leY - 10);
+
+                // Add drag value
+                fill(0);
+                stroke(255, 255, 255, 200);
+                strokeWeight(1);
+                textSize(getResponsiveTextSize(10));
+                text((dragMagnitude * 0.03).toFixed(2) + ' N', leX - dragMagnitude/2, leY + 8);
+
+                fill(200, 100, 0);
+                noStroke();
+                textSize(getResponsiveTextSize(10));
+                text((dragMagnitude * 0.03).toFixed(2) + ' N', leX - dragMagnitude/2, leY + 8);
+
+                // Draw force balance indicator
+                if (abs(liftMagnitude - weightMagnitude) < 15) {
+                    fill(255, 255, 0, 180);
+                    stroke(0);
+                    strokeWeight(max(1, 2 * scaleFactor));
+                    ellipse(leX, leY, 12 * scaleFactor, 12 * scaleFactor);
+                    fill(0);
+                    noStroke();
+                    textSize(getResponsiveTextSize(10));
+                    textAlign(CENTER);
+                    text('≡', leX, leY + 3 * scaleFactor);
+                }
             }
 
             // Labels
@@ -369,17 +530,50 @@
             }
         }
 
-        function drawArrow(x1, y1, x2, y2, arrowColor, weight = 3) {
-            stroke(arrowColor);
-            strokeWeight(weight);
-            line(x1, y1, x2, y2);
+        function drawArrow(x1, y1, x2, y2, arrowColor, weight = 4, scaleFactor = 1) {
+            // Calculate arrow length and direction
+            let dx = x2 - x1;
+            let dy = y2 - y1;
+            let length = sqrt(dx * dx + dy * dy);
+            let angle = atan2(dy, dx);
+
+            // Scale arrow based on length
+            let arrowLength = max(25, length * 0.4) * scaleFactor;
+            let arrowWidth = weight * 2.5 * scaleFactor;
 
             push();
-            translate(x2, y2);
-            rotate(atan2(y2 - y1, x2 - x1));
+            translate(x1, y1);
+            rotate(angle);
+
+            // Draw arrow shadow for depth
+            stroke(0, 0, 0, 50);
+            strokeWeight(weight + 2);
+            line(2, 2, length - arrowLength + 2, 2);
+
+            // Draw arrow shaft with gradient effect
+            for (let i = 0; i < length - arrowLength; i += 3) {
+                let alpha = map(i, 0, length - arrowLength, 255, 150);
+                stroke(red(arrowColor), green(arrowColor), blue(arrowColor), alpha);
+                strokeWeight(weight);
+                line(i, 0, i + 3, 0);
+            }
+
+            // Draw arrowhead with better shape and shadow
+            translate(length - arrowLength, 0);
+
+            // Arrowhead shadow
+            fill(0, 0, 0, 50);
+            noStroke();
+            triangle(2, 2, -arrowLength + 2, -arrowWidth/2 + 2, -arrowLength + 2, arrowWidth/2 + 2);
+
+            // Main arrowhead
             fill(arrowColor);
             noStroke();
-            triangle(0, 0, -6, -2, -6, 2);
+            triangle(0, 0, -arrowLength, -arrowWidth/2, -arrowLength, arrowWidth/2);
+
+            // Add arrowhead base for better appearance
+            rect(-arrowLength, -arrowWidth/4, arrowLength * 0.3, arrowWidth/2);
+
             pop();
         }
     </script>
