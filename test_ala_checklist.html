@@ -90,34 +90,71 @@
 
         /* Mobile specific optimizations */
         @media (max-width: 768px) {
+            #mobile-menu-toggle {
+                display: block;
+            }
+
             #controls {
-                bottom: 5px;
-                left: 5px;
-                right: 5px;
+                position: fixed;
+                bottom: 10px;
+                left: 70px;
+                right: 10px;
+                max-width: none;
                 padding: 12px;
+                border-radius: 12px;
                 font-size: 14px;
+                z-index: 1000;
             }
+
             #checklist {
-                top: 5px;
-                left: 5px;
-                right: 5px;
-                max-height: 30vh;
-                padding: 12px;
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 80%;
+                max-width: 300px;
+                height: 100vh;
+                border-radius: 0;
+                padding: 20px;
                 font-size: 13px;
+                transition: left 0.3s ease;
+                z-index: 1000;
+                overflow-y: auto;
             }
+
+            #checklist.open {
+                left: 0;
+            }
+
+            #controls input[type="range"] {
+                width: 100%;
+                height: 8px;
+                margin: 10px 0;
+            }
+
+            #controls button {
+                width: 48%;
+                padding: 12px;
+                margin: 2px;
+                font-size: 14px;
+                min-height: 44px;
+            }
+
             #controls label {
                 display: block;
                 margin: 8px 0;
                 font-size: 14px;
             }
+
             #controls input[type="checkbox"] {
                 width: 20px;
                 height: 20px;
                 margin-right: 8px;
             }
+
             .check-item {
                 padding: 8px;
                 margin: 6px 0;
+                font-size: 12px;
             }
         }
 
@@ -185,7 +222,78 @@
             }
         }
 
-        #checklist h3 { margin: 0 0 10px 0; color: #333; }
+        #mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1001;
+        }
+
+        #mobile-menu-toggle button {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #mobile-menu-toggle button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(33, 150, 243, 0.4);
+        }
+
+        #mobile-menu-toggle button:active {
+            transform: scale(0.95);
+        }
+
+        #mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #checklist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        #close-menu-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+            padding: 5px;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #close-menu-btn:hover {
+            background: rgba(0,0,0,0.1);
+        }
         .check-item { margin: 8px 0; padding: 5px; border-radius: 5px; }
         .check-item.completed { background: #e8f5e8; border-left: 4px solid #4CAF50; }
         .check-item.pending { background: #fff3cd; border-left: 4px solid #ffc107; }
@@ -197,6 +305,12 @@
     </style>
 </head>
 <body>
+    <div id="mobile-menu-toggle">
+        <button id="menu-btn" onclick="toggleMobileMenu()">☰</button>
+    </div>
+
+    <div id="mobile-overlay" onclick="closeMobileMenu()"></div>
+
     <div id="controls">
         <h3>Controles de Test</h3>
         <label>Ángulo de Ataque: <span id="angle-value">5</span>°</label><br>
@@ -211,7 +325,10 @@
     </div>
 
     <div id="checklist">
-        <h3>Checklist de Mejoras del Ala</h3>
+        <div id="checklist-header">
+            <h3>Checklist de Mejoras del Ala</h3>
+            <button id="close-menu-btn" onclick="closeMobileMenu()">✕</button>
+        </div>
         <div id="checklist-items"></div>
     </div>
 
@@ -353,6 +470,40 @@
             select('#show-pressure').checked(true);
             select('#show-flows').checked(true);
             select('#show-forces').checked(true);
+        }
+
+        function toggleMobileMenu() {
+            const checklist = select('#checklist');
+            const overlay = select('#mobile-overlay');
+            const isOpen = checklist.hasClass('open');
+
+            if (isOpen) {
+                closeMobileMenu();
+            } else {
+                openMobileMenu();
+            }
+        }
+
+        function openMobileMenu() {
+            const checklist = select('#checklist');
+            const overlay = select('#mobile-overlay');
+
+            checklist.addClass('open');
+            overlay.style('display', 'block');
+            setTimeout(() => {
+                overlay.style('opacity', '1');
+            }, 10);
+        }
+
+        function closeMobileMenu() {
+            const checklist = select('#checklist');
+            const overlay = select('#mobile-overlay');
+
+            checklist.removeClass('open');
+            overlay.style('opacity', '0');
+            setTimeout(() => {
+                overlay.style('display', 'none');
+            }, 300);
         }
 
         function exportChecklist() {
