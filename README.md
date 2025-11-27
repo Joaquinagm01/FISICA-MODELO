@@ -28,26 +28,23 @@ Este proyecto es una simulación web interactiva de la sustentación en un ala d
 
 ## Despliegue en Vercel
 
-### Opción 1: Despliegue Automático (Recomendado)
-1. Ve a [vercel.com](https://vercel.com) y crea una cuenta
-2. Conecta tu repositorio de GitHub
-3. Vercel detectará automáticamente la configuración y desplegará el proyecto
-4. Tu sitio estará disponible en una URL como `https://fisica-modelo.vercel.app`
+### 🚀 Despliegue Automático (Muy Fácil)
+1. Ve a [vercel.com](https://vercel.com)
+2. Crea una cuenta gratuita
+3. Haz clic en **"Import Project"**
+4. Conecta tu repositorio GitHub: `Joaquinagm01/FISICA-MODELO`
+5. **Vercel detectará automáticamente** que es un proyecto estático
+6. ¡Listo! Tu sitio estará online en segundos
 
-### Opción 2: Despliegue Manual con Vercel CLI
-```bash
-# Instalar Vercel CLI
-npm install -g vercel
+### 📁 Archivos Necesarios
+Solo necesitas los archivos HTML y JavaScript. **No se requiere configuración especial**.
 
-# Iniciar sesión
-vercel login
-
-# Desplegar
-vercel
-
-# Para producción
-vercel --prod
-```
+### 🌐 URLs Disponibles
+Después del despliegue, tendrás acceso a:
+- `https://tu-proyecto.vercel.app/index.html` - Simulador principal
+- `https://tu-proyecto.vercel.app/test_ala_checklist.html` - Versión con checklist
+- `https://tu-proyecto.vercel.app/test_ala.html` - Versión básica
+- `https://tu-proyecto.vercel.app/` - Redirige automáticamente a index.html
 
 ### Opción 3: Script de Despliegue Rápido
 ```bash
