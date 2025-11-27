@@ -1,10 +1,7 @@
 {
-  "version": 2,
-  "name": "fisica-modelo",
-  "builds": [
-    {
-      "src": "**/*.html",
-      "use": "@vercel/static"
-    }
-  ]
+  "framework": null,
+  "outputDirectory": ".",
+  "installCommand": "echo 'No install needed'",
+  "buildCommand": "echo 'No build needed'",
+  "devCommand": "echo 'No dev command needed'"
 }
