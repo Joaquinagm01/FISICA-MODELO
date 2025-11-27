@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Interactivo de Sustentación</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to bottom, #87CEEB, #FFFFFF);
+            overflow: hidden;
+        }
+        #data-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #000;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        #data-panel h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        #data-panel h4 {
+            margin: 0 0 8px 0;
+            color: #555;
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        #angle-slider {
+            width: 200px;
+            margin-bottom: 10px;
+        }
+        canvas {
+            display: block;
+        }
+        @media (max-width: 1200px) {
+            #data-panel {
+                width: 250px;
+                font-size: 12px;
+                right: 10px;
+                top: 10px;
+            }
+            #instrument-panel {
+                width: 90%;
+                max-width: 600px;
+                bottom: 10px;
+            }
+            .gauge {
+                width: 100px;
+                height: 100px;
+                font-size: 9px;
+            }
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+        }
+        @media (max-width: 480px) {
+            #data-panel {
+                width: 95%;
+                right: 2.5%;
+                left: 2.5%;
+                top: 5px;
+                font-size: 10px;
+                padding: 8px;
+                max-height: 40vh;
+            }
+            #data-panel h4 {
+                font-size: 10px;
+            }
+            #instrument-panel {
+                width: 98%;
+                height: 100px;
+                bottom: 2px;
+                padding: 3px;
+                left: 1%;
+            }
+            .gauge {
+                width: 60px;
+                height: 60px;
+                font-size: 7px;
+            }
+            .airplane-btn, .weather-btn {
+                padding: 2px 4px;
+                font-size: 9px;
+                margin: 1px;
+            }
+            #data-panel button {
+                font-size: 9px;
+                padding: 3px 4px;
+                margin: 1px;
+            }
+        }
+        #instrument-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #333;
+            border-radius: 15px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .gauge {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, #222 0%, #000 100%);
+            border-radius: 50%;
+            border: 3px solid #444;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            text-align: center;
+        }
+        .gauge canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .gauge-label {
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .gauge-value {
+            font-size: 12px;
+            color: #00ff00;
+        }
+        .weather-btn {
+            background-color: #666;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .weather-btn.active {
+            background-color: #4CAF50;
+        }
+        .weather-btn:hover {
+            background-color: #555;
+        }
+        .airplane-btn {
+            background-color: #666;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            margin: 2px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+        .airplane-btn.active {
+            background-color: #FF6B35;
+        }
+        .airplane-btn:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div id="data-panel">
+        <h3>Datos en Tiempo Real</h3>
+        
+        <div style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+            <h4 style="margin: 0 0 8px 0; color: #555; font-size: 13px;">Parámetros de Vuelo</h4>
+            <label>Ángulo de Ataque: <span id="angle-value">5°</span></label><br>
+            <input type="range" id="angle-slider" min="-10" max="20" value="5" step="0.5"><br>
+            <label>Velocidad del Viento: <span id="wind-value">70 m/s</span></label><br>
+            <input type="range" id="wind-slider" min="10" max="100" value="70"><br>
+            <label>Altitud: <span id="altitude-value">0 m</span></label><br>
+            <input type="range" id="altitude-slider" min="0" max="10000" value="0" step="100"><br>
+            <label>Masa del Avión: <span id="mass-value">80 kg</span></label><br>
+            <input type="range" id="mass-slider" min="50" max="150" value="80"><br>
+        </div>
+        
+        <div style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+            <h4 style="margin: 0 0 8px 0; color: #555; font-size: 13px;">Física Aerodinámica</h4>
+            <p style="margin: 5px 0;">Sustentación: <span id="lift-value">75 N</span></p>
+            <p style="margin: 5px 0;">Peso: <span id="weight-value">784 N</span></p>
+            <p style="margin: 5px 0; font-size: 12px;">Ecuación de Bernoulli:</p>
+            <p style="margin: 2px 0; font-size: 11px;">P + ½ρv² = constante</p>
+            <p style="margin: 2px 0; font-size: 11px;">Arriba: P1=<span id="p1">101325</span> Pa, v1=<span id="v1">80</span> m/s</p>
+            <p style="margin: 2px 0; font-size: 11px;">Abajo: P2=<span id="p2">101325</span> Pa, v2=<span id="v2">60</span> m/s</p>
+            <p style="margin: 5px 0; font-size: 11px;">Densidad del Aire: <span id="rho-value">1.225 kg/m³</span></p>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <button id="reset-btn" style="margin-right: 5px;">Reiniciar</button>
+            <button id="tutorial-btn" style="margin-right: 5px;">Tutorial</button>
+            <button id="export-btn" style="margin-right: 5px;">Exportar</button>
+            <button id="save-btn" style="margin-right: 5px;">Guardar</button>
+            <button id="load-btn">Cargar</button>
+        </div>
+        
+        <div style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+            <label>Modelo de Avión:</label><br>
+            <div style="background: #f0f0f0; padding: 8px; border-radius: 4px; margin-top: 5px;">
+                Boeing 737-800 (Aerolineas Argentinas)
+            </div>
+            <br><br>
+            <div id="airplane-info" style="font-size: 12px; color: #666; margin: 5px 0;">Selecciona un modelo de avión arriba</div>
+        </div>
+        
+        <div style="margin-bottom: 15px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+            <label>Clima:</label><br>
+            <button id="weather-clear" class="weather-btn active">Despejado</button>
+            <button id="weather-rain" class="weather-btn">Lluvia</button>
+            <button id="weather-snow" class="weather-btn">Nieve</button>
+            <button id="weather-storm" class="weather-btn">Tormenta</button>
+        </div>
+        
+        <div>
+            <h4 style="margin: 0 0 8px 0; color: #555; font-size: 13px;">Calidad Gráfica</h4>
+            <label>Bloom: <span id="bloom-value">80%</span></label><br>
+            <input type="range" id="bloom-slider" min="0" max="100" value="80"><br>
+            <label>Depth of Field: <span id="dof-value">30%</span></label><br>
+            <input type="range" id="dof-slider" min="0" max="100" value="30"><br>
+            <label>Motion Blur: <span id="motion-blur-value">70%</span></label><br>
+            <input type="range" id="motion-blur-slider" min="0" max="100" value="70"><br>
+            <label>LOD Distance: <span id="lod-value">200px</span></label><br>
+            <input type="range" id="lod-slider" min="50" max="500" value="200"><br>
+        </div>
+    </div>
+    <div id="tutorial-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:20px; border:2px solid black; border-radius:10px; max-width:400px; z-index:1000; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+        <h3 style="margin-top: 0; color: #333;">Tutorial: Principios de Sustentación</h3>
+        <div style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">
+            <p style="margin: 8px 0; line-height: 1.4;">1. <strong>Ángulo de ataque</strong>: Afecta la sustentación según Cl = 2π sin(α)</p>
+            <p style="margin: 8px 0; line-height: 1.4;">2. <strong>Velocidad del viento</strong>: Influye en la presión dinámica</p>
+            <p style="margin: 8px 0; line-height: 1.4;">3. <strong>Altitud</strong>: Cambia la densidad del aire</p>
+            <p style="margin: 8px 0; line-height: 1.4;">4. <strong>Masa del avión</strong>: Determina el peso a equilibrar</p>
+            <p style="margin: 8px 0; line-height: 1.4;">5. <strong>Stall</strong>: En ángulos >15°, la sustentación disminuye</p>
+            <p style="margin: 8px 0; line-height: 1.4;">6. <strong>Modelos de avión</strong>: Cada uno tiene características diferentes</p>
+            <p style="margin: 8px 0; line-height: 1.4;">7. <strong>Clima</strong>: Afecta las condiciones de vuelo</p>
+        </div>
+        <button id="close-tutorial" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cerrar</button>
+    </div>
+    <div id="instrument-panel">
+        <div class="gauge" id="airspeed-gauge">
+            <div class="gauge-label">AIRSPEED</div>
+            <div class="gauge-value" id="airspeed-value">70</div>
+            <div class="gauge-unit">m/s</div>
+        </div>
+        <div class="gauge" id="altitude-gauge">
+            <div class="gauge-label">ALTITUDE</div>
+            <div class="gauge-value" id="altitude-gauge-value">0</div>
+            <div class="gauge-unit">m</div>
+        </div>
+        <div class="gauge" id="angle-gauge">
+            <div class="gauge-label">ANGLE</div>
+            <div class="gauge-value" id="angle-gauge-value">5</div>
+            <div class="gauge-unit">°</div>
+        </div>
+        <div class="gauge" id="lift-gauge">
+            <div class="gauge-label">LIFT</div>
+            <div class="gauge-value" id="lift-gauge-value">75</div>
+            <div class="gauge-unit">N</div>
+        </div>
+    </div>
+    <script src="lift_interactive.js"></script>
+</body>
+</html>
