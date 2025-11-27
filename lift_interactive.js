@@ -14,6 +14,7 @@ let currentWeather = 'clear'; // Current weather condition
 let rainDrops = []; // Array of raindrop objects
 let snowFlakes = []; // Array of snowflake objects
 let lightningFlash = 0; // Lightning flash intensity
+let flowParticles = []; // Array of flow particles following aerodynamic paths
 
 // Bloom effect variables
 let bloomEnabled = true;
@@ -153,6 +154,9 @@ function setup() {
     
     // Load material textures
     loadMaterialTextures();
+    
+    // Initialize flow particles
+    initializeFlowParticles();
     
     console.log('Setup completed');
   }, 100);
@@ -1022,42 +1026,124 @@ function draw() {
 
   pop();
 
-  // Dynamic flow animation with improved realism
-  flowOffset += 0.05;
+  // Update and draw aerodynamic flow particles
+  updateFlowParticles();
+  drawFlowParticles();
 
-  // Upper surface flow (fast air, low pressure) - accelerated flow
-  stroke(135, 206, 235, 200); // Sky blue with transparency
-  strokeWeight(2);
+  // Enhanced aerodynamic flow visualization following NACA 2412 profile
   noFill();
-  for (let i = 0; i < 15; i++) {
-    let baseY = height / 2 - 50 - i * 6;
-    let speed = 4 + sin(angleAttack) * 0.8; // More dynamic speed variation
-    let xOffset = (flowOffset * speed + i * 20) % (width + 300) - 150;
-    let curveOffset = angleAttack * 25; // More pronounced curve
-    let turbulence = sin(frameCount * 0.1 + i) * 3; // Add turbulence
 
-    // Color gradient based on velocity (blue slow → red fast)
-    let velocityRatio = map(speed, 3, 5, 0, 1);
-    let flowColor = lerpColor(color(0, 100, 255), color(255, 100, 0), velocityRatio);
-    stroke(red(flowColor), green(flowColor), blue(flowColor), 200);
+  // Upper surface flow (fast air, low pressure) - accelerated flow with NACA contour following
+  for (let i = 0; i < 8; i++) {
+    // Position flows around the transformed wing (centered at width/2, height/2, scaled by 1.4)
+    let wingCenterX = width / 2;
+    let wingCenterY = height / 2;
+    let wingScale = 1.4;
 
-    // Streamline that follows wing contour more realistically
+    // Local coordinates relative to wing center, then scale
+    let localX = (-100 + i * 25) * wingScale; // Spread around wing horizontally - reduced spread
+    let localY = (-60 - i * 6) * wingScale;  // Above wing vertically - moderate separation
+
+    let baseX = wingCenterX + localX;
+    let baseY = wingCenterY + localY;
+
+    let speed = 4.5 + sin(angleAttack) * 1.0; // Higher speed variation
+    let curveOffset = angleAttack * 45; // More pronounced curve
+    let turbulence = sin(frameCount * 0.15 + i) * 3; // More turbulence
+
+    // Enhanced color gradient (green/white for upper surface - high speed, better contrast with blue sky)
+    let velocityRatio = map(speed, 3.5, 5.5, 0, 1);
+    let flowColor = lerpColor(color(100, 255, 100), color(200, 255, 200), velocityRatio);
+    stroke(red(flowColor), green(flowColor), blue(flowColor), 180);
+    strokeWeight(2.5);
+
+    // Smooth aerodynamic flow lines following NACA 2412 upper surface
     beginShape();
-    vertex(xOffset, baseY + turbulence);
-    bezierVertex(xOffset + 80, baseY - 15 - curveOffset + turbulence, xOffset + 180, baseY - 25 - curveOffset + turbulence, xOffset + 280, baseY - 8 - curveOffset + turbulence);
+    noFill();
+    // Start far upstream
+    vertex(baseX - 120 * wingScale, baseY + turbulence);
+
+    // Smooth approach to leading edge
+    bezierVertex(baseX - 80 * wingScale, baseY - 5 * wingScale + turbulence,
+                 baseX - 40 * wingScale, baseY - 12 * wingScale + turbulence,
+                 baseX - 10 * wingScale, baseY - 20 * wingScale + turbulence);
+
+    // Follow upper surface curvature more accurately
+    bezierVertex(baseX + 15 * wingScale, baseY - 32 * wingScale - curveOffset * 0.6 + turbulence,
+                 baseX + 45 * wingScale, baseY - 38 * wingScale - curveOffset * 0.8 + turbulence,
+                 baseX + 75 * wingScale, baseY - 35 * wingScale - curveOffset + turbulence);
+
+    // Continue along the wing with proper NACA curvature
+    bezierVertex(baseX + 105 * wingScale, baseY - 30 * wingScale - curveOffset * 0.9 + turbulence,
+                 baseX + 135 * wingScale, baseY - 22 * wingScale - curveOffset * 0.7 + turbulence,
+                 baseX + 165 * wingScale, baseY - 15 * wingScale - curveOffset * 0.5 + turbulence);
+
+    // Trailing edge departure
+    bezierVertex(baseX + 195 * wingScale, baseY - 8 * wingScale - curveOffset * 0.3 + turbulence,
+                 baseX + 225 * wingScale, baseY + 2 * wingScale + turbulence,
+                 baseX + 255 * wingScale, baseY + 12 * wingScale + turbulence);
+    endShape();
+    bezierVertex(baseX + 270 * wingScale, baseY - 5 * wingScale - curveOffset * 0.3 + turbulence,
+                 baseX + 310 * wingScale, baseY + 5 * wingScale + turbulence,
+                 baseX + 350 * wingScale, baseY + 15 * wingScale + turbulence);
     endShape();
 
-    // Velocity vectors (arrows) with varying sizes and colors
-    let arrowSize = map(speed, 3, 5, 3, 5);
-    drawArrowOnCurve(xOffset + 130, baseY - 20 - curveOffset + turbulence, xOffset + 150, baseY - 15 - curveOffset + turbulence, flowColor, arrowSize);
+    // Multiple velocity vectors with faster animation for upper surface
+    let arrowPositions = [
+      {t: 0.15, size: 5.0},
+      {t: 0.35, size: 6.0},
+      {t: 0.55, size: 6.5},
+      {t: 0.75, size: 5.5},
+      {t: 0.9, size: 5.0}
+    ];
 
-    // Enhanced particle system following streamlines
-    for (let p = 0; p < 8; p++) {
-      let t = (frameCount * 0.02 + p * 0.3 + i * 0.1) % (TWO_PI * 2);
-      let particleX = xOffset + 50 + t * 60 + sin(t * 2 + i) * 5;
-      let particleY = baseY - 20 - curveOffset + turbulence + sin(t * 3 + i) * 3 + cos(t * 1.5 + i) * 2;
-      let particleSize = map(speed, 3, 5, 1, 2.5);
-      let particleAlpha = map(sin(t * 4), -1, 1, 50, 150);
+    for (let arrow of arrowPositions) {
+      // Calculate position along the complex Bézier curve (simplified for upper surface)
+      let t = arrow.t;
+      let wingCenterX = width/2;
+      let wingCenterY = height/2;
+
+      // Approximate position along the new smooth upper surface streamline
+      let arrowX, arrowY;
+      if (t < 0.25) {
+        // Leading edge approach - follow the smooth curve
+        let localT = t / 0.25;
+        arrowX = baseX - 120 * wingScale + 110 * wingScale * localT;
+        arrowY = baseY + turbulence - 20 * wingScale * localT;
+      } else if (t < 0.6) {
+        // Along wing surface - follow curvature
+        let localT = (t - 0.25) / 0.35;
+        arrowX = baseX - 10 * wingScale + 85 * wingScale * localT;
+        arrowY = baseY - 20 * wingScale - curveOffset * 0.8 + turbulence - 18 * wingScale * localT;
+      } else {
+        // Trailing edge exit - smooth departure
+        let localT = (t - 0.6) / 0.4;
+        arrowX = baseX + 75 * wingScale + 180 * wingScale * localT;
+        arrowY = baseY - 35 * wingScale + 47 * wingScale * localT + turbulence;
+      }
+
+      // Calculate tangent direction
+      let tangentX = 1; // Simplified - mostly horizontal flow
+      let tangentY = t < 0.5 ? -0.4 : 0.3; // Curve down then up
+
+      let tangentLength = sqrt(tangentX*tangentX + tangentY*tangentY);
+      tangentX /= tangentLength;
+      tangentY /= tangentLength;
+
+      let arrowLength = 28 * wingScale;
+      let arrowEndX = arrowX + tangentX * arrowLength;
+      let arrowEndY = arrowY + tangentY * arrowLength;
+
+      drawArrowOnCurve(arrowX, arrowY, arrowEndX, arrowEndY, flowColor, arrow.size * 1.2);
+    }
+
+    // Enhanced particles with faster movement for upper surface - follow smooth flow
+    for (let p = 0; p < 15; p++) {
+      let t = (frameCount * 0.035 + p * 0.15 + i * 0.06) % (TWO_PI * 3);
+      let particleX = baseX - 120 * wingScale + t * 25 * wingScale + sin(t * 3.5 + i) * 8 * wingScale;
+      let particleY = baseY + turbulence - 20 * wingScale + sin(t * 4.5 + i) * 6 * wingScale + cos(t * 2.8 + i) * 5 * wingScale;
+      let particleSize = map(speed, 3.5, 5.5, 2.5, 6.0);
+      let particleAlpha = map(sin(t * 6), -1, 1, 120, 255);
 
       fill(red(flowColor), green(flowColor), blue(flowColor), particleAlpha);
       noStroke();
@@ -1065,38 +1151,111 @@ function draw() {
     }
   }
 
-  // Lower surface flow (slow air, high pressure) - decelerated flow with particles
-  stroke(255, 140, 100, 200); // Coral with transparency
-  strokeWeight(2);
-  for (let i = 0; i < 15; i++) {
-    let baseY = height / 2 + 50 + i * 6;
-    let speed = 1.5 + sin(angleAttack) * 0.3; // Slower variation
-    let xOffset = (flowOffset * speed + i * 20) % (width + 300) - 150;
-    let curveOffset = angleAttack * 18; // Less pronounced curve
+  // Lower surface flow (slow air, high pressure) - decelerated flow with NACA contour following
+  for (let i = 0; i < 8; i++) {
+    // Position flows around the transformed wing (centered at width/2, height/2, scaled by 1.4)
+    let wingCenterX = width / 2;
+    let wingCenterY = height / 2;
+    let wingScale = 1.4;
+
+    // Local coordinates relative to wing center, then scale
+    let localX = (-100 + i * 25) * wingScale; // Spread around wing horizontally - reduced spread
+    let localY = (40 + i * 6) * wingScale;   // Below wing vertically - moderate separation
+
+    let baseX = wingCenterX + localX;
+    let baseY = wingCenterY + localY;
+
+    let speed = 2.0 + sin(angleAttack) * 0.5; // Slower speed variation
+    let curveOffset = angleAttack * 35; // More pronounced curve
     let turbulence = sin(frameCount * 0.08 + i) * 2; // Less turbulence
 
-    // Color gradient based on velocity (blue slow → red fast)
-    let velocityRatio = map(speed, 1, 2, 0, 1);
-    let flowColor = lerpColor(color(0, 100, 255), color(255, 100, 0), velocityRatio);
-    stroke(red(flowColor), green(flowColor), blue(flowColor), 200);
+    // Enhanced color gradient (orange/red for lower surface - high pressure)
+    let velocityRatio = map(speed, 1.5, 2.5, 0, 1);
+    let flowColor = lerpColor(color(255, 120, 0), color(255, 80, 0), velocityRatio);
+    stroke(red(flowColor), green(flowColor), blue(flowColor), 180);
+    strokeWeight(2.5);
 
-    // Streamline that curves below the wing
+    // Smooth aerodynamic flow lines following NACA 2412 lower surface
     beginShape();
-    vertex(xOffset, baseY + turbulence);
-    bezierVertex(xOffset + 80, baseY + 15 + curveOffset + turbulence, xOffset + 180, baseY + 25 + curveOffset + turbulence, xOffset + 280, baseY + 8 + curveOffset + turbulence);
+    noFill();
+    // Start far upstream
+    vertex(baseX - 120 * wingScale, baseY + turbulence);
+
+    // Smooth approach to leading edge
+    bezierVertex(baseX - 80 * wingScale, baseY + 8 * wingScale + turbulence,
+                 baseX - 40 * wingScale, baseY + 18 * wingScale + turbulence,
+                 baseX - 10 * wingScale, baseY + 28 * wingScale + turbulence);
+
+    // Follow lower surface curvature more accurately
+    bezierVertex(baseX + 15 * wingScale, baseY + 38 * wingScale + curveOffset * 0.6 + turbulence,
+                 baseX + 45 * wingScale, baseY + 42 * wingScale + curveOffset * 0.8 + turbulence,
+                 baseX + 75 * wingScale, baseY + 38 * wingScale + curveOffset + turbulence);
+
+    // Continue along the wing with proper NACA curvature
+    bezierVertex(baseX + 105 * wingScale, baseY + 30 * wingScale + curveOffset * 0.9 + turbulence,
+                 baseX + 135 * wingScale, baseY + 22 * wingScale + curveOffset * 0.7 + turbulence,
+                 baseX + 165 * wingScale, baseY + 15 * wingScale + curveOffset * 0.5 + turbulence);
+
+    // Trailing edge departure
+    bezierVertex(baseX + 195 * wingScale, baseY + 8 * wingScale + curveOffset * 0.3 + turbulence,
+                 baseX + 225 * wingScale, baseY - 2 * wingScale + turbulence,
+                 baseX + 255 * wingScale, baseY - 12 * wingScale + turbulence);
     endShape();
 
-    // Velocity vectors with smaller arrows and colors
-    let arrowSize = map(speed, 1, 2, 2, 4);
-    drawArrowOnCurve(xOffset + 130, baseY + 20 + curveOffset + turbulence, xOffset + 150, baseY + 15 + curveOffset + turbulence, flowColor, arrowSize);
+    // Multiple velocity vectors with slower animation for lower surface
+    let arrowPositions = [
+      {t: 0.15, size: 4.8},
+      {t: 0.35, size: 5.5},
+      {t: 0.55, size: 6.0},
+      {t: 0.75, size: 5.2},
+      {t: 0.9, size: 4.8}
+    ];
 
-    // Enhanced particle system following streamlines
-    for (let p = 0; p < 6; p++) {
-      let t = (frameCount * 0.015 + p * 0.4 + i * 0.1) % (TWO_PI * 2);
-      let particleX = xOffset + 50 + t * 45 + sin(t * 1.5 + i) * 3;
-      let particleY = baseY + 20 + curveOffset + turbulence + sin(t * 2 + i) * 2 + cos(t * 1.2 + i) * 1.5;
-      let particleSize = map(speed, 1, 2, 1, 2);
-      let particleAlpha = map(sin(t * 3), -1, 1, 40, 120);
+    for (let arrow of arrowPositions) {
+      // Calculate position along the complex Bézier curve (simplified for lower surface)
+      let t = arrow.t;
+
+      // Approximate position along the new smooth lower surface streamline
+      let arrowX, arrowY;
+      if (t < 0.25) {
+        // Leading edge approach - follow the smooth curve
+        let localT = t / 0.25;
+        arrowX = baseX - 120 * wingScale + 110 * wingScale * localT;
+        arrowY = baseY + turbulence + 28 * wingScale * localT;
+      } else if (t < 0.6) {
+        // Along wing surface - follow curvature
+        let localT = (t - 0.25) / 0.35;
+        arrowX = baseX - 10 * wingScale + 85 * wingScale * localT;
+        arrowY = baseY + 28 * wingScale + curveOffset * 0.8 + turbulence + 10 * wingScale * localT;
+      } else {
+        // Trailing edge exit - smooth departure
+        let localT = (t - 0.6) / 0.4;
+        arrowX = baseX + 75 * wingScale + 180 * wingScale * localT;
+        arrowY = baseY + 38 * wingScale - 50 * wingScale * localT + turbulence;
+      }
+
+      // Calculate tangent direction
+      let tangentX = 1; // Simplified - mostly horizontal flow
+      let tangentY = t < 0.5 ? 0.4 : -0.3; // Curve up then down
+
+      let tangentLength = sqrt(tangentX*tangentX + tangentY*tangentY);
+      tangentX /= tangentLength;
+      tangentY /= tangentLength;
+
+      let arrowLength = 24 * wingScale; // Better sized arrows for lower surface
+      let arrowEndX = arrowX + tangentX * arrowLength;
+      let arrowEndY = arrowY + tangentY * arrowLength;
+
+      drawArrowOnCurve(arrowX, arrowY, arrowEndX, arrowEndY, flowColor, arrow.size * 1.2);
+    }
+
+    // Enhanced particles with slower movement for lower surface - follow smooth flow
+    for (let p = 0; p < 12; p++) {
+      let t = (frameCount * 0.018 + p * 0.18 + i * 0.07) % (TWO_PI * 3);
+      let particleX = baseX - 120 * wingScale + t * 22 * wingScale + sin(t * 2.2 + i) * 6 * wingScale;
+      let particleY = baseY + turbulence + 28 * wingScale + sin(t * 3.2 + i) * 5 * wingScale + cos(t * 2.1 + i) * 4 * wingScale;
+      let particleSize = map(speed, 1.5, 2.5, 2.2, 5.5);
+      let particleAlpha = map(sin(t * 4), -1, 1, 100, 240);
 
       fill(red(flowColor), green(flowColor), blue(flowColor), particleAlpha);
       noStroke();
@@ -1255,15 +1414,15 @@ function draw() {
     endShape();
   }
 
-  // Flecha de Sustentación (verde, oscilante y dinámica) - emerge del borde de ataque
+  // Flecha de Sustentación (azul, oscilante y dinámica) - emerge del borde de ataque
   let liftLength = liftMagnitude / 5;
   let oscillation = sin(frameCount * 0.1) * 5; // Oscilación ligera
   let leadingEdgeWorldX = width / 2 - 180 * 1.4; // Posición del borde de ataque en coordenadas del mundo
   let leadingEdgeWorldY = height / 2; // Centro vertical
 
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY + oscillation,
-           leadingEdgeWorldX, leadingEdgeWorldY - liftLength + oscillation, 'green', 6);
-  fill(0, 255, 0);
+           leadingEdgeWorldX, leadingEdgeWorldY - liftLength + oscillation, 'blue', 6);
+  fill(0, 100, 255);
   textSize(16);
   text('Sustentación', leadingEdgeWorldX + 20, leadingEdgeWorldY - liftLength / 2 + oscillation);
 
@@ -1365,15 +1524,42 @@ function drawArrow(x1, y1, x2, y2, color, weight = 4) {
 }
 
 function drawArrowOnCurve(x1, y1, x2, y2, color, weight = 4) {
-  stroke(color);
-  strokeWeight(weight);
-  line(x1, y1, x2, y2);
+  // Draw the arrow shaft with gradient
+  let shaftLength = dist(x1, y1, x2, y2);
+  let steps = 10;
+
+  for (let i = 0; i < steps; i++) {
+    let t1 = i / steps;
+    let t2 = (i + 1) / steps;
+    let alpha1 = map(t1, 0, 1, 50, 200);
+    let alpha2 = map(t2, 0, 1, 50, 200);
+
+    let px1 = lerp(x1, x2, t1);
+    let py1 = lerp(y1, y2, t1);
+    let px2 = lerp(x1, x2, t2);
+    let py2 = lerp(y1, y2, t2);
+
+    stroke(red(color), green(color), blue(color), alpha1);
+    strokeWeight(weight * (1 - t1 * 0.3)); // Shaft tapers
+    line(px1, py1, px2, py2);
+  }
+
+  // Draw aerodynamic arrowhead
   let angle = atan2(y2 - y1, x2 - x1);
   push();
   translate(x2, y2);
   rotate(angle);
-  fill(color);
-  triangle(0, 0, -10, -5, -10, 5);
+
+  // Main arrowhead triangle
+  fill(red(color), green(color), blue(color), 220);
+  stroke(red(color), green(color), blue(color), 180);
+  strokeWeight(2);
+  triangle(0, 0, -18, -7, -18, 7);
+
+  // Arrowhead details for more aerodynamic look
+  fill(red(color), green(color), blue(color), 150);
+  triangle(0, 0, -12, -4, -12, 4);
+
   pop();
 }
 
@@ -1508,6 +1694,248 @@ function updateGauges() {
     select('#altitude-gauge-value').html(Math.round(altitude));
     select('#angle-gauge-value').html(degrees(angleAttack).toFixed(1));
     select('#lift-gauge-value').html(Math.round(liftMagnitude));
+  }
+}
+
+function initializeFlowParticles() {
+  flowParticles = [];
+
+  // Wing transformation parameters
+  let wingCenterX = width/2;
+  let wingCenterY = height/2;
+  let scaleFactor = 1.4;
+  let rotationAngle = angleAttack * 0.3;
+
+  // Create particles for upper surface (faster flow)
+  for (let i = 0; i < 15; i++) {
+    // Start particles at random positions along the wing chord
+    let chordPos = random(-160, 160); // Along chord length
+    let upperOffset = random(-60, -20); // Above wing surface
+
+    // Apply wing transformations to get screen coordinates
+    let localX = chordPos;
+    let localY = upperOffset;
+
+    // Apply rotation
+    let cosRot = cos(rotationAngle);
+    let sinRot = sin(rotationAngle);
+    let rotatedX = localX * cosRot - localY * sinRot;
+    let rotatedY = localX * sinRot + localY * cosRot;
+
+    // Apply scaling and translation
+    let screenX = rotatedX * scaleFactor + wingCenterX;
+    let screenY = rotatedY * scaleFactor + wingCenterY;
+
+    flowParticles.push({
+      x: screenX,
+      y: screenY,
+      vx: 2 + random(1),
+      vy: 0,
+      surface: 'upper',
+      age: random(100),
+      maxAge: 200 + random(100),
+      size: 1.5 + random(1),
+      trail: []
+    });
+  }
+
+  // Create particles for lower surface (slower flow)
+  for (let i = 0; i < 12; i++) {
+    // Start particles at random positions along the wing chord
+    let chordPos = random(-160, 160); // Along chord length
+    let lowerOffset = random(15, 45); // Below wing surface
+
+    // Apply wing transformations to get screen coordinates
+    let localX = chordPos;
+    let localY = lowerOffset;
+
+    // Apply rotation
+    let cosRot = cos(rotationAngle);
+    let sinRot = sin(rotationAngle);
+    let rotatedX = localX * cosRot - localY * sinRot;
+    let rotatedY = localX * sinRot + localY * cosRot;
+
+    // Apply scaling and translation
+    let screenX = rotatedX * scaleFactor + wingCenterX;
+    let screenY = rotatedY * scaleFactor + wingCenterY;
+
+    flowParticles.push({
+      x: screenX,
+      y: screenY,
+      vx: 1 + random(0.5),
+      vy: 0,
+      surface: 'lower',
+      age: random(100),
+      maxAge: 250 + random(100),
+      size: 1.2 + random(0.8),
+      trail: []
+    });
+  }
+}
+
+function updateFlowParticles() {
+  for (let i = flowParticles.length - 1; i >= 0; i--) {
+    let p = flowParticles[i];
+
+    // Update trail
+    p.trail.push({x: p.x, y: p.y});
+    if (p.trail.length > 8) {
+      p.trail.shift();
+    }
+
+    // Calculate wing-relative position
+    let wingCenterX = width/2;
+    let wingCenterY = height/2;
+    let scaleFactor = 1.4;
+    let rotationAngle = angleAttack * 0.3;
+
+    // Transform particle position to wing coordinate system
+    let localX = (p.x - wingCenterX) / scaleFactor;
+    let localY = (p.y - wingCenterY) / scaleFactor;
+
+    // Apply inverse rotation to get position relative to unrotated wing
+    let cosRot = cos(-rotationAngle);
+    let sinRot = sin(-rotationAngle);
+    let wingLocalX = localX * cosRot - localY * sinRot;
+    let wingLocalY = localX * sinRot + localY * cosRot;
+
+    // Wing geometry parameters (NACA 2412 profile approximation)
+    let chordLength = 360; // From leadingEdgeX -180 to trailing edge ~180
+    let maxThickness = 55; // Maximum thickness of airfoil
+
+    if (p.surface === 'upper') {
+      // Upper surface: faster flow following NACA 2412 upper curve
+      let t = map(wingLocalX, -180, 180, 0, 1); // Parameter along chord
+
+      // NACA 2412 upper surface approximation using Bézier-like curve
+      let upperY;
+      if (t < 0.5) {
+        // Leading edge region - more curved
+        let curveFactor = sin(t * PI);
+        upperY = -maxThickness * 0.5 * curveFactor * (1 - t*2);
+      } else {
+        // Trailing edge region - straighter
+        let trailT = (t - 0.5) * 2;
+        upperY = -maxThickness * 0.3 * (1 - trailT*trailT);
+      }
+
+      // Calculate desired Y position on upper surface
+      let targetY = upperY;
+
+      // Velocity based on position along chord (Bernoulli principle)
+      let baseSpeed = map(t, 0, 1, 2.8, 2.2); // Faster at leading edge
+      p.vx = baseSpeed + sin(wingLocalX * 0.008 + frameCount * 0.03) * 0.3;
+
+      // Curve toward upper surface
+      let surfaceOffset = wingLocalY - targetY;
+      if (abs(surfaceOffset) > 5) {
+        p.vy = -abs(surfaceOffset) * 0.1 - 0.05; // Curve toward surface
+      } else {
+        p.vy = sin(wingLocalX * 0.012 + frameCount * 0.025) * 0.15;
+      }
+
+      // Leading edge special handling
+      if (wingLocalX > -180 && wingLocalX < -100) {
+        let leadingFactor = map(wingLocalX, -180, -100, 1, 0);
+        p.vy -= leadingFactor * 0.4; // Strong curve around leading edge
+      }
+
+    } else {
+      // Lower surface: slower flow following NACA 2412 lower curve
+      let t = map(wingLocalX, -180, 180, 0, 1);
+
+      // NACA 2412 lower surface approximation
+      let lowerY;
+      if (t < 0.4) {
+        // Leading edge region
+        let curveFactor = sin(t * PI * 0.8);
+        lowerY = maxThickness * 0.3 * curveFactor;
+      } else {
+        // Trailing edge region - cambered
+        let trailT = (t - 0.4) / 0.6;
+        lowerY = maxThickness * 0.15 * (1 - trailT);
+      }
+
+      // Calculate desired Y position on lower surface
+      let targetY = lowerY;
+
+      // Slower velocity on lower surface
+      let baseSpeed = map(t, 0, 1, 1.4, 1.0);
+      p.vx = baseSpeed + sin(wingLocalX * 0.005 + frameCount * 0.02) * 0.2;
+
+      // Curve toward lower surface
+      let surfaceOffset = wingLocalY - targetY;
+      if (abs(surfaceOffset) > 5) {
+        p.vy = surfaceOffset * 0.08 + 0.02; // Curve toward surface
+      } else {
+        p.vy = sin(wingLocalX * 0.008 + frameCount * 0.018) * 0.1;
+      }
+
+      // Leading edge special handling
+      if (wingLocalX > -180 && wingLocalX < -120) {
+        let leadingFactor = map(wingLocalX, -180, -120, 1, 0);
+        p.vy += leadingFactor * 0.3; // Gentle curve around leading edge
+      }
+    }
+
+    // Apply angle of attack effect
+    let aoaEffect = sin(angleAttack) * 0.3;
+    if (p.surface === 'upper') {
+      p.vx += aoaEffect * 0.4;
+      p.vy -= abs(aoaEffect) * 0.3;
+    } else {
+      p.vx -= aoaEffect * 0.2;
+      p.vy += abs(aoaEffect) * 0.2;
+    }
+
+    // Update position
+    p.x += p.vx;
+    p.y += p.vy;
+
+    // Age particle
+    p.age++;
+
+    // Reset particle if it goes off screen or gets too old
+    if (p.x > width + 100 || p.age > p.maxAge) {
+      if (p.surface === 'upper') {
+        p.x = -50;
+        p.y = height/2 - 80 - random(40); // Start above wing
+      } else {
+        p.x = -50;
+        p.y = height/2 + 20 + random(40); // Start below wing
+      }
+      p.age = 0;
+      p.trail = [];
+    }
+  }
+}
+
+function drawFlowParticles() {
+  noStroke();
+  
+  for (let p of flowParticles) {
+    // Draw trail
+    for (let i = 0; i < p.trail.length - 1; i++) {
+      let alpha = map(i, 0, p.trail.length - 1, 20, 80);
+      let size = map(i, 0, p.trail.length - 1, p.size * 0.3, p.size * 0.8);
+      
+      if (p.surface === 'upper') {
+        fill(0, 150, 255, alpha); // Blue for upper surface
+      } else {
+        fill(255, 150, 0, alpha); // Orange for lower surface
+      }
+      
+      ellipse(p.trail[i].x, p.trail[i].y, size, size);
+    }
+    
+    // Draw main particle
+    if (p.surface === 'upper') {
+      fill(0, 200, 255, 120);
+    } else {
+      fill(255, 200, 0, 100);
+    }
+    
+    ellipse(p.x, p.y, p.size, p.size);
   }
 }
 
