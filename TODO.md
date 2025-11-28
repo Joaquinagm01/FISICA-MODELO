@@ -49,3 +49,8 @@
 - [x] Implementar cálculo correcto de velocidades arriba/abajo del ala usando teoría de flujo potencial
 - [x] Corregir ecuación de Bernoulli con presión atmosférica dependiente de altitud
 - [x] Mejorar presentación visual de conceptos físicos en la interfaz
+
+## ✅ Mejoras de Accesibilidad Avanzadas
+- [x] Mejorar modo de alto contraste para afectar también elementos del canvas (ala, fuerzas, texto, indicadores)
+- [x] Implementar esquemas de colores diferenciados para modo normal vs alto contraste
+- [x] Asegurar que todos los elementos visuales sean claramente distinguibles en alto contraste

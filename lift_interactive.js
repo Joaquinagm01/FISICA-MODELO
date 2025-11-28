@@ -20,6 +20,49 @@ let reducedMotionMode = false;
 let fontScale = 1.0;
 let canvasFontScale = 1.0; // Scale factor for canvas text only
 
+// High contrast color scheme
+let hcColors = {
+  background: [0, 0, 0], // Black background
+  skyGradient: [[0, 0, 0], [30, 30, 30]], // Dark gradient
+  wing: [255, 255, 255], // White wing
+  wingOutline: [255, 255, 0], // Yellow outline
+  liftForce: [0, 255, 0], // Bright green
+  weightForce: [255, 0, 0], // Bright red
+  flowFast: [0, 255, 255], // Cyan for fast flow
+  flowSlow: [255, 100, 255], // Magenta for slow flow
+  text: [255, 255, 255], // White text
+  textHighlight: [255, 255, 0], // Yellow highlights
+  pressureHigh: [255, 0, 0], // Red for high pressure
+  pressureLow: [0, 255, 0], // Green for low pressure
+  velocityHigh: [0, 255, 255], // Cyan for high velocity
+  velocityLow: [255, 100, 255], // Magenta for low velocity
+  stallWarning: [255, 0, 0], // Red flash
+  maxLiftSuccess: [0, 255, 0] // Green flash
+};
+
+// Normal color scheme (current colors)
+let normalColors = {
+  background: [135, 206, 250], // Sky blue
+  skyGradient: [[135, 206, 250], [100, 180, 220]], // Blue gradient
+  wing: [255, 255, 255], // White wing
+  wingOutline: [100, 150, 200], // Blue outline
+  liftForce: [0, 200, 0], // Green
+  weightForce: [200, 0, 0], // Red
+  flowFast: [173, 216, 230], // Light blue
+  flowSlow: [255, 160, 122], // Light coral
+  text: [255, 255, 255], // White text
+  textHighlight: [255, 255, 0], // Yellow highlights
+  pressureHigh: [255, 100, 100], // Light red
+  pressureLow: [100, 255, 100], // Light green
+  velocityHigh: [100, 200, 255], // Light blue
+  velocityLow: [255, 150, 200], // Light pink
+  stallWarning: [255, 0, 0], // Red flash
+  maxLiftSuccess: [0, 255, 0] // Green flash
+};
+
+// Current color scheme (switches between normal and high contrast)
+let currentColors = normalColors;
+
 // Educational features variables
 let showEducationalLegends = false;
 let showPressureDiagram = false;
@@ -914,9 +957,9 @@ function draw() {
   if (bgImage) {
     image(bgImage, 0, 0, width, height);
   } else {
-    // Gradiente de cielo simple y eficiente
-    let topColor = color(135, 206, 250);
-    let bottomColor = color(100, 180, 220);
+    // Gradiente de cielo usando esquema de colores actual
+    let topColor = color(currentColors.skyGradient[0][0], currentColors.skyGradient[0][1], currentColors.skyGradient[0][2]);
+    let bottomColor = color(currentColors.skyGradient[1][0], currentColors.skyGradient[1][1], currentColors.skyGradient[1][2]);
 
     // Dibujar gradiente de manera eficiente
     for (let y = 0; y < height; y += 3) { // Dibujar cada 3 píxeles para mejor rendimiento
@@ -929,7 +972,7 @@ function draw() {
     }
 
     // Horizonte simple
-    stroke(100, 150, 200, 100);
+    stroke(currentColors.wingOutline[0], currentColors.wingOutline[1], currentColors.wingOutline[2], 100);
     strokeWeight(1);
     line(0, height * 0.7, width, height * 0.7);
   }
@@ -1204,14 +1247,14 @@ function draw() {
   textSize(28 * canvasFontScale);
   textAlign(CENTER);
   fill(255);
-  stroke(0);
+  stroke(currentColors.text[0], currentColors.text[1], currentColors.text[2]);
   strokeWeight(2);
   text('Simulador Interactivo de Sustentación', width / 2, 50);
 
   // Etiqueta del slider
   textSize(16 * canvasFontScale);
   textAlign(LEFT);
-  fill(255);
+  fill(currentColors.text[0], currentColors.text[1], currentColors.text[2]);
   noStroke();
   text('Ángulo de Ataque: ' + angleSlider.value() + ' grados', 20, 15);
 
@@ -1283,7 +1326,7 @@ function draw() {
   // ===== EFECTOS DE IMPACTO VISUAL =====
   // Stall warning flash (red)
   if (stallFlashIntensity > 0.01) {
-    fill(255, 0, 0, stallFlashIntensity * 100); // Red flash
+    fill(currentColors.stallWarning[0], currentColors.stallWarning[1], currentColors.stallWarning[2], stallFlashIntensity * 100); // Red flash
     noStroke();
     beginShape();
     vertex(leadingEdgeX, leadingEdgeY);
@@ -1298,7 +1341,7 @@ function draw() {
 
   // Max lift success flash (green)
   if (maxLiftFlashIntensity > 0.01) {
-    fill(0, 255, 0, maxLiftFlashIntensity * 100); // Green flash
+    fill(currentColors.maxLiftSuccess[0], currentColors.maxLiftSuccess[1], currentColors.maxLiftSuccess[2], maxLiftFlashIntensity * 100); // Green flash
     noStroke();
     beginShape();
     vertex(leadingEdgeX, leadingEdgeY);
@@ -1538,26 +1581,26 @@ function draw() {
 
   // Número de serie del ala - más visible con efecto 3D
   // Sombra del texto
-  fill(0, 0, 0, 100);
+  fill(currentColors.text[0] * 0.4, currentColors.text[1] * 0.4, currentColors.text[2] * 0.4, 100);
   textSize(10 * canvasFontScale);
   textAlign(CENTER);
   text('NACA 2412', 1, 46);
 
   // Texto principal
-  fill(255);
-  stroke(0);
+  fill(currentColors.text[0], currentColors.text[1], currentColors.text[2]);
+  stroke(currentColors.text[0] * 0.5, currentColors.text[1] * 0.5, currentColors.text[2] * 0.5);
   strokeWeight(1);
   text('NACA 2412', 0, 45);
 
   // Etiqueta del borde de ataque con mejor diseño
-  fill(255, 255, 0);
-  stroke(150, 150, 0);
+  fill(currentColors.textHighlight[0], currentColors.textHighlight[1], currentColors.textHighlight[2]);
+  stroke(currentColors.textHighlight[0] * 0.6, currentColors.textHighlight[1] * 0.6, currentColors.textHighlight[2] * 0.6);
   strokeWeight(1);
   textSize(8 * canvasFontScale);
   text('Borde de Ataque', leadingEdgeX - 20, leadingEdgeY - 15);
 
   // Indicador de dirección de vuelo
-  stroke(255, 255, 0, 150);
+  stroke(currentColors.textHighlight[0], currentColors.textHighlight[1], currentColors.textHighlight[2], 150);
   strokeWeight(2);
   let arrowLength = 15;
   line(leadingEdgeX - arrowLength, leadingEdgeY, leadingEdgeX - 5, leadingEdgeY);
@@ -1587,16 +1630,16 @@ function draw() {
 
   // Indicador de velocidad (vector de velocidad)
   let speedVectorLength = map(windSpeed, 0, 100, 20, 60);
-  stroke(255, 255, 0, 200); // Amarillo para velocidad
+  stroke(currentColors.velocityHigh[0], currentColors.velocityHigh[1], currentColors.velocityHigh[2], 200);
   strokeWeight(3);
   line(0, 0, speedVectorLength, 0);
   // Punta de flecha
-  fill(255, 255, 0, 200);
+  fill(currentColors.velocityHigh[0], currentColors.velocityHigh[1], currentColors.velocityHigh[2], 200);
   noStroke();
   triangle(speedVectorLength, 0, speedVectorLength - 8, -3, speedVectorLength - 8, 3);
 
   // Indicador de altitud (escala vertical)
-  stroke(0, 255, 255, 150); // Cyan para altitud
+  stroke(currentColors.velocityLow[0], currentColors.velocityLow[1], currentColors.velocityLow[2], 150);
   strokeWeight(2);
   line(-60, -30, -60, 30);
   // Marcas de altitud
@@ -1605,22 +1648,22 @@ function draw() {
   }
   // Indicador actual
   let altIndicatorY = map(altitude, 0, 10000, 20, -20);
-  fill(0, 255, 255, 200);
+  fill(currentColors.velocityLow[0], currentColors.velocityLow[1], currentColors.velocityLow[2], 200);
   noStroke();
   ellipse(-60, altIndicatorY, 6, 6);
 
   // Indicador de sustentación (barra lateral)
   let liftBarHeight = map(liftMagnitude, 0, 200, 0, 40);
-  stroke(255, 0, 255, 180); // Magenta para sustentación
+  stroke(currentColors.liftForce[0], currentColors.liftForce[1], currentColors.liftForce[2], 180);
   strokeWeight(4);
   line(70, 20, 70, 20 - liftBarHeight);
   // Base de la barra
-  fill(255, 0, 255, 100);
+  fill(currentColors.liftForce[0], currentColors.liftForce[1], currentColors.liftForce[2], 100);
   noStroke();
   rect(65, 15, 10, 10);
 
   // Texto HUD
-  fill(0, 255, 0, 220);
+  fill(currentColors.textHighlight[0], currentColors.textHighlight[1], currentColors.textHighlight[2], 220);
   textAlign(CENTER);
   textSize(8 * canvasFontScale);
   text(Math.round(windSpeed) + ' m/s', 40, -25);
@@ -2028,23 +2071,23 @@ function draw() {
   let leadingEdgeWorldY = height / 2; // Centro vertical
 
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY,
-           leadingEdgeWorldX, leadingEdgeWorldY - liftLength, 'blue', 6);
-  fill(0, 100, 255);
+           leadingEdgeWorldX, leadingEdgeWorldY - liftLength, currentColors.liftForce, 6);
+  fill(currentColors.liftForce[0], currentColors.liftForce[1], currentColors.liftForce[2]);
   textSize(16 * canvasFontScale);
   text('Sustentación', leadingEdgeWorldX + 20, leadingEdgeWorldY - liftLength / 2);
 
   // Flecha de Peso (rojo, emerge del borde de ataque hacia abajo)
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY,
-           leadingEdgeWorldX, leadingEdgeWorldY + 80, 'red', 6);
-  fill(255, 0, 0);
+           leadingEdgeWorldX, leadingEdgeWorldY + 80, currentColors.weightForce, 6);
+  fill(currentColors.weightForce[0], currentColors.weightForce[1], currentColors.weightForce[2]);
   text('Peso', leadingEdgeWorldX + 20, leadingEdgeWorldY + 90);
 
   // Etiquetas de flujo
   textAlign(LEFT);
-  fill(173, 216, 230);
+  fill(currentColors.flowFast[0], currentColors.flowFast[1], currentColors.flowFast[2]);
   textSize(14 * canvasFontScale);
   text('Aire Rápido (Baja P)', 50, height / 2 - 80);
-  fill(255, 160, 122);
+  fill(currentColors.flowSlow[0], currentColors.flowSlow[1], currentColors.flowSlow[2]);
   text('Aire Lento (Alta P)', 50, height / 2 + 100);
 
 
@@ -2601,12 +2644,14 @@ async function fetchRandomAirplaneImage() {
 function toggleHighContrast() {
   highContrastMode = !highContrastMode;
   let body = document.body;
-  
+
   if (highContrastMode) {
     body.classList.add('high-contrast');
+    currentColors = hcColors; // Switch to high contrast colors
     console.log('Modo Alto Contraste activado');
   } else {
     body.classList.remove('high-contrast');
+    currentColors = normalColors; // Switch back to normal colors
     console.log('Modo Alto Contraste desactivado');
   }
 }
