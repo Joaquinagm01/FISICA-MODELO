@@ -16,6 +16,7 @@ let snowFlakes = []; // Array of snowflake objects
 let lightningFlash = 0; // Lightning flash intensity
 let lightningTimer = 0; // Lightning flash timer
 let flowParticles = []; // Array of flow particles following aerodynamic paths
+let vortices = []; // Array of vortex effects at wing tips
 
 // Bloom effect variables
 let bloomEnabled = true;
@@ -42,6 +43,48 @@ let lodDistanceThreshold = 200; // Distance from center where LOD kicks in
 
 // Graphics quality control variables
 let bloomSlider, dofSlider, motionBlurSlider, lodSlider;
+
+// ===== CONTROLES EDUCATIVOS =====
+let educationalLegendsCheckbox, pressureDiagramCheckbox, velocityDiagramCheckbox, forceDiagramCheckbox;
+let tutorialModeBtn, comparisonModeBtn;
+
+// ===== VARIABLES PARA CARACTERÍSTICAS EDUCATIVAS =====
+// Leyendas interactivas
+let showEducationalLegends = false;
+let legendFontSize = 14;
+let legendBoxWidth = 200;
+let legendBoxHeight = 80;
+
+// Diagramas superpuestos
+let showPressureDiagram = false;
+let showVelocityDiagram = false;
+let showForceDiagram = false;
+
+// Modo tutorial paso a paso
+let tutorialMode = false;
+let tutorialStep = 0;
+let tutorialSteps = [
+  "🎓 Bienvenido al Tutorial Interactivo de Aerodinámica\n\nDescubre los principios que permiten volar a los aviones",
+  "✈️ El Ala y la Sustentación\n\nEl ala genera una fuerza hacia arriba llamada 'sustentación' que contrarresta el peso del avión",
+  "🌪️ Principio de Bernoulli\n\nLa superficie superior del ala es más curva, por lo que el aire viaja más rápido y crea menor presión",
+  "⚖️ Diferencia de Presiones\n\nLa presión inferior es mayor que la superior, creando una fuerza neta hacia arriba",
+  "📐 Ángulo de Ataque\n\nCambia el ángulo del ala para ver cómo afecta la sustentación. ¡Prueba valores entre 0° y 15°!",
+  "💨 Velocidad del Viento\n\nMayor velocidad del aire = mayor sustentación. Observa cómo cambian los vectores de velocidad",
+  "🏔️ Efecto de la Altitud\n\nA mayor altitud, el aire es menos denso. ¿Cómo afecta esto a la sustentación?",
+  "⚠️ El Peligro del Stall\n\nSi el ángulo supera los 15°, la sustentación disminuye drásticamente. ¡Esto es el 'stall'!",
+  "🔄 Fuerzas en Equilibrio\n\nSustentación = Peso y Empuje = Resistencia. El avión vuela cuando estas fuerzas se equilibran",
+  "🎯 ¡Tutorial Completado!\n\nAhora eres un experto en aerodinámica. ¡Experimenta con todos los controles!"
+];
+
+// Comparaciones visuales
+let comparisonMode = false;
+let comparisonConfigs = [
+  {angle: 0, name: "Sin ángulo de ataque"},
+  {angle: 5, name: "Ángulo óptimo (5°)"},
+  {angle: 15, name: "Ángulo alto (15°)"},
+  {angle: 20, name: "Cerca del stall (20°)"}
+];
+let currentComparisonIndex = 0;
 
 // Weather API variables
 let weatherData = null;
@@ -132,6 +175,43 @@ function initializeDOMElements() {
   if (rainBtn) rainBtn.mousePressed(() => setWeather('rain'));
   if (snowBtn) snowBtn.mousePressed(() => setWeather('snow'));
   if (stormBtn) stormBtn.mousePressed(() => setWeather('storm'));
+
+  // ===== CONTROLES EDUCATIVOS =====
+  // Get educational control elements
+  educationalLegendsCheckbox = select('#educational-legends');
+  pressureDiagramCheckbox = select('#pressure-diagram');
+  velocityDiagramCheckbox = select('#velocity-diagram');
+  forceDiagramCheckbox = select('#force-diagram');
+  tutorialModeBtn = select('#tutorial-mode');
+  comparisonModeBtn = select('#comparison-mode');
+
+  // Educational control listeners
+  if (educationalLegendsCheckbox) {
+    educationalLegendsCheckbox.changed(() => {
+      showEducationalLegends = educationalLegendsCheckbox.checked();
+    });
+  }
+  if (pressureDiagramCheckbox) {
+    pressureDiagramCheckbox.changed(() => {
+      showPressureDiagram = pressureDiagramCheckbox.checked();
+    });
+  }
+  if (velocityDiagramCheckbox) {
+    velocityDiagramCheckbox.changed(() => {
+      showVelocityDiagram = velocityDiagramCheckbox.checked();
+    });
+  }
+  if (forceDiagramCheckbox) {
+    forceDiagramCheckbox.changed(() => {
+      showForceDiagram = forceDiagramCheckbox.checked();
+    });
+  }
+  if (tutorialModeBtn) {
+    tutorialModeBtn.mousePressed(toggleTutorialMode);
+  }
+  if (comparisonModeBtn) {
+    comparisonModeBtn.mousePressed(toggleComparisonMode);
+  }
 
   // Initialize parameters after all DOM elements are set up
   updateParameters();
@@ -756,94 +836,184 @@ function draw() {
     map(sin(timeOfDay), -1, 1, 100, 255)  // Azul varía (más azul al amanecer/atardecer)
   );
 
-  // ===== TEXTURA METÁLICA CON ILUMINACIÓN DINÁMICA =====
-  // Base metálica con gradiente afectado por la iluminación
-  for (let layer = 0; layer < 4; layer++) {
-    let layerLight = totalLight + layer * 0.1;
-    let alpha = map(layer, 0, 3, 255, 150) * layerLight;
+  // ===== TEXTURA METÁLICA AVANZADA CON GRADIENTES RADIALES =====
+  // Gradientes metálicos más realistas con efectos de profundidad
+  for (let layer = 0; layer < 6; layer++) { // Más capas para mayor profundidad
+    let layerLight = totalLight + layer * 0.08;
+    let layerDepth = layer * 0.15; // Profundidad para efecto 3D
 
-    // Color base metálico afectado por la luz del sol
-    let baseR = map(layer, 0, 3, 60, 140) * layerLight;
-    let baseG = map(layer, 0, 3, 65, 150) * layerLight;
-    let baseB = map(layer, 0, 3, 75, 160) * layerLight;
+    // Gradiente radial desde el centro hacia los bordes
+    let centerX = 0; // Centro del ala
+    let centerY = -15; // Centro vertical del ala
 
-    // Aplicar tinte del sol
-    let metallicColor = color(
-      constrain(baseR + red(sunColor) * 0.1, 0, 255),
-      constrain(baseG + green(sunColor) * 0.1, 0, 255),
-      constrain(baseB + blue(sunColor) * 0.1, 0, 255)
+    // Color base metálico con variación radial
+    for (let r = 0; r < 180; r += 15) { // Dibujar en anillos radiales
+      let radialFactor = map(r, 0, 180, 1.0, 0.6); // Más brillante en el centro
+      let alpha = map(layer, 0, 5, 255, 120) * layerLight * radialFactor;
+
+      // Color metálico con variaciones cromáticas
+      let metallicR = map(layer + r * 0.01, 0, 6, 70, 160) * layerLight * radialFactor;
+      let metallicG = map(layer + r * 0.008, 0, 6, 75, 170) * layerLight * radialFactor;
+      let metallicB = map(layer + r * 0.012, 0, 6, 85, 180) * layerLight * radialFactor;
+
+      // Aplicar tinte del sol con mayor intensidad
+      let finalColor = color(
+        constrain(metallicR + red(sunColor) * 0.15, 0, 255),
+        constrain(metallicG + green(sunColor) * 0.15, 0, 255),
+        constrain(metallicB + blue(sunColor) * 0.15, 0, 255)
+      );
+
+      fill(red(finalColor), green(finalColor), blue(finalColor), alpha);
+      stroke(red(finalColor) * 0.8, green(finalColor) * 0.8, blue(finalColor) * 0.8, alpha * 0.8);
+      strokeWeight(0.5);
+
+      // Dibujar sección radial del perfil
+      beginShape();
+      // Calcular puntos en el perfil para esta capa radial
+      let innerRadius = r;
+      let outerRadius = r + 15;
+
+      // Parte superior del ala
+      for (let angle = -PI/2; angle <= PI/2; angle += PI/24) {
+        let x = centerX + cos(angle) * outerRadius;
+        let y = centerY + sin(angle) * outerRadius * 0.3; // Ala más delgada
+        vertex(x, y - layerDepth);
+      }
+
+      // Parte inferior del ala
+      for (let angle = PI/2; angle <= 3*PI/2; angle += PI/24) {
+        let x = centerX + cos(angle) * outerRadius;
+        let y = centerY + sin(angle) * outerRadius * 0.2; // Ala inferior más curva
+        vertex(x, y - layerDepth);
+      }
+      endShape(CLOSE);
+    }
+  }
+
+  // ===== TEXTURAS SUPERFICIALES =====
+  // Texturas sutiles de rugosidad superficial para mayor realismo
+  push();
+  noFill();
+  stroke(255, 255, 255, 8); // Blanco muy sutil
+  strokeWeight(0.5);
+
+  // Patrón de rugosidad aleatoria pero consistente
+  randomSeed(42); // Semilla para consistencia
+  for (let i = 0; i < 50; i++) {
+    let x = random(-150, 200);
+    let y = random(-60, 40);
+    let size = random(1, 3);
+
+    // Solo dibujar si el punto está dentro del perfil del ala
+    if (isPointInWing(x, y)) {
+      point(x, y);
+    }
+  }
+
+  // Líneas de tensión superficial sutiles
+  stroke(255, 255, 255, 5);
+  strokeWeight(0.3);
+  for (let i = 0; i < 8; i++) {
+    let startX = -120 + i * 40;
+    let startY = -30 + sin(i * 0.5) * 5;
+    let endX = startX + 30;
+    let endY = startY + cos(i * 0.3) * 8;
+
+    if (isPointInWing(startX, startY) && isPointInWing(endX, endY)) {
+      line(startX, startY, endX, endY);
+    }
+  }
+  pop();
+
+  // ===== EFECTOS DE REFLEJO ESPECULAR AVANZADOS =====
+  // Reflejos especulares que responden dinámicamente al ángulo de luz
+  let specularIntensity = pow(max(0, lightDirection.dot(wingNormal)), 16) * 1.2; // Más sensible
+
+  if (specularIntensity > 0.05) {
+    // Reflejo principal - más realista con forma elíptica
+    push();
+    translate(lightDirection.x * 20, lightDirection.y * 20); // Offset basado en dirección de luz
+
+    // Elipse de reflejo principal
+    fill(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 180);
+    noStroke();
+    ellipse(20, -25, 40 * specularIntensity, 15 * specularIntensity);
+
+    // Reflejos secundarios con blur progresivo
+    for (let i = 1; i <= 3; i++) {
+      let secondaryIntensity = specularIntensity * (1 - i * 0.2);
+      fill(red(sunColor), green(sunColor), blue(sunColor), secondaryIntensity * 120);
+      ellipse(20 + i * 15, -25 + i * 5, 25 * secondaryIntensity, 10 * secondaryIntensity);
+    }
+    pop();
+
+    // Reflejos lineales en bordes
+    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 200);
+    strokeWeight(3);
+    noFill();
+
+    // Arco de reflejo en borde de ataque
+    beginShape();
+    for (let t = 0; t <= 1; t += 0.1) {
+      let x = leadingEdgeX + t * 60;
+      let y = leadingEdgeY - 8 + sin(t * PI) * 4;
+      vertex(x, y);
+    }
+    endShape();
+
+    // Reflejos puntuales en áreas curvas
+    strokeWeight(2);
+    let highlightPoints = [
+      {x: 40, y: -35}, {x: 80, y: -40}, {x: 120, y: -35},
+      {x: -20, y: -30}, {x: -60, y: -25}
+    ];
+
+    for (let point of highlightPoints) {
+      let pointIntensity = specularIntensity * random(0.7, 1.3);
+      stroke(red(sunColor), green(sunColor), blue(sunColor), pointIntensity * 150);
+      point(point.x, point.y);
+    }
+  }
+
+  // ===== SOMBRAS 3D DINÁMICAS MULTICAPA =====
+  // Sombras volumétricas con múltiples capas y blur variable
+  for (let shadowLayer = 0; shadowLayer < 3; shadowLayer++) {
+    push();
+
+    // Offset progresivo para efecto de profundidad
+    let shadowOffsetX = lightDirection.x * (8 + shadowLayer * 4);
+    let shadowOffsetY = lightDirection.y * (8 + shadowLayer * 4);
+    translate(shadowOffsetX, shadowOffsetY);
+
+    // Blur variable basado en distancia e intensidad de luz
+    let blurAmount = shadowLayer * 2;
+    let shadowAlpha = (1 - totalLight) * (60 - shadowLayer * 15) + 15;
+
+    // Color de sombra con tinte azulado para mayor realismo
+    let shadowColor = color(
+      20 + shadowLayer * 10, // Más rojo en capas lejanas
+      20 + shadowLayer * 10, // Más verde en capas lejanas
+      40 + shadowLayer * 15  // Más azul en capas lejanas
     );
 
-    fill(red(metallicColor), green(metallicColor), blue(metallicColor), alpha);
-    stroke(red(metallicColor) * 0.7, green(metallicColor) * 0.7, blue(metallicColor) * 0.7, alpha * 0.7);
-    strokeWeight(1);
+    fill(red(shadowColor), green(shadowColor), blue(shadowColor), shadowAlpha);
+    noStroke();
 
-    // Dibujar perfil con gradiente metálico mejorado
+    // Sombra escalada para efecto de profundidad
+    scale(1 + shadowLayer * 0.1);
+
+    // Sombra del perfil principal con deformación sutil
     beginShape();
     vertex(leadingEdgeX, leadingEdgeY);
-    bezierVertex(-120 + layer * 2, -25 + layer, -60 + layer, -45 + layer, 0, -55 + layer);
-    bezierVertex(60 - layer, -55 + layer, 120 - layer * 2, -45 + layer, 180 - layer * 3, -25 + layer);
-    vertex(200 - layer * 4, layer * 0.5);
-    bezierVertex(180 - layer * 3, 15 - layer, 120 - layer * 2, 25 - layer, 60 - layer, 30 - layer);
-    bezierVertex(0, 30 - layer, -60 + layer, 25 - layer, -120 + layer * 2, 15 - layer);
-    bezierVertex(-150 + layer * 3, 8 - layer, -120 + layer * 2, 10 - layer, -90 + layer, 12 - layer, leadingEdgeX, leadingEdgeY);
+    bezierVertex(-120 + blurAmount, -25 + blurAmount, -60 + blurAmount, -45 + blurAmount, 0, -55 + blurAmount);
+    bezierVertex(60 - blurAmount, -55 + blurAmount, 120 - blurAmount, -45 + blurAmount, 180 - blurAmount, -25 + blurAmount);
+    vertex(200 - blurAmount, blurAmount);
+    bezierVertex(180 - blurAmount, 15 - blurAmount, 120 - blurAmount, 25 - blurAmount, 60 - blurAmount, 30 - blurAmount);
+    bezierVertex(0, 30 - blurAmount, -60 + blurAmount, 25 - blurAmount, -120 + blurAmount, 15 - blurAmount);
+    bezierVertex(-150 + blurAmount, 8 - blurAmount, -120 + blurAmount, 10 - blurAmount, -90 + blurAmount, 12 - blurAmount, leadingEdgeX, leadingEdgeY);
     endShape(CLOSE);
+    pop();
   }
-
-  // ===== BRILLOS ESPECULARES DINÁMICOS =====
-  // Brillos especulares que cambian con la iluminación
-  let specularIntensity = pow(max(0, lightDirection.dot(wingNormal)), 8) * 0.8;
-
-  if (specularIntensity > 0.1) {
-    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 255);
-    strokeWeight(2);
-
-    // Brillo principal (highlight) - más intenso con buena iluminación
-    beginShape();
-    vertex(leadingEdgeX + 10, leadingEdgeY - 5);
-    bezierVertex(-80, -15, -20, -25, 20, -30);
-    bezierVertex(80, -30, 140, -20, 170, -10);
-    endShape();
-
-    // Brillos secundarios con intensidad variable
-    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 150);
-    beginShape();
-    vertex(leadingEdgeX + 20, leadingEdgeY - 2);
-    bezierVertex(-60, -8, 0, -12, 40, -15);
-    bezierVertex(100, -15, 150, -8, 180, -3);
-    endShape();
-
-    // Brillo de borde de ataque
-    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 100);
-    strokeWeight(1);
-    beginShape();
-    vertex(leadingEdgeX, leadingEdgeY - 3);
-    bezierVertex(leadingEdgeX + 30, leadingEdgeY - 8, leadingEdgeX + 60, leadingEdgeY - 6, leadingEdgeX + 90, leadingEdgeY - 4);
-    endShape();
-  }
-
-  // ===== SOMBRAS 3D DINÁMICAS =====
-  // Sombras volumétricas basadas en dirección de luz y hora del día
-  push();
-  let shadowOffsetX = lightDirection.x * 8;
-  let shadowOffsetY = lightDirection.y * 8;
-  translate(shadowOffsetX, shadowOffsetY);
-
-  let shadowAlpha = (1 - totalLight) * 80 + 20; // Más oscura cuando menos luz
-  fill(0, 0, 0, shadowAlpha);
-  noStroke();
-
-  // Sombra del perfil principal
-  beginShape();
-  vertex(leadingEdgeX, leadingEdgeY);
-  bezierVertex(-120, -25, -60, -45, 0, -55);
-  bezierVertex(60, -55, 120, -45, 180, -25);
-  vertex(200, 0);
-  bezierVertex(180, 15, 120, 25, 60, 30);
-  bezierVertex(0, 30, -60, 25, -120, 15);
-  bezierVertex(-150, 8, -120, 10, -90, 12, leadingEdgeX, leadingEdgeY);
-  endShape(CLOSE);
-  pop();
 
   // ===== DETALLES DE SUPERFICIE =====
   // Paneles estructurales
@@ -1029,9 +1199,9 @@ function draw() {
   text('NACA 2412', 0, 45);
 
   // Etiqueta del borde de ataque con mejor diseño
-  fill(255, 255, 0);
-  stroke(150, 150, 0);
-  strokeWeight(1);
+  fill(255, 165, 0);
+  stroke(0);
+  strokeWeight(2);
   textSize(8);
   text('Borde de Ataque', leadingEdgeX - 20, leadingEdgeY - 15);
 
@@ -1066,11 +1236,11 @@ function draw() {
 
   // Indicador de velocidad (vector de velocidad)
   let speedVectorLength = map(windSpeed, 0, 100, 20, 60);
-  stroke(255, 255, 0, 200); // Amarillo para velocidad
+  stroke(255, 165, 0, 200); // Naranja para velocidad
   strokeWeight(3);
   line(0, 0, speedVectorLength, 0);
   // Punta de flecha
-  fill(255, 255, 0, 200);
+  fill(255, 165, 0, 200);
   noStroke();
   triangle(speedVectorLength, 0, speedVectorLength - 8, -3, speedVectorLength - 8, 3);
 
@@ -1108,12 +1278,29 @@ function draw() {
 
   pop();
 
-  // Update and draw aerodynamic flow particles
-  updateFlowParticles();
-  drawFlowParticles();
+  // Update and draw aerodynamic flow particles (solo cuando no está en modo tutorial)
+  if (!tutorialMode) {
+    updateFlowParticles();
+    updateVortices();
+    drawFlowParticles();
+    drawVortices();
+  }
 
-  // Enhanced aerodynamic flow visualization following NACA 2412 profile
-  noFill();
+  // ===== CARACTERÍSTICAS EDUCATIVAS =====
+  // No dibujar diagramas y elementos gráficos cuando está en modo tutorial
+  if (!tutorialMode) {
+    drawEducationalLegends();
+    drawPressureDiagram();
+    drawVelocityDiagram();
+    drawForceDiagram();
+    drawActiveDiagramIndicators();
+  }
+  drawTutorialOverlay();
+  drawComparisonMode();
+
+  // Enhanced aerodynamic flow visualization following NACA 2412 profile (solo cuando no está en modo tutorial)
+  if (!tutorialMode) {
+    noFill();
 
   // Upper surface flow (fast air, low pressure) - accelerated flow with NACA contour following
   for (let i = 0; i < 8; i++) {
@@ -1527,6 +1714,8 @@ function draw() {
   // Update weather effects
   updateWeather();
 
+  } // Fin de la condición !tutorialMode para visualización aerodinámica
+
   // Close camera transformation
   pop();
 
@@ -1719,6 +1908,7 @@ function drawVortex(centerX, centerY, strength, direction) {
 
 function initializeFlowParticles() {
   flowParticles = [];
+  vortices = []; // Initialize vortices array
 
   // Wing transformation parameters
   let wingCenterX = width/2;
@@ -1790,6 +1980,63 @@ function initializeFlowParticles() {
       size: 1.2 + random(0.8),
       trail: []
     });
+  }
+
+  // ===== INICIALIZAR VÓRTICES =====
+  // Vórtices en los bordes de ataque y salida del ala
+  let vortexPositions = [
+    {x: -180, y: 0, type: 'leading'}, // Borde de ataque
+    {x: 180, y: 0, type: 'trailing'}  // Borde de salida
+  ];
+
+  for (let pos of vortexPositions) {
+    // Aplicar transformaciones del ala
+    let localX = pos.x;
+    let localY = pos.y;
+
+    // Apply rotation
+    let cosRot = cos(rotationAngle);
+    let sinRot = sin(rotationAngle);
+    let rotatedX = localX * cosRot - localY * sinRot;
+    let rotatedY = localX * sinRot + localY * cosRot;
+
+    // Apply scaling and translation
+    let screenX = rotatedX * scaleFactor + wingCenterX;
+    let screenY = rotatedY * scaleFactor + wingCenterY;
+
+    vortices.push({
+      x: screenX,
+      y: screenY,
+      type: pos.type,
+      strength: pos.type === 'leading' ? 2.0 : 1.5,
+      rotation: 0,
+      particles: []
+    });
+  }
+}
+
+function updateVortices() {
+  for (let vortex of vortices) {
+    // Rotación del vórtice
+    vortex.rotation += vortex.strength * 0.1;
+
+    // Actualizar partículas del vórtice (efecto espiral)
+    vortex.particles = [];
+    let numParticles = 8;
+
+    for (let i = 0; i < numParticles; i++) {
+      let angle = vortex.rotation + (i * TWO_PI / numParticles);
+      let radius = 5 + i * 2; // Radio creciente para efecto espiral
+
+      let particleX = vortex.x + cos(angle) * radius;
+      let particleY = vortex.y + sin(angle) * radius;
+
+      vortex.particles.push({
+        x: particleX,
+        y: particleY,
+        alpha: map(i, 0, numParticles - 1, 150, 30)
+      });
+    }
   }
 }
 
@@ -1898,15 +2145,29 @@ function updateFlowParticles() {
       }
     }
 
-    // Apply angle of attack effect
-    let aoaEffect = sin(angleAttack) * 0.3;
-    if (p.surface === 'upper') {
-      p.vx += aoaEffect * 0.4;
-      p.vy -= abs(aoaEffect) * 0.3;
-    } else {
-      p.vx -= aoaEffect * 0.2;
-      p.vy += abs(aoaEffect) * 0.2;
+    // ===== TURBULENCIA REALISTA =====
+    // Agregar movimiento ondulatorio para simular turbulencia real
+    let turbulenceStrength = 0.8; // Intensidad de la turbulencia
+    let turbulenceScale = 0.02; // Escala de las ondas de turbulencia
+
+    // Componentes de turbulencia basados en posición y tiempo
+    let turbulenceX = sin(wingLocalX * turbulenceScale + frameCount * 0.05) * turbulenceStrength;
+    let turbulenceY = cos(wingLocalY * turbulenceScale * 0.7 + frameCount * 0.03) * turbulenceStrength * 0.6;
+
+    // Turbulencia más intensa cerca del borde de ataque y salida
+    let edgeFactor = 1;
+    if (abs(wingLocalX) > 150) { // Cerca del borde de salida
+      edgeFactor = 1.5;
+    } else if (abs(wingLocalX) < 50) { // Cerca del borde de ataque
+      edgeFactor = 1.3;
     }
+
+    turbulenceX *= edgeFactor;
+    turbulenceY *= edgeFactor;
+
+    // Aplicar turbulencia a la velocidad
+    p.vx += turbulenceX * 0.1;
+    p.vy += turbulenceY * 0.08;
 
     // Update position
     p.x += p.vx;
@@ -1932,30 +2193,121 @@ function updateFlowParticles() {
 
 function drawFlowParticles() {
   noStroke();
-  
+
   for (let p of flowParticles) {
-    // Draw trail
-    for (let i = 0; i < p.trail.length - 1; i++) {
-      let alpha = map(i, 0, p.trail.length - 1, 20, 80);
-      let size = map(i, 0, p.trail.length - 1, p.size * 0.3, p.size * 0.8);
-      
-      if (p.surface === 'upper') {
-        fill(0, 150, 255, alpha); // Blue for upper surface
-      } else {
-        fill(255, 150, 0, alpha); // Orange for lower surface
-      }
-      
-      ellipse(p.trail[i].x, p.trail[i].y, size, size);
-    }
-    
-    // Draw main particle
-    if (p.surface === 'upper') {
-      fill(0, 200, 255, 120);
+    // ===== COLORES DINÁMICOS BASADOS EN VELOCIDAD =====
+    // Calcular velocidad total de la partícula
+    let speed = sqrt(p.vx * p.vx + p.vy * p.vy);
+
+    // Mapear velocidad a colores: azul frío (lento) → rojo cálido (rápido)
+    let speedNormalized = constrain(map(speed, 0.5, 4.0, 0, 1), 0, 1);
+
+    // Gradiente de colores: azul → cian → verde → amarillo → rojo
+    let r, g, b;
+    if (speedNormalized < 0.25) {
+      // Azul → Cian (velocidades muy bajas)
+      let t = speedNormalized / 0.25;
+      r = 0;
+      g = map(t, 0, 1, 100, 200);
+      b = map(t, 0, 1, 255, 255);
+    } else if (speedNormalized < 0.5) {
+      // Cian → Verde (velocidades bajas)
+      let t = (speedNormalized - 0.25) / 0.25;
+      r = 0;
+      g = map(t, 0, 1, 200, 255);
+      b = map(t, 0, 1, 255, 100);
+    } else if (speedNormalized < 0.75) {
+      // Verde → Amarillo (velocidades medias)
+      let t = (speedNormalized - 0.5) / 0.25;
+      r = map(t, 0, 1, 0, 255);
+      g = 255;
+      b = map(t, 0, 1, 100, 0);
     } else {
-      fill(255, 200, 0, 100);
+      // Amarillo → Rojo (velocidades altas)
+      let t = (speedNormalized - 0.75) / 0.25;
+      r = 255;
+      g = map(t, 0, 1, 255, 100);
+      b = 0;
     }
-    
+
+    // Intensidad del color basada en la edad de la partícula
+    let ageAlpha = map(p.age, 0, p.maxAge, 255, 50);
+
+    // Draw trail with dynamic colors
+    for (let i = 0; i < p.trail.length - 1; i++) {
+      let trailAlpha = map(i, 0, p.trail.length - 1, ageAlpha * 0.1, ageAlpha * 0.4);
+      let trailSize = map(i, 0, p.trail.length - 1, p.size * 0.2, p.size * 0.6);
+
+      fill(r, g, b, trailAlpha);
+      ellipse(p.trail[i].x, p.trail[i].y, trailSize, trailSize);
+    }
+
+    // Draw main particle with dynamic color
+    fill(r, g, b, ageAlpha);
     ellipse(p.x, p.y, p.size, p.size);
+  }
+
+  // ===== TRAILS DE CONDENSACIÓN =====
+  // Agregar estelas de vapor en áreas de baja presión (alta velocidad)
+  for (let p of flowParticles) {
+    if (p.surface === 'upper') {
+      let speed = sqrt(p.vx * p.vx + p.vy * p.vy);
+
+      // Alta velocidad = baja presión = condensación posible
+      if (speed > 3.0 && random() < 0.02) { // Probabilidad baja pero visible
+        // Crear partícula de condensación
+        let condensationX = p.x + random(-5, 5);
+        let condensationY = p.y + random(-3, 3);
+
+        // Color blanco azulado para el vapor
+        fill(220, 240, 255, 80);
+
+        // Forma ovalada para simular gotas de condensación
+        ellipse(condensationX, condensationY, 2, 4);
+
+        // Trail sutil de la condensación
+        for (let i = 0; i < 3; i++) {
+          let trailX = condensationX - i * 2;
+          let trailY = condensationY - i * 1;
+          let trailAlpha = 80 - i * 25;
+
+          fill(220, 240, 255, trailAlpha);
+          ellipse(trailX, trailY, 1, 2);
+        }
+      }
+    }
+  }
+}
+
+function drawVortices() {
+  noFill();
+  strokeWeight(1.5);
+
+  for (let vortex of vortices) {
+    // Color del vórtice basado en el tipo
+    if (vortex.type === 'leading') {
+      stroke(100, 150, 255, 120); // Azul para borde de ataque
+    } else {
+      stroke(255, 100, 100, 100); // Rojo para borde de salida
+    }
+
+    // Dibujar espiral del vórtice
+    beginShape();
+    for (let particle of vortex.particles) {
+      vertex(particle.x, particle.y);
+    }
+    endShape();
+
+    // Dibujar partículas del vórtice
+    noStroke();
+    for (let particle of vortex.particles) {
+      if (vortex.type === 'leading') {
+        fill(100, 150, 255, particle.alpha);
+      } else {
+        fill(255, 100, 100, particle.alpha);
+      }
+      ellipse(particle.x, particle.y, 2, 2);
+    }
   }
 }
 
@@ -2168,71 +2520,563 @@ function updateWeather() {
   }
 }
 
-// API Integration Functions
-async function fetchWeather() {
-  try {
-    // Using a free weather API (no key required for basic data)
-    // For demonstration, we'll simulate weather data
-    // In a real implementation, you would use something like:
-    // const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=40.7128&longitude=-74.0060&current_weather=true');
 
-    // Simulate API response with realistic weather data
-    const mockWeatherData = {
-      temperature: 15 + random(-5, 10), // 10-25°C
-      windSpeed: 5 + random(0, 15), // 5-20 m/s
-      windDirection: random(0, 360),
-      humidity: 40 + random(0, 60), // 40-100%
-      pressure: 1013 + random(-20, 20), // 993-1033 hPa
-      visibility: 5 + random(0, 10), // 5-15 km
-      conditions: ['clear', 'rain', 'snow', 'storm'][floor(random(4))]
-    };
 
-    // Update simulation parameters based on weather data
-    windSpeed = constrain(mockWeatherData.windSpeed, 10, 100);
-    windSlider.value(windSpeed);
+function isPointInWing(x, y) {
+  // Función auxiliar para determinar si un punto está dentro del perfil del ala
+  // Usando una aproximación simplificada del perfil NACA
+  let chord = 320; // Longitud de la cuerda
+  let thickness = 0.12; // Espesor relativo
 
-    // Set weather conditions
-    setWeather(mockWeatherData.conditions);
+  // Coordenadas normalizadas
+  let xn = (x + 150) / chord; // Centrar en el borde de ataque
 
-    // Update air density based on temperature and pressure
-    let temperature = mockWeatherData.temperature + 273.15; // Convert to Kelvin
-    rho = (mockWeatherData.pressure * 100) / (287.05 * temperature); // Ideal gas law
+  if (xn < 0 || xn > 1) return false;
 
-    console.log('Weather data updated:', mockWeatherData);
-    alert('Datos meteorológicos actualizados desde API simulada');
+  // Perfil NACA simétrico simplificado
+  let yt = thickness * chord * (0.2969 * sqrt(xn) - 0.1260 * xn - 0.3516 * pow(xn, 2) + 0.2843 * pow(xn, 3) - 0.1015 * pow(xn, 4));
 
-  } catch (error) {
-    console.error('Error fetching weather data:', error);
-    alert('Error al obtener datos meteorológicos');
+  // Verificar si el punto está dentro del espesor del perfil
+  return abs(y) <= yt;
+}
+
+function toggleTutorialMode() {
+  tutorialMode = !tutorialMode;
+  if (tutorialMode) {
+    tutorialStep = 0;
+    tutorialModeBtn.html('🎓 Salir Tutorial');
+    tutorialModeBtn.style('background', 'linear-gradient(145deg, #ff6b6b, #ee5a52)');
+  } else {
+    tutorialModeBtn.html('🎓 Modo Tutorial');
+    tutorialModeBtn.style('background', 'linear-gradient(145deg, #667eea, #764ba2)');
   }
 }
 
-async function fetchRandomAirplaneImage() {
-  try {
-    // Simulate fetching airplane data
-    // In a real implementation, you would use FlightAware API or similar
-    const mockAirplaneData = {
-      model: ['Boeing 737', 'Airbus A320', 'Boeing 787', 'Airbus A350'][floor(random(4))],
-      airline: ['Aerolineas Argentinas', 'LATAM', 'Iberia', 'American Airlines'][floor(random(4))],
-      registration: 'LV-' + ['ABC', 'DEF', 'GHI', 'JKL'][floor(random(4))],
-      imageUrl: null // Would be a real image URL from API
-    };
-
-    // Update airplane display info
-    select('#airplane-info').html(
-      `${mockAirplaneData.airline} - ${mockAirplaneData.model}<br>` +
-      `Matrícula: ${mockAirplaneData.registration}`
-    );
-
-    console.log('Airplane data loaded:', mockAirplaneData);
-    alert(`Avión cargado: ${mockAirplaneData.model} de ${mockAirplaneData.airline}`);
-
-  } catch (error) {
-    console.error('Error fetching airplane data:', error);
-    alert('Error al cargar datos del avión');
+function toggleComparisonMode() {
+  comparisonMode = !comparisonMode;
+  if (comparisonMode) {
+    currentComparisonIndex = 0;
+    comparisonModeBtn.html('📊 Salir Comparación');
+    comparisonModeBtn.style('background', 'linear-gradient(145deg, #ff9a9e, #fecfef)');
+  } else {
+    // Restaurar configuración original
+    angleSlider.value(5);
+    updateParameters();
+    comparisonModeBtn.html('📊 Comparaciones');
+    comparisonModeBtn.style('background', 'linear-gradient(145deg, #f093fb, #f5576c)');
   }
 }
 
-function windowResized() {
-  resizeCanvasForPanel();
+function drawEducationalLegends() {
+  if (!showEducationalLegends) return;
+
+  textAlign(CENTER);
+  textSize(12);
+  fill(255, 255, 255, 220);
+  stroke(0, 0, 0, 150);
+  strokeWeight(1);
+
+  // Distribuir leyendas horizontalmente en la parte inferior
+  let legendY = height - 80; // Más arriba para evitar cortes
+  let spacing = width / 4; // Dividir el ancho en 4 secciones
+
+  // ===== LEYENDA 1: SUSTENTACIÓN =====
+  let legend1X = spacing * 0.5;
+  // Caja de fondo con gradiente
+  fill(0, 100, 0, 180); // Verde para sustentación
+  noStroke();
+  rect(legend1X - 60, legendY - 35, 120, 50, 8);
+
+  // Icono de flecha hacia arriba
+  stroke(255, 255, 255, 255);
+  strokeWeight(3);
+  line(legend1X, legendY - 25, legend1X, legendY - 15);
+  line(legend1X, legendY - 25, legend1X - 3, legendY - 20);
+  line(legend1X, legendY - 25, legend1X + 3, legendY - 20);
+
+  // Texto
+  fill(255, 255, 255, 255);
+  noStroke();
+  text("SUSTENTACIÓN", legend1X, legendY - 5);
+  textSize(10);
+  text("Fuerza ↑", legend1X, legendY + 8);
+
+  // ===== LEYENDA 2: ARRASTRE =====
+  let legend2X = spacing * 1.5;
+  // Caja de fondo con gradiente
+  fill(100, 0, 0, 180); // Rojo para arrastre
+  noStroke();
+  rect(legend2X - 60, legendY - 35, 120, 50, 8);
+
+  // Icono de flecha hacia la derecha
+  stroke(255, 255, 255, 255);
+  strokeWeight(3);
+  line(legend2X - 10, legendY - 20, legend2X + 10, legendY - 20);
+  line(legend2X + 10, legendY - 20, legend2X + 5, legendY - 23);
+  line(legend2X + 10, legendY - 20, legend2X + 5, legendY - 17);
+
+  // Texto
+  fill(255, 255, 255, 255);
+  noStroke();
+  textSize(12);
+  text("ARRASTRE", legend2X, legendY - 5);
+  textSize(10);
+  text("Resistencia →", legend2X, legendY + 8);
+
+  // ===== LEYENDA 3: PARTÍCULAS =====
+  let legend3X = spacing * 2.5;
+  // Caja de fondo con gradiente
+  fill(0, 0, 100, 180); // Azul para partículas
+  noStroke();
+  rect(legend3X - 70, legendY - 35, 140, 50, 8);
+
+  // Iconos de partículas (círculos pequeños)
+  fill(0, 150, 255, 255); // Azul superior
+  noStroke();
+  ellipse(legend3X - 25, legendY - 20, 6, 6);
+  fill(255, 100, 0, 255); // Rojo inferior
+  ellipse(legend3X - 10, legendY - 15, 6, 6);
+  fill(0, 200, 255, 255); // Azul superior
+  ellipse(legend3X + 5, legendY - 18, 4, 4);
+
+  // Texto
+  fill(255, 255, 255, 255);
+  textSize(12);
+  text("PARTÍCULAS", legend3X, legendY - 5);
+  textSize(10);
+  text("Azul: superior | Rojo: inferior", legend3X, legendY + 8);
+
+  // ===== LEYENDA 4: PRESIÓN =====
+  let legend4X = spacing * 3.5;
+  // Caja de fondo con gradiente
+  fill(100, 0, 100, 180); // Púrpura para presión
+  noStroke();
+  rect(legend4X - 60, legendY - 35, 120, 50, 8);
+
+  // Icono de presión (ondas)
+  stroke(255, 255, 255, 255);
+  strokeWeight(2);
+  noFill();
+  arc(legend4X - 15, legendY - 20, 8, 8, PI, TWO_PI);
+  arc(legend4X - 5, legendY - 18, 6, 6, PI, TWO_PI);
+  arc(legend4X + 5, legendY - 22, 10, 10, PI, TWO_PI);
+
+  // Texto
+  fill(255, 255, 255, 255);
+  noStroke();
+  textSize(12);
+  text("PRESIÓN", legend4X, legendY - 5);
+  textSize(10);
+  text("Baja ↑ | Alta ↓", legend4X, legendY + 8);
+}
+
+function drawActiveDiagramIndicators() {
+  // Indicadores en la esquina superior derecha para mostrar qué diagramas están activos
+  let indicatorX = width - 120;
+  let indicatorY = 30;
+  let indicatorSpacing = 25;
+
+  textAlign(LEFT);
+  textSize(10);
+
+  if (showPressureDiagram) {
+    fill(255, 0, 0, 200);
+    noStroke();
+    rect(indicatorX - 15, indicatorY - 8, 12, 12, 2);
+    fill(255, 255, 255, 255);
+    text("Presión", indicatorX, indicatorY + 2);
+    indicatorY += indicatorSpacing;
+  }
+
+  if (showVelocityDiagram) {
+    fill(255, 165, 0, 200);
+    noStroke();
+    rect(indicatorX - 15, indicatorY - 8, 12, 12, 2);
+    fill(255, 255, 255, 255);
+    text("Velocidad", indicatorX, indicatorY + 2);
+    indicatorY += indicatorSpacing;
+  }
+
+  if (showForceDiagram) {
+    fill(0, 255, 0, 200);
+    noStroke();
+    rect(indicatorX - 15, indicatorY - 8, 12, 12, 2);
+    fill(255, 255, 255, 255);
+    text("Fuerzas", indicatorX, indicatorY + 2);
+  }
+}
+
+function drawPressureDiagram() {
+  if (!showPressureDiagram) return;
+
+  // Diagrama de presiones sobre el ala - más sutil
+  push();
+  translate(width/2, height/2);
+
+  // Área de baja presión (superior) - más transparente
+  fill(255, 0, 0, 60);
+  noStroke();
+  beginShape();
+  vertex(-180, -55);
+  bezierVertex(-120, -45, -60, -35, 0, -30);
+  bezierVertex(60, -35, 120, -45, 180, -55);
+  vertex(200, -20);
+  bezierVertex(180, -10, 120, 0, 60, 5);
+  bezierVertex(0, 5, -60, 0, -120, -10);
+  bezierVertex(-150, -15, -180, -20, -180, -55);
+  endShape();
+
+  // Área de alta presión (inferior) - más transparente
+  fill(0, 0, 255, 60);
+  beginShape();
+  vertex(-180, 15);
+  bezierVertex(-120, 25, -60, 30, 0, 30);
+  bezierVertex(60, 30, 120, 25, 180, 15);
+  vertex(200, 40);
+  bezierVertex(180, 50, 120, 55, 60, 50);
+  bezierVertex(0, 50, -60, 55, -120, 50);
+  bezierVertex(-150, 45, -180, 40, -180, 15);
+  endShape();
+
+  // Etiquetas más pequeñas y mejor posicionadas
+  fill(255, 255, 255, 200);
+  textAlign(CENTER);
+  textSize(10);
+  text("BAJA PRESIÓN", 0, -80);
+  text("ALTA PRESIÓN", 0, 80);
+  pop();
+}
+
+function drawVelocityDiagram() {
+  if (!showVelocityDiagram) return;
+
+  // Diagrama de velocidades - más sutil
+  push();
+  translate(width/2, height/2);
+
+  stroke(255, 165, 0, 120); // Más transparente
+  strokeWeight(2);
+  noFill();
+
+  // Vectores de velocidad en superficie superior (más rápidos) - menos vectores
+  for (let x = -100; x <= 100; x += 100) {
+    let y = -40;
+    let speed = map(abs(x), 0, 150, 3.5, 2.0);
+    let vectorLength = speed * 10; // Más cortos
+
+    line(x, y, x + vectorLength, y);
+    // Punta de flecha más pequeña
+    line(x + vectorLength, y, x + vectorLength - 3, y - 2);
+    line(x + vectorLength, y, x + vectorLength - 3, y + 2);
+  }
+
+  // Vectores de velocidad en superficie inferior (más lentos)
+  for (let x = -100; x <= 100; x += 100) {
+    let y = 40;
+    let speed = map(abs(x), 0, 150, 1.5, 1.0);
+    let vectorLength = speed * 10;
+
+    line(x, y, x + vectorLength, y);
+    line(x + vectorLength, y, x + vectorLength - 3, y - 2);
+    line(x + vectorLength, y, x + vectorLength - 3, y + 2);
+  }
+
+  // Etiqueta más pequeña
+  fill(255, 165, 0);
+  stroke(0);
+  strokeWeight(2);
+  textAlign(CENTER);
+  textSize(10);
+  text("VELOCIDAD DEL AIRE", 0, -110);
+  pop();
+}
+
+function drawForceDiagram() {
+  if (!showForceDiagram) return;
+
+  // Diagrama de fuerzas - más sutil
+  push();
+  translate(width/2, height/2);
+
+  // Fuerza de sustentación - más sutil
+  stroke(0, 255, 0, 150);
+  strokeWeight(3);
+  let liftForce = 60; // Más corto
+  line(0, 0, 0, -liftForce);
+
+  // Punta de flecha
+  fill(0, 255, 0, 150);
+  noStroke();
+  triangle(-4, -liftForce, 4, -liftForce, 0, -liftForce - 8);
+
+  // Fuerza de arrastre - más sutil
+  stroke(255, 0, 0, 150);
+  strokeWeight(3);
+  let dragForce = 40;
+  line(0, 0, dragForce, 0);
+
+  fill(255, 0, 0, 150);
+  triangle(dragForce, -4, dragForce, 4, dragForce + 8, 0);
+
+  // Fuerza de peso - más sutil
+  stroke(255, 165, 0, 150);
+  strokeWeight(3);
+  let weightForce = 50;
+  line(0, 0, 0, weightForce);
+
+  fill(255, 165, 0, 150);
+  triangle(-4, weightForce, 4, weightForce, 0, weightForce + 8);
+
+  // Etiquetas más pequeñas
+  fill(255, 255, 255, 200);
+  textAlign(CENTER);
+  textSize(10);
+  text("SUSTENTACIÓN", 0, -liftForce - 15);
+  text("ARRASTRE", dragForce + 25, 0);
+  text("PESO", 0, weightForce + 20);
+  pop();
+}
+
+function drawTutorialOverlay() {
+  if (!tutorialMode) return;
+
+  // Overlay semi-transparente con blur effect
+  fill(0, 0, 0, 150);
+  noStroke();
+  rect(0, 0, width, height);
+
+  // Caja principal del tutorial con gradiente
+  let boxWidth = min(600, width * 0.9); // Aumentado de 500 a 600
+  let boxHeight = min(400, height * 0.7); // Aumentado de 350 a 400
+  let boxX = width/2 - boxWidth/2;
+  let boxY = height/2 - boxHeight/2;
+
+  // Sombra de la caja
+  fill(0, 0, 0, 80);
+  noStroke();
+  rect(boxX + 8, boxY + 8, boxWidth, boxHeight, 20);
+
+  // Caja principal con gradiente
+  for (let i = 0; i < boxHeight; i++) {
+    let alpha = map(i, 0, boxHeight, 255, 220);
+    let r = map(i, 0, boxHeight, 255, 248);
+    let g = map(i, 0, boxHeight, 255, 249);
+    let b = map(i, 0, boxHeight, 255, 250);
+    stroke(r, g, b, alpha);
+    strokeWeight(1);
+    line(boxX, boxY + i, boxX + boxWidth, boxY + i);
+  }
+
+  // Borde de la caja
+  stroke(52, 152, 219, 200);
+  strokeWeight(3);
+  fill(255, 255, 255, 250);
+  rect(boxX, boxY, boxWidth, boxHeight, 20);
+
+  // Barra de progreso
+  let progressWidth = map(tutorialStep, 0, tutorialSteps.length - 1, 0, boxWidth - 40);
+  fill(52, 152, 219, 180);
+  noStroke();
+  rect(boxX + 20, boxY + boxHeight - 25, progressWidth, 6, 3);
+
+  // Indicador de paso
+  fill(52, 152, 219, 255);
+  textAlign(CENTER);
+  textSize(12);
+  text(`Paso ${tutorialStep + 1} de ${tutorialSteps.length}`, width/2, boxY + boxHeight - 35);
+
+  // Título
+  fill(44, 62, 80, 255);
+  textAlign(CENTER);
+  textSize(20);
+  text("Tutorial Interactivo", width/2, boxY + 40);
+
+  // Línea decorativa
+  stroke(52, 152, 219, 150);
+  strokeWeight(2);
+  line(width/2 - 50, boxY + 55, width/2 + 50, boxY + 55);
+
+  // Contenido del tutorial
+  let contentY = boxY + 80;
+  let lines = tutorialSteps[tutorialStep].split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() === '') continue;
+
+    if (lines[i].includes('🎓') || lines[i].includes('✈️') || lines[i].includes('🌪️') ||
+        lines[i].includes('⚖️') || lines[i].includes('📐') || lines[i].includes('💨') ||
+        lines[i].includes('🏔️') || lines[i].includes('⚠️') || lines[i].includes('🔄') ||
+        lines[i].includes('🎯')) {
+      // Título con emoji
+      fill(52, 152, 219, 255);
+      textSize(18);
+      text(lines[i], width/2, contentY);
+      contentY += 35;
+    } else {
+      // Texto normal
+      fill(52, 73, 94, 255);
+      textSize(14);
+      text(lines[i], width/2, contentY);
+      contentY += 25;
+    }
+  }
+
+  // Botones de navegación mejorados
+  let buttonY = boxY + boxHeight - 60;
+  let buttonWidth = 100;
+  let buttonHeight = 35;
+
+  // Botón anterior
+  if (tutorialStep > 0) {
+    // Sombra del botón
+    fill(0, 0, 0, 50);
+    noStroke();
+    rect(boxX + 30 + 2, buttonY + 2, buttonWidth, buttonHeight, 8);
+
+    // Botón principal
+    fill(100, 100, 255, 220);
+    stroke(100, 100, 255, 255);
+    strokeWeight(2);
+    rect(boxX + 30, buttonY, buttonWidth, buttonHeight, 8);
+
+    // Texto del botón
+    fill(255, 255, 255, 255);
+    textAlign(CENTER);
+    textSize(14);
+    text("⬅️ Anterior", boxX + 30 + buttonWidth/2, buttonY + buttonHeight/2 + 5);
+  }
+
+  // Botón siguiente/finalizar
+  let rightButtonX = boxX + boxWidth - 30 - buttonWidth;
+
+  // Sombra del botón
+  fill(0, 0, 0, 50);
+  noStroke();
+  rect(rightButtonX + 2, buttonY + 2, buttonWidth, buttonHeight, 8);
+
+  // Botón principal
+  if (tutorialStep < tutorialSteps.length - 1) {
+    fill(100, 255, 100, 220);
+    stroke(100, 255, 100, 255);
+    strokeWeight(2);
+    rect(rightButtonX, buttonY, buttonWidth, buttonHeight, 8);
+
+    fill(255, 255, 255, 255);
+    textAlign(CENTER);
+    textSize(14);
+    text("Siguiente ➡️", rightButtonX + buttonWidth/2, buttonY + buttonHeight/2 + 5);
+  } else {
+    fill(255, 100, 100, 220);
+    stroke(255, 100, 100, 255);
+    strokeWeight(2);
+    rect(rightButtonX, buttonY, buttonWidth, buttonHeight, 8);
+
+    fill(255, 255, 255, 255);
+    textAlign(CENTER);
+    textSize(14);
+    text("🎉 Finalizar", rightButtonX + buttonWidth/2, buttonY + buttonHeight/2 + 5);
+  }
+
+  // Indicador visual de progreso (círculos)
+  let dotsY = boxY + boxHeight - 45;
+  let dotsSpacing = 20;
+  let totalDots = tutorialSteps.length;
+  let dotsStartX = width/2 - (totalDots * dotsSpacing) / 2;
+
+  for (let i = 0; i < totalDots; i++) {
+    if (i === tutorialStep) {
+      fill(52, 152, 219, 255);
+      stroke(52, 152, 219, 255);
+      strokeWeight(2);
+      ellipse(dotsStartX + i * dotsSpacing, dotsY, 12, 12);
+    } else if (i < tutorialStep) {
+      fill(100, 255, 100, 200);
+      stroke(100, 255, 100, 255);
+      strokeWeight(1);
+      ellipse(dotsStartX + i * dotsSpacing, dotsY, 8, 8);
+    } else {
+      fill(200, 200, 200, 150);
+      noStroke();
+      ellipse(dotsStartX + i * dotsSpacing, dotsY, 6, 6);
+    }
+  }
+}
+
+function drawComparisonMode() {
+  if (!comparisonMode) return;
+
+  // Aplicar configuración de comparación actual
+  let config = comparisonConfigs[currentComparisonIndex];
+  angleSlider.value(config.angle);
+  updateParameters();
+
+  // Overlay de comparación
+  fill(0, 0, 0, 200);
+  noStroke();
+  rect(0, 0, width, 60);
+
+  fill(255, 255, 255, 255);
+  textAlign(CENTER);
+  textSize(18);
+  text(config.name, width/2, 30);
+
+  textSize(14);
+  text(`Configuración ${currentComparisonIndex + 1} de ${comparisonConfigs.length}`, width/2, 50);
+
+  // Controles de navegación
+  fill(100, 100, 255, 255);
+  rect(20, 10, 60, 30, 5);
+  fill(255, 255, 255, 255);
+  textSize(12);
+  text("◀", 50, 28);
+
+  fill(100, 255, 100, 255);
+  rect(width - 80, 10, 60, 30, 5);
+  fill(255, 255, 255, 255);
+  text("▶", width - 50, 28);
+}
+
+function mousePressed() {
+  // Handle tutorial navigation
+  if (tutorialMode) {
+    let boxWidth = min(600, width * 0.9); // Actualizado para coincidir con drawTutorialOverlay
+    let boxHeight = min(400, height * 0.7); // Actualizado para coincidir con drawTutorialOverlay
+    let boxX = width/2 - boxWidth/2;
+    let boxY = height/2 - boxHeight/2;
+    let buttonY = boxY + boxHeight - 60;
+    let buttonWidth = 100;
+    let buttonHeight = 35;
+
+    // Botón anterior
+    if (tutorialStep > 0 &&
+        mouseX > boxX + 30 && mouseX < boxX + 30 + buttonWidth &&
+        mouseY > buttonY && mouseY < buttonY + buttonHeight) {
+      tutorialStep--;
+    }
+
+    // Botón siguiente/finalizar
+    let rightButtonX = boxX + boxWidth - 30 - buttonWidth;
+    if (mouseX > rightButtonX && mouseX < rightButtonX + buttonWidth &&
+        mouseY > buttonY && mouseY < buttonY + buttonHeight) {
+      if (tutorialStep < tutorialSteps.length - 1) {
+        tutorialStep++;
+      } else {
+        // Finalizar tutorial
+        toggleTutorialMode();
+      }
+    }
+  }
+
+  // Handle comparison navigation
+  if (comparisonMode) {
+    // Botón anterior
+    if (mouseX > 20 && mouseX < 80 && mouseY > 10 && mouseY < 40) {
+      currentComparisonIndex = max(0, currentComparisonIndex - 1);
+    }
+
+    // Botón siguiente
+    if (mouseX > width - 80 && mouseX < width - 20 && mouseY > 10 && mouseY < 40) {
+      currentComparisonIndex = min(comparisonConfigs.length - 1, currentComparisonIndex + 1);
+    }
+  }
 }

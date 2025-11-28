@@ -383,20 +383,133 @@
                 </button>
             </div>
         </div>
+        
+        <div style="margin-bottom: 15px;">
+            <h4>Características Educativas</h4>
+            
+            <div style="margin-bottom: 12px;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="educational-legends" style="margin-right: 8px;">
+                    <span>Leyendas Interactivas</span>
+                </label>
+            </div>
+            
+            <div style="margin-bottom: 12px;">
+                <h5 style="margin: 8px 0 4px 0; font-size: 12px; color: #666;">Diagramas Superpuestos:</h5>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 4px;">
+                    <input type="checkbox" id="pressure-diagram" style="margin-right: 8px;">
+                    <span style="font-size: 12px;">Presión</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 4px;">
+                    <input type="checkbox" id="velocity-diagram" style="margin-right: 8px;">
+                    <span style="font-size: 12px;">Velocidad</span>
+                </label>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="force-diagram" style="margin-right: 8px;">
+                    <span style="font-size: 12px;">Fuerzas</span>
+                </label>
+            </div>
+            
+            <div style="margin-bottom: 12px;">
+                <button id="tutorial-mode" style="width: 100%; padding: 8px; background: linear-gradient(145deg, #667eea, #764ba2); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                    🎓 Modo Tutorial
+                </button>
+            </div>
+            
+            <div style="margin-bottom: 12px;">
+                <button id="comparison-mode" style="width: 100%; padding: 8px; background: linear-gradient(145deg, #f093fb, #f5576c); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                    📊 Comparaciones
+                </button>
+            </div>
+        </div>
     </div>
     
-    <div id="tutorial-modal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:20px; border:2px solid black; border-radius:10px; max-width:400px; z-index:1000; box-shadow: 0 4px 8px rgba(0,0,0,0.3);">
-        <h3 style="margin-top: 0; color: #333;">Tutorial: Principios de Sustentación</h3>
-        <div style="max-height: 300px; overflow-y: auto; margin-bottom: 15px;">
-            <p style="margin: 8px 0; line-height: 1.4;">1. <strong>Ángulo de ataque</strong>: Afecta la sustentación según Cl = 2π sin(α)</p>
-            <p style="margin: 8px 0; line-height: 1.4;">2. <strong>Velocidad del viento</strong>: Influye en la presión dinámica</p>
-            <p style="margin: 8px 0; line-height: 1.4;">3. <strong>Altitud</strong>: Cambia la densidad del aire</p>
-            <p style="margin: 8px 0; line-height: 1.4;">4. <strong>Masa del avión</strong>: Determina el peso a equilibrar</p>
-            <p style="margin: 8px 0; line-height: 1.4;">5. <strong>Stall</strong>: En ángulos >15°, la sustentación disminuye</p>
-            <p style="margin: 8px 0; line-height: 1.4;">6. <strong>Modelos de avión</strong>: Cada uno tiene características diferentes</p>
-            <p style="margin: 8px 0; line-height: 1.4;">7. <strong>Clima</strong>: Afecta las condiciones de vuelo</p>
+    <div id="tutorial-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; backdrop-filter: blur(5px);">
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background: linear-gradient(145deg, #ffffff, #f8f9fa); padding:30px; border-radius:20px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 2px solid rgba(52, 152, 219, 0.2);">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <h2 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 24px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎓 Tutorial Interactivo</h2>
+                <h3 style="margin: 0; color: #3498db; font-size: 18px; font-weight: 500;">Principios de Sustentación</h3>
+                <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #3498db, #2980b9); margin: 15px auto; border-radius: 2px;"></div>
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <div style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(41, 128, 185, 0.1)); border: 1px solid rgba(52, 152, 219, 0.2); border-radius: 12px; padding: 20px; margin-bottom: 15px;">
+                    <h4 style="margin: 0 0 15px 0; color: #2980b9; font-size: 16px; display: flex; align-items: center;">
+                        <span style="font-size: 20px; margin-right: 10px;">✈️</span>
+                        Conceptos Fundamentales
+                    </h4>
+                    <div style="display: grid; gap: 12px;">
+                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #3498db;">
+                            <span style="font-size: 18px; margin-right: 12px; color: #e74c3c;">1️⃣</span>
+                            <div>
+                                <strong style="color: #2c3e50;">Ángulo de Ataque:</strong>
+                                <span style="color: #7f8c8d; font-size: 14px;"> Afecta la sustentación según Cl = 2π sin(α). Ángulos óptimos: 5-12°</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #e67e22;">
+                            <span style="font-size: 18px; margin-right: 12px; color: #e74c3c;">2️⃣</span>
+                            <div>
+                                <strong style="color: #2c3e50;">Velocidad del Viento:</strong>
+                                <span style="color: #7f8c8d; font-size: 14px;"> Mayor velocidad = mayor presión dinámica y sustentación</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #27ae60;">
+                            <span style="font-size: 18px; margin-right: 12px; color: #e74c3c;">3️⃣</span>
+                            <div>
+                                <strong style="color: #2c3e50;">Altitud:</strong>
+                                <span style="color: #7f8c8d; font-size: 14px;"> Aire menos denso reduce la sustentación</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #9b59b6;">
+                            <span style="font-size: 18px; margin-right: 12px; color: #e74c3c;">4️⃣</span>
+                            <div>
+                                <strong style="color: #2c3e50;">Masa del Avión:</strong>
+                                <span style="color: #7f8c8d; font-size: 14px;"> Peso que debe equilibrarse con la sustentación</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: linear-gradient(135deg, rgba(230, 126, 34, 0.1), rgba(211, 84, 0, 0.1)); border: 1px solid rgba(230, 126, 34, 0.2); border-radius: 12px; padding: 20px;">
+                    <h4 style="margin: 0 0 15px 0; color: #e67e22; font-size: 16px; display: flex; align-items: center;">
+                        <span style="font-size: 20px; margin-right: 10px;">⚠️</span>
+                        Fenómenos Críticos
+                    </h4>
+                    <div style="display: grid; gap: 12px;">
+                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #e74c3c;">
+                            <span style="font-size: 18px; margin-right: 12px;">🚨</span>
+                            <div>
+                                <strong style="color: #2c3e50;">Stall (Pérdida de Sustentación):</strong>
+                                <span style="color: #7f8c8d; font-size: 14px;"> Ocurre en ángulos >15°. La capa límite se separa del ala.</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #f39c12;">
+                            <span style="font-size: 18px; margin-right: 12px;">🌪️</span>
+                            <div>
+                                <strong style="color: #2c3e50;">Flujo Turbulento:</strong>
+                                <span style="color: #7f8c8d; font-size: 14px;"> Reduce la eficiencia aerodinámica</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #8e44ad;">
+                            <span style="font-size: 18px; margin-right: 12px;">🎯</span>
+                            <div>
+                                <strong style="color: #2c3e50;">Óptimo de Diseño:</strong>
+                                <span style="color: #7f8c8d; font-size: 14px;"> Cada modelo de avión tiene ángulos y velocidades ideales</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.1);">
+                <p style="margin: 0 0 20px 0; color: #7f8c8d; font-size: 14px; font-style: italic;">
+                    💡 Experimenta con los controles para ver estos principios en acción
+                </p>
+                <button id="close-tutorial" style="background: linear-gradient(145deg, #27ae60, #2ecc71); color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); transition: all 0.3s ease;">
+                    🚀 Comenzar a Experimentar
+                </button>
+            </div>
         </div>
-        <button id="close-tutorial" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Cerrar</button>
     </div>
 
     <script src="lift_interactive.js"></script>

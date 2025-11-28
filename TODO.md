@@ -86,4 +86,55 @@
 ## Mejoras Implementadas
 - [x] Flechas de fuerzas mejoradas con magnitudes variables, gradientes y valores numéricos
 - [x] Mejorada la visibilidad del texto "Peso" con alto contraste y efectos de sombra
+- [x] Mejorada la visibilidad de todas las etiquetas amarillas cambiando a naranja con contorno negro para mejor contraste
+- [x] **TUTORIAL REDISEÑADO**: Modal HTML moderno con diseño atractivo, iconos y mejor organización de información
+- [x] **MODO TUTORIAL MEJORADO**: Overlay paso a paso con diseño moderno, barra de progreso, indicadores visuales y contenido más detallado
+- [x] **TUTORIAL SIN INTERFERENCIAS**: Corregido problema donde flechas y elementos gráficos aparecían sobre el overlay del tutorial
+- [x] **TEXTO TUTORIAL CONTENIDO**: Implementado word wrapping para que el texto no se salga del recuadro del tutorial
+- [x] **TUTORIAL FUNCIONANDO**: Corregido problema donde el modo tutorial no funcionaba después de los cambios
+- [x] **BOTONES TUTORIAL FUNCIONANDO**: Corregido problema donde los botones "Anterior" y "Siguiente" no respondían a clics debido a coordenadas desactualizadas
+
+## Mejoras Visuales para Usuario Final
+
+### Estética del Ala y Aerodinámica
+- [x] **GRADIENTES METÁLICOS AVANZADOS**: Aplicar gradientes radiales y lineales más realistas en la superficie del ala para simular metal pulido
+- [x] **SOMBRAS DINÁMICAS 3D**: Mejorar el sistema de sombras con múltiples capas y blur variable según la intensidad de luz
+- [x] **TEXTURAS SUPERFICIALES**: Agregar sutiles texturas de rugosidad en la superficie del ala para mayor realismo
+- [x] **EFECTOS DE REFLEJO**: Implementar reflejos especulares que respondan al ángulo de la luz solar
+
+### Sistema de Partículas y Flujos
+- [x] **PARTÍCULAS ANIMADAS**: Agregar movimiento ondulatorio a las partículas de flujo para simular turbulencia real
+- [x] **COLORES DINÁMICOS**: Cambiar colores de partículas según velocidad (azul frío para lento, rojo cálido para rápido)
+- [x] **TRAILS DE CONDENSACIÓN**: Agregar estelas de vapor en áreas de baja presión para visualización educativa
+- [x] **EFECTOS DE VÓRTICE**: Mejorar visualización de vórtices con espirales animadas y colores diferenciados
+
+### Interfaz de Usuario y Controles
+- [ ] **SLIDERS CON ANIMACIÓN**: Agregar animaciones suaves cuando se mueven los sliders con preview en tiempo real
+- [ ] **TOOLTIPS INFORMATIVOS**: Mostrar información contextual al pasar el mouse sobre elementos (ángulos, fuerzas, etc.)
+- [ ] **INDICADORES VISUALES**: Agregar gauges circulares para mostrar valores críticos (lift/drag ratio, velocidad)
+- [ ] **MODO OSCURO/CLARO**: Permitir alternar entre temas visuales para mejor comodidad
+
+### Efectos Ambientales y Atmosféricos
+- [ ] **NUBES VOLUMÉTRICAS**: Implementar nubes 3D con movimiento realista y efectos de luz
+- [ ] **EFECTOS CLIMÁTICOS**: Agregar lluvia, nieve o tormenta con impacto visual en el ala
+- [ ] **CICLO DÍA/NOCHE**: Mejorar transición gradual con cambios de color en cielo, nubes y iluminación
+- [ ] **EFECTOS DE ALTITUD**: Cambiar densidad de atmósfera visualmente según altitud (cielo más oscuro, estrellas)
+
+### Animaciones y Transiciones
+- [ ] **SMOOTH TRANSITIONS**: Todas las animaciones deben tener easing functions para movimientos naturales
+- [ ] **MICRO-INTERACCIONES**: Feedback visual inmediato en botones, sliders y cambios de parámetros
+- [ ] **ANIMACIONES EDUCATIVAS**: Mostrar progresivamente cómo cambian las fuerzas al modificar parámetros
+- [ ] **EFECTOS DE IMPACTO**: Visual feedback cuando se alcanzan valores críticos (stall, máximo lift)
+
+### Accesibilidad y UX
+- [ ] **CONTRASTE MEJORADO**: Asegurar que todos los textos sean legibles en cualquier condición de luz
+- [ ] **FUENTES OPTIMIZADAS**: Usar fuentes sans-serif modernas y tamaños escalables
+- [ ] **REDUCCIÓN DE MOTION**: Opción para usuarios sensibles al movimiento (reducir animaciones)
+- [ ] **MODO ALTO CONTRASTE**: Para usuarios con dificultades visuales
+
+### Características Educativas Visuales
+- [x] **LEYENDAS INTERACTIVAS**: Mostrar/ocultar explicaciones de fenómenos aerodinámicos (rediseñadas horizontalmente)
+- [x] **DIAGRAMAS SUPERPUESTOS**: Capas opcionales con diagramas de presión, velocidad, fuerzas (mejorados y más sutiles)
+- [x] **ANIMACIONES PASO A PASO**: Modo tutorial que explica cada aspecto de la sustentación
+- [x] **COMPARACIONES VISUALES**: Mostrar side-by-side diferentes configuraciones aerodinámicas
 
