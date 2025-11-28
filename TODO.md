@@ -128,10 +128,11 @@
 - [ ] **EFECTOS DE IMPACTO**: Visual feedback cuando se alcanzan valores críticos (stall, máximo lift)
 
 ### Accesibilidad y UX
-- [ ] **CONTRASTE MEJORADO**: Asegurar que todos los textos sean legibles en cualquier condición de luz
-- [ ] **FUENTES OPTIMIZADAS**: Usar fuentes sans-serif modernas y tamaños escalables
-- [ ] **REDUCCIÓN DE MOTION**: Opción para usuarios sensibles al movimiento (reducir animaciones)
-- [ ] **MODO ALTO CONTRASTE**: Para usuarios con dificultades visuales
+- [x] **CONTRASTE MEJORADO**: Sistema de colores accesibles con función getAccessibleColor() que adapta colores según modo alto contraste
+- [x] **FUENTES OPTIMIZADAS**: Sistema de escalado de fuentes con getAccessibleFontSize() y control deslizante para ajustar tamaño (80%-200%)
+- [x] **REDUCCIÓN DE MOTION**: Opción para reducir movimiento con variable reducedMotion (preparado para futuras animaciones)
+- [x] **MODO ALTO CONTRASTE**: Checkbox para activar/desactivar modo alto contraste que convierte colores a blanco/negro
+- [x] **CONTROLES DE ACCESIBILIDAD**: Interfaz de usuario con checkboxes y slider para todas las opciones de accesibilidad
 
 ### Características Educativas Visuales
 - [x] **LEYENDAS INTERACTIVAS**: Mostrar/ocultar explicaciones de fenómenos aerodinámicos (rediseñadas horizontalmente)

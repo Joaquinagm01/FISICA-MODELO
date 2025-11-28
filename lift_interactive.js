@@ -60,6 +60,12 @@ let showPressureDiagram = false;
 let showVelocityDiagram = false;
 let showForceDiagram = false;
 
+// ===== CONFIGURACIONES DE ACCESIBILIDAD =====
+let highContrastMode = false;
+let reducedMotion = false;
+let accessibilityFontScale = 1.0; // Factor de escala para fuentes (1.0 = normal, 1.2 = 20% más grande, etc.)
+let minFontSize = 12; // Tamaño mínimo de fuente para legibilidad
+
 // Modo tutorial paso a paso
 let tutorialMode = false;
 let tutorialStep = 0;
@@ -97,6 +103,46 @@ let materialTextures = {};
 let fuselageTexture = null;
 let wingTexture = null;
 let engineTexture = null;
+
+// ===== FUNCIONES DE ACCESIBILIDAD =====
+
+// Función para obtener el tamaño de fuente escalado según accesibilidad
+function getAccessibleFontSize(baseSize) {
+  let scaledSize = baseSize * accessibilityFontScale;
+  return Math.max(scaledSize, minFontSize);
+}
+
+// Función para obtener colores con alto contraste
+function getAccessibleColor(r, g, b, a = 255) {
+  if (highContrastMode) {
+    // Convertir a blanco/negro de alto contraste
+    let brightness = (r + g + b) / 3;
+    if (brightness > 128) {
+      return [255, 255, 255, a]; // Blanco para colores claros
+    } else {
+      return [0, 0, 0, a]; // Negro para colores oscuros
+    }
+  }
+  return [r, g, b, a];
+}
+
+// Función para alternar modo de alto contraste
+function toggleHighContrastMode() {
+  highContrastMode = !highContrastMode;
+  console.log("Modo de alto contraste:", highContrastMode ? "Activado" : "Desactivado");
+}
+
+// Función para alternar reducción de movimiento
+function toggleReducedMotion() {
+  reducedMotion = !reducedMotion;
+  console.log("Reducción de movimiento:", reducedMotion ? "Activada" : "Desactivada");
+}
+
+// Función para ajustar escala de fuente
+function setFontScale(scale) {
+  accessibilityFontScale = Math.max(0.8, Math.min(2.0, scale)); // Limitar entre 0.8x y 2.0x
+  console.log("Escala de fuente:", accessibilityFontScale);
+}
 
 function preload() {
   // No sounds to load
@@ -211,6 +257,41 @@ function initializeDOMElements() {
   }
   if (comparisonModeBtn) {
     comparisonModeBtn.mousePressed(toggleComparisonMode);
+  }
+
+  // ===== CONTROLES DE ACCESIBILIDAD =====
+  // Get accessibility control elements
+  let highContrastCheckbox = document.getElementById('high-contrast');
+  let reducedMotionCheckbox = document.getElementById('reduced-motion');
+  let fontScaleSlider = document.getElementById('font-scale');
+  let fontScaleValue = document.getElementById('font-scale-value');
+
+  console.log('Accessibility elements found:', {
+    highContrastCheckbox: !!highContrastCheckbox,
+    reducedMotionCheckbox: !!reducedMotionCheckbox,
+    fontScaleSlider: !!fontScaleSlider,
+    fontScaleValue: !!fontScaleValue
+  });
+
+  // Accessibility control listeners
+  if (highContrastCheckbox) {
+    highContrastCheckbox.addEventListener('change', () => {
+      toggleHighContrastMode();
+    });
+  }
+  if (reducedMotionCheckbox) {
+    reducedMotionCheckbox.addEventListener('change', () => {
+      toggleReducedMotion();
+    });
+  }
+  if (fontScaleSlider) {
+    fontScaleSlider.addEventListener('input', () => {
+      let scale = parseFloat(fontScaleSlider.value);
+      setFontScale(scale);
+      if (fontScaleValue) {
+        fontScaleValue.textContent = Math.round(scale * 100) + '%';
+      }
+    });
   }
 
   // Initialize parameters after all DOM elements are set up
@@ -546,9 +627,10 @@ function draw() {
   // Don't draw airplane and flows until sliders are initialized
   if (!angleSlider || !windSlider || !altitudeSlider || !massSlider) {
     // Show loading message
-    textSize(24);
+    textSize(getAccessibleFontSize(24));
     textAlign(CENTER);
-    fill(255);
+    let [r, g, b, a] = getAccessibleColor(255, 255, 255, 255);
+    fill(r, g, b, a);
     text('Cargando simulación...', width / 2, height / 2);
     return;
   }
@@ -791,17 +873,20 @@ function draw() {
   }
 
   // Título
-  textSize(28);
+  textSize(getAccessibleFontSize(28));
   textAlign(CENTER);
-  fill(255);
-  stroke(0);
+  let [fillR, fillG, fillB, fillA] = getAccessibleColor(255, 255, 255, 255);
+  fill(fillR, fillG, fillB, fillA);
+  let [strokeR, strokeG, strokeB, strokeA] = getAccessibleColor(0, 0, 0, 255);
+  stroke(strokeR, strokeG, strokeB, strokeA);
   strokeWeight(2);
   text('Simulador Interactivo de Sustentación', width / 2, 50);
 
   // Etiqueta del slider
-  textSize(16);
+  textSize(getAccessibleFontSize(16));
   textAlign(LEFT);
-  fill(255);
+  let [sliderR, sliderG, sliderB, sliderA] = getAccessibleColor(255, 255, 255, 255);
+  fill(sliderR, sliderG, sliderB, sliderA);
   noStroke();
   text('Ángulo de Ataque: ' + angleSlider.value() + ' grados', 20, 15);
 
@@ -1188,7 +1273,7 @@ function draw() {
   // Número de serie del ala - más visible con efecto 3D
   // Sombra del texto
   fill(0, 0, 0, 100);
-  textSize(10);
+  textSize(getAccessibleFontSize(10));
   textAlign(CENTER);
   text('NACA 2412', 1, 46);
 
@@ -1202,7 +1287,7 @@ function draw() {
   fill(255, 165, 0);
   stroke(0);
   strokeWeight(2);
-  textSize(8);
+  textSize(getAccessibleFontSize(8));
   text('Borde de Ataque', leadingEdgeX - 20, leadingEdgeY - 15);
 
   // Indicador de dirección de vuelo
@@ -1271,15 +1356,15 @@ function draw() {
   // Texto HUD
   fill(0, 255, 0, 220);
   textAlign(CENTER);
-  textSize(8);
+  textSize(getAccessibleFontSize(8));
   text(Math.round(windSpeed) + ' m/s', 40, -25);
   text(Math.round(altitude) + ' m', -40, -25);
   text(Math.round(liftMagnitude) + ' N', 40, 35);
 
   pop();
 
-  // Update and draw aerodynamic flow particles (solo cuando no está en modo tutorial)
-  if (!tutorialMode) {
+  // Update and draw aerodynamic flow particles (solo cuando no está en modo tutorial y no reducedMotion)
+  if (!tutorialMode && !reducedMotion) {
     updateFlowParticles();
     updateVortices();
     drawFlowParticles();
@@ -1685,28 +1770,32 @@ function draw() {
 
   // Flecha de Sustentación (azul, oscilante y dinámica) - emerge del borde de ataque
   let liftLength = liftMagnitude / 5;
-  let oscillation = sin(frameCount * 0.1) * 5; // Oscilación ligera
+  let oscillation = reducedMotion ? 0 : sin(frameCount * 0.1) * 5; // Oscilación ligera, reducida si reducedMotion
   let leadingEdgeWorldX = width / 2 - 180 * 1.4; // Posición del borde de ataque en coordenadas del mundo
   let leadingEdgeWorldY = height / 2; // Centro vertical
 
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY + oscillation,
            leadingEdgeWorldX, leadingEdgeWorldY - liftLength + oscillation, 'blue', 6);
-  fill(0, 100, 255);
-  textSize(16);
+  let [liftR, liftG, liftB, liftA] = getAccessibleColor(0, 100, 255, 255);
+  fill(liftR, liftG, liftB, liftA);
+  textSize(getAccessibleFontSize(16));
   text('Sustentación', leadingEdgeWorldX + 20, leadingEdgeWorldY - liftLength / 2 + oscillation);
 
   // Flecha de Peso (rojo, emerge del borde de ataque hacia abajo)
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY,
            leadingEdgeWorldX, leadingEdgeWorldY + 80, 'red', 6);
-  fill(255, 0, 0);
+  let [weightR, weightG, weightB, weightA] = getAccessibleColor(255, 0, 0, 255);
+  fill(weightR, weightG, weightB, weightA);
   text('Peso', leadingEdgeWorldX + 20, leadingEdgeWorldY + 90);
 
   // Etiquetas de flujo
   textAlign(LEFT);
-  fill(173, 216, 230);
-  textSize(14);
+  let [fastAirR, fastAirG, fastAirB, fastAirA] = getAccessibleColor(173, 216, 230, 255);
+  fill(fastAirR, fastAirG, fastAirB, fastAirA);
+  textSize(getAccessibleFontSize(14));
   text('Aire Rápido (Baja P)', 50, height / 2 - 80);
-  fill(255, 160, 122);
+  let [slowAirR, slowAirG, slowAirB, slowAirA] = getAccessibleColor(255, 160, 122, 255);
+  fill(slowAirR, slowAirG, slowAirB, slowAirA);
   text('Aire Lento (Alta P)', 50, height / 2 + 100);
 
 
@@ -2571,9 +2660,15 @@ function drawEducationalLegends() {
   if (!showEducationalLegends) return;
 
   textAlign(CENTER);
-  textSize(12);
-  fill(255, 255, 255, 220);
-  stroke(0, 0, 0, 150);
+  let mainFontSize = getAccessibleFontSize(12);
+  let smallFontSize = getAccessibleFontSize(10);
+  textSize(mainFontSize);
+  
+  // Aplicar colores accesibles
+  let [textR, textG, textB, textA] = getAccessibleColor(255, 255, 255, 220);
+  fill(textR, textG, textB, textA);
+  let [strokeR, strokeG, strokeB, strokeA] = getAccessibleColor(0, 0, 0, 150);
+  stroke(strokeR, strokeG, strokeB, strokeA);
   strokeWeight(1);
 
   // Distribuir leyendas horizontalmente en la parte inferior
@@ -2598,7 +2693,7 @@ function drawEducationalLegends() {
   fill(255, 255, 255, 255);
   noStroke();
   text("SUSTENTACIÓN", legend1X, legendY - 5);
-  textSize(10);
+  textSize(smallFontSize);
   text("Fuerza ↑", legend1X, legendY + 8);
 
   // ===== LEYENDA 2: ARRASTRE =====
@@ -2618,9 +2713,9 @@ function drawEducationalLegends() {
   // Texto
   fill(255, 255, 255, 255);
   noStroke();
-  textSize(12);
+  textSize(mainFontSize);
   text("ARRASTRE", legend2X, legendY - 5);
-  textSize(10);
+  textSize(smallFontSize);
   text("Resistencia →", legend2X, legendY + 8);
 
   // ===== LEYENDA 3: PARTÍCULAS =====
@@ -2641,9 +2736,9 @@ function drawEducationalLegends() {
 
   // Texto
   fill(255, 255, 255, 255);
-  textSize(12);
+  textSize(mainFontSize);
   text("PARTÍCULAS", legend3X, legendY - 5);
-  textSize(10);
+  textSize(smallFontSize);
   text("Azul: superior | Rojo: inferior", legend3X, legendY + 8);
 
   // ===== LEYENDA 4: PRESIÓN =====
@@ -2664,9 +2759,9 @@ function drawEducationalLegends() {
   // Texto
   fill(255, 255, 255, 255);
   noStroke();
-  textSize(12);
+  textSize(mainFontSize);
   text("PRESIÓN", legend4X, legendY - 5);
-  textSize(10);
+  textSize(smallFontSize);
   text("Baja ↑ | Alta ↓", legend4X, legendY + 8);
 }
 
@@ -2677,7 +2772,7 @@ function drawActiveDiagramIndicators() {
   let indicatorSpacing = 25;
 
   textAlign(LEFT);
-  textSize(10);
+  textSize(getAccessibleFontSize(10));
 
   if (showPressureDiagram) {
     fill(255, 0, 0, 200);
@@ -2741,7 +2836,7 @@ function drawPressureDiagram() {
   // Etiquetas más pequeñas y mejor posicionadas
   fill(255, 255, 255, 200);
   textAlign(CENTER);
-  textSize(10);
+  textSize(getAccessibleFontSize(10));
   text("BAJA PRESIÓN", 0, -80);
   text("ALTA PRESIÓN", 0, 80);
   pop();
@@ -2786,7 +2881,7 @@ function drawVelocityDiagram() {
   stroke(0);
   strokeWeight(2);
   textAlign(CENTER);
-  textSize(10);
+  textSize(getAccessibleFontSize(10));
   text("VELOCIDAD DEL AIRE", 0, -110);
   pop();
 }
@@ -2830,7 +2925,7 @@ function drawForceDiagram() {
   // Etiquetas más pequeñas
   fill(255, 255, 255, 200);
   textAlign(CENTER);
-  textSize(10);
+  textSize(getAccessibleFontSize(10));
   text("SUSTENTACIÓN", 0, -liftForce - 15);
   text("ARRASTRE", dragForce + 25, 0);
   text("PESO", 0, weightForce + 20);
@@ -2880,15 +2975,17 @@ function drawTutorialOverlay() {
   rect(boxX + 20, boxY + boxHeight - 25, progressWidth, 6, 3);
 
   // Indicador de paso
-  fill(52, 152, 219, 255);
+  let [stepColorR, stepColorG, stepColorB, stepColorA] = getAccessibleColor(52, 152, 219, 255);
+  fill(stepColorR, stepColorG, stepColorB, stepColorA);
   textAlign(CENTER);
-  textSize(12);
+  textSize(getAccessibleFontSize(12));
   text(`Paso ${tutorialStep + 1} de ${tutorialSteps.length}`, width/2, boxY + boxHeight - 35);
 
   // Título
-  fill(44, 62, 80, 255);
+  let [titleColorR, titleColorG, titleColorB, titleColorA] = getAccessibleColor(44, 62, 80, 255);
+  fill(titleColorR, titleColorG, titleColorB, titleColorA);
   textAlign(CENTER);
-  textSize(20);
+  textSize(getAccessibleFontSize(20));
   text("Tutorial Interactivo", width/2, boxY + 40);
 
   // Línea decorativa
@@ -2936,8 +3033,9 @@ function drawTutorialOverlay() {
 
     if (isTitle) {
       // Título con emoji - dividir en líneas si es necesario
-      fill(52, 152, 219, 255);
-      textSize(18);
+      let [titleTextR, titleTextG, titleTextB, titleTextA] = getAccessibleColor(52, 152, 219, 255);
+      fill(titleTextR, titleTextG, titleTextB, titleTextA);
+      textSize(getAccessibleFontSize(18));
       let wrappedLines = wrapText(lines[i], maxTextWidth);
       for (let wrappedLine of wrappedLines) {
         text(wrappedLine, width/2, contentY);
@@ -2945,8 +3043,9 @@ function drawTutorialOverlay() {
       }
     } else {
       // Texto normal - dividir en líneas si es necesario
-      fill(52, 73, 94, 255);
-      textSize(14);
+      let [normalTextR, normalTextG, normalTextB, normalTextA] = getAccessibleColor(52, 73, 94, 255);
+      fill(normalTextR, normalTextG, normalTextB, normalTextA);
+      textSize(getAccessibleFontSize(14));
       let wrappedLines = wrapText(lines[i], maxTextWidth);
       for (let wrappedLine of wrappedLines) {
         text(wrappedLine, width/2, contentY);
@@ -2976,7 +3075,7 @@ function drawTutorialOverlay() {
     // Texto del botón
     fill(255, 255, 255, 255);
     textAlign(CENTER);
-    textSize(14);
+    textSize(getAccessibleFontSize(14));
     text("⬅️ Anterior", boxX + 30 + buttonWidth/2, buttonY + buttonHeight/2 + 5);
   }
 
@@ -2997,7 +3096,7 @@ function drawTutorialOverlay() {
 
     fill(255, 255, 255, 255);
     textAlign(CENTER);
-    textSize(14);
+    textSize(getAccessibleFontSize(14));
     text("Siguiente ➡️", rightButtonX + buttonWidth/2, buttonY + buttonHeight/2 + 5);
   } else {
     fill(255, 100, 100, 220);
@@ -3007,7 +3106,7 @@ function drawTutorialOverlay() {
 
     fill(255, 255, 255, 255);
     textAlign(CENTER);
-    textSize(14);
+    textSize(getAccessibleFontSize(14));
     text("🎉 Finalizar", rightButtonX + buttonWidth/2, buttonY + buttonHeight/2 + 5);
   }
 
