@@ -14,6 +14,7 @@ let currentWeather = 'clear'; // Current weather condition
 let rainDrops = []; // Array of raindrop objects
 let snowFlakes = []; // Array of snowflake objects
 let lightningFlash = 0; // Lightning flash intensity
+let lightningTimer = 0; // Lightning flash timer
 let flowParticles = []; // Array of flow particles following aerodynamic paths
 
 // Bloom effect variables
@@ -48,32 +49,11 @@ let weatherApiKey = 'YOUR_OPENWEATHERMAP_API_KEY'; // Replace with actual API ke
 let currentCity = 'Buenos Aires,AR'; // Default location
 let weatherUpdateInterval = 600000; // 10 minutes in milliseconds
 
-// Airplane images API variables
-let airplaneImages = {};
-let aviationApiKey = 'YOUR_AVIATION_STACK_API_KEY'; // Replace with actual API key
-
 // Material textures variables
 let materialTextures = {};
 let fuselageTexture = null;
 let wingTexture = null;
 let engineTexture = null;
-
-// Airplane model data - Fixed single model for testing
-let currentAirplaneModel = {
-  name: 'Boeing 737-800',
-  airline: 'Aerolineas Argentinas',
-  registration: 'LV-ABC',
-  colors: { fuselage: [255, 255, 255], accent: [0, 57, 166], stripe: [220, 20, 60], wings: [80, 80, 90] },
-  scale: 1.0,
-  wingspan: 35.8,
-  length: 39.5,
-  maxWeight: 79000
-};
-
-function changeAirplaneModel(modelIndex) {
-  // Function disabled - using fixed airplane model for testing
-  console.log('Airplane model switching disabled for testing');
-}
 
 function preload() {
   // No sounds to load
@@ -88,8 +68,6 @@ function setup() {
   createCanvas(canvasWidth, canvasHeight);
   smooth(); // Enable anti-aliasing for smoother edges
   console.log('Canvas created with size:', canvasWidth, canvasHeight);
-
-  // Airplane model is already initialized above
 
   // Initialize DOM elements immediately
   initializeDOMElements();
@@ -114,12 +92,6 @@ function initializeDOMElements() {
   altitudeSlider = select('#altitude-slider');
   massSlider = select('#mass-slider');
 
-  // Get graphics sliders
-  bloomSlider = select('#bloom-slider');
-  dofSlider = select('#dof-slider');
-  motionBlurSlider = select('#motion-blur-slider');
-  lodSlider = select('#lod-slider');
-
   // Get buttons
   let resetBtn = select('#reset-btn');
   let tutorialBtn = select('#tutorial-btn');
@@ -127,6 +99,8 @@ function initializeDOMElements() {
   let closeTutorialBtn = select('#close-tutorial');
   let saveBtn = select('#save-btn');
   let loadBtn = select('#load-btn');
+  let togglePanelBtn = select('#toggle-panel-btn');
+  let showPanelBtn = select('#show-panel-btn');
 
   // Weather buttons
   let clearBtn = select('#weather-clear');
@@ -143,24 +117,6 @@ function initializeDOMElements() {
   if (altitudeSlider) altitudeSlider.input(updateParameters);
   if (massSlider) massSlider.input(updateParameters);
 
-  // Graphics sliders
-  if (bloomSlider) {
-    bloomSlider.input(updateGraphicsQuality);
-    bloomSlider.value(bloomIntensity * 100);
-  }
-  if (dofSlider) {
-    dofSlider.input(updateGraphicsQuality);
-    dofSlider.value(dofStrength * 100);
-  }
-  if (motionBlurSlider) {
-    motionBlurSlider.input(updateGraphicsQuality);
-    motionBlurSlider.value(motionBlurStrength * 100);
-  }
-  if (lodSlider) {
-    lodSlider.input(updateGraphicsQuality);
-    lodSlider.value(lodDistanceThreshold);
-  }
-
   // Button listeners
   if (resetBtn) resetBtn.mousePressed(resetSimulation);
   if (tutorialBtn) tutorialBtn.mousePressed(showTutorial);
@@ -168,6 +124,8 @@ function initializeDOMElements() {
   if (closeTutorialBtn) closeTutorialBtn.mousePressed(hideTutorial);
   if (saveBtn) saveBtn.mousePressed(saveConfiguration);
   if (loadBtn) loadBtn.mousePressed(loadConfiguration);
+  if (togglePanelBtn) togglePanelBtn.mousePressed(togglePanel);
+  if (showPanelBtn) showPanelBtn.mousePressed(togglePanel);
 
   // Weather buttons
   if (clearBtn) clearBtn.mousePressed(() => setWeather('clear'));
@@ -396,77 +354,6 @@ function updateWeatherUI() {
   // Weather UI removed
 }
 
-function updateGraphicsQuality() {
-  if (bloomSlider) {
-    bloomIntensity = bloomSlider.value() / 100;
-    select('#bloom-value').html(Math.round(bloomSlider.value()) + '%');
-  }
-  
-  if (dofSlider) {
-    dofStrength = dofSlider.value() / 100;
-    select('#dof-value').html(Math.round(dofSlider.value()) + '%');
-  }
-  
-  if (motionBlurSlider) {
-    motionBlurStrength = motionBlurSlider.value() / 100;
-    select('#motion-blur-value').html(Math.round(motionBlurSlider.value()) + '%');
-  }
-  
-  if (lodSlider) {
-    lodDistanceThreshold = lodSlider.value();
-    select('#lod-value').html(lodSlider.value() + 'px');
-  }
-  
-  console.log('Graphics quality updated:', {
-    bloom: bloomIntensity,
-    dof: dofStrength,
-    motionBlur: motionBlurStrength,
-    lod: lodDistanceThreshold
-  });
-}
-
-async function fetchAirplaneImageFromAPI(modelName) {
-  try {
-    console.log(`Fetching image for ${modelName}...`);
-    
-    // For demo purposes, using public aviation images
-    // In production, you would use an aviation API like Aviation Stack
-    const imageUrls = {
-      'Boeing 737-800': 'https://images.unsplash.com/photo-1556388158-158ea5cc549b?w=400',
-    };
-    
-    const imageUrl = imageUrls[modelName] || 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=400';
-    
-    // Load image using p5.js
-    const img = loadImage(imageUrl, 
-      () => {
-        console.log(`Image loaded for ${modelName}`);
-        airplaneImages[modelName] = img;
-        // Image loaded successfully
-      },
-      () => {
-        console.error(`Failed to load image for ${modelName}`);
-        // Fallback to default
-        airplaneImages[modelName] = null;
-      }
-    );
-    
-    return true;
-  } catch (error) {
-    console.error('Failed to fetch airplane image:', error);
-    return false;
-  }
-}
-
-function updateAirplaneDisplay() {
-  // Always update the airplane info
-  select('#airplane-info').html(`
-    ${currentAirplaneModel.airline} - ${currentAirplaneModel.name}<br>
-    Matrícula: ${currentAirplaneModel.registration}<br>
-    Envergadura: ${currentAirplaneModel.wingspan}m | Longitud: ${currentAirplaneModel.length}m
-  `);
-}
-
 async function loadMaterialTextures() {
   try {
     console.log('Loading material textures...');
@@ -527,14 +414,6 @@ async function loadMaterialTextures() {
   }
 }
 
-function applyTextureToAirplane() {
-  if (fuselageTexture && wingTexture && engineTexture) {
-    // In WebGL mode, you would apply these textures to 3D models
-    // For now, we'll use them as background patterns in 2D mode
-    console.log('Textures loaded and ready for application');
-  }
-}
-
 function draw() {
   console.log('Draw called');
   clear(); // Clear for P2D
@@ -556,19 +435,25 @@ function draw() {
   translate(-width/2, -height/2);
   translate(cameraShake, cameraPitch);
 
-  // Background con gradiente de cielo realista
+  // Background con gradiente de cielo optimizado
   if (bgImage) {
     image(bgImage, 0, 0, width, height);
   } else {
-    // Gradiente de cielo (azul claro arriba → azul más oscuro abajo)
-    for (let y = 0; y < height; y++) {
+    // Gradiente de cielo simple y eficiente
+    let topColor = color(135, 206, 250);
+    let bottomColor = color(100, 180, 220);
+
+    // Dibujar gradiente de manera eficiente
+    for (let y = 0; y < height; y += 3) { // Dibujar cada 3 píxeles para mejor rendimiento
       let inter = map(y, 0, height, 0, 1);
-      let c = lerpColor(color(135, 206, 250), color(100, 180, 220), inter);
+      let c = lerpColor(topColor, bottomColor, inter);
       stroke(c);
       line(0, y, width, y);
+      line(0, y + 1, width, y + 1);
+      line(0, y + 2, width, y + 2);
     }
 
-    // Horizonte sutil
+    // Horizonte simple
     stroke(100, 150, 200, 100);
     strokeWeight(1);
     line(0, height * 0.7, width, height * 0.7);
@@ -584,8 +469,9 @@ function draw() {
     return;
   }
 
-  // Nubes volumétricas con profundidad, sombreado y animación
+  // Nubes volumétricas con profundidad
   let cloudOffset = frameCount * 0.02; // Movimiento lento de nubes
+  let cloudScale = 1.0; // Escala fija para evitar problemas
 
   // Nube 1 (más cercana, más detallada) - movimiento lento
   let lod1 = getLODLevel(abs(180 - width/2));
@@ -651,43 +537,173 @@ function draw() {
   fill(230, 230, 235, 75);
   ellipse(490 + sin(cloudOffset * 0.3) * 2, 165, 90, 40);
 
-  // Apply depth of field effect to background elements
-  applyDepthOfField();
+  // ===== TERRENO DETALLADO CON CAPAS =====
 
-  // Horizonte visible con tierra/montañas sutiles
-  fill(100, 150, 100, 150); // Verde tierra
+  // Montañas distantes (fondo) - tonos azules
+  fill(100, 120, 140, 120);
   noStroke();
   beginShape();
   vertex(0, height);
+  vertex(0, height * 0.8);
+  for (let x = 0; x <= width; x += 30) {
+    let y = height * 0.8 + sin(x * 0.005 + cloudOffset * 0.05) * 15;
+    vertex(x, y);
+  }
+  vertex(width, height * 0.8);
+  vertex(width, height);
+  endShape(CLOSE);
+
+  // Montañas medias - tonos verdes/azules
+  fill(80, 110, 90, 140);
+  beginShape();
+  vertex(0, height);
   vertex(0, height * 0.75);
-  // Montañas onduladas
-  for (let x = 0; x <= width; x += 20) {
-    let y = height * 0.75 + sin(x * 0.01 + cloudOffset * 0.1) * 10;
+  for (let x = 0; x <= width; x += 25) {
+    let y = height * 0.75 + sin(x * 0.008 + cloudOffset * 0.08) * 20;
     vertex(x, y);
   }
   vertex(width, height * 0.75);
   vertex(width, height);
   endShape(CLOSE);
 
-  // Efectos atmosféricos: Niebla y partículas en la distancia
-  // Niebla gradiente en el horizonte
-  for (let y = height * 0.6; y < height * 0.8; y++) {
-    let alpha = map(y, height * 0.6, height * 0.8, 0, 60);
-    let fogColor = color(200, 220, 230, alpha);
-    stroke(fogColor);
-    strokeWeight(1);
-    line(0, y, width, y);
+  // Montañas del frente - más detalladas
+  fill(60, 90, 70, 160);
+  beginShape();
+  vertex(0, height);
+  vertex(0, height * 0.7);
+  for (let x = 0; x <= width; x += 20) {
+    let y = height * 0.7 + sin(x * 0.01 + cloudOffset * 0.1) * 25;
+    vertex(x, y);
+  }
+  vertex(width, height * 0.7);
+  vertex(width, height);
+  endShape(CLOSE);
+
+  // Valle/llanura principal
+  fill(100, 150, 100, 180);
+  beginShape();
+  vertex(0, height);
+  vertex(0, height * 0.65);
+  for (let x = 0; x <= width; x += 15) {
+    let y = height * 0.65 + sin(x * 0.015 + cloudOffset * 0.12) * 8;
+    vertex(x, y);
+  }
+  vertex(width, height * 0.65);
+  vertex(width, height);
+  endShape(CLOSE);
+
+  // ===== RÍOS Y CUERPOS DE AGUA =====
+  // Río principal serpenteante
+  stroke(30, 80, 150, 120);
+  strokeWeight(3);
+  noFill();
+  beginShape();
+  for (let x = 0; x <= width; x += 10) {
+    let baseY = height * 0.75;
+    let y = baseY + sin(x * 0.02 + cloudOffset * 0.15) * 5;
+    if (x === 0) {
+      vertex(x, y);
+    } else {
+      vertex(x, y);
+    }
+  }
+  endShape();
+
+  // Lago pequeño en el valle
+  fill(40, 90, 160, 100);
+  noStroke();
+  ellipse(width * 0.3, height * 0.78, 80, 30);
+  // Reflejo del sol en el lago
+  fill(200, 220, 255, 150);
+  ellipse(width * 0.3, height * 0.78, 20, 8);
+
+  // ===== VEGETACIÓN =====
+  // Árboles en las laderas
+  for (let i = 0; i < 15; i++) {
+    let treeX = (i * 80 + frameCount * 0.1) % (width + 100) - 50;
+    let treeY = height * 0.72 + sin(treeX * 0.02) * 10;
+
+    // Tronco
+    stroke(60, 40, 20, 150);
+    strokeWeight(2);
+    line(treeX, treeY, treeX, treeY - 15);
+
+    // Copa del árbol
+    fill(30, 80, 40, 120);
+    noStroke();
+    ellipse(treeX, treeY - 18, 12, 20);
   }
 
-  // Partículas flotantes en la distancia (simulando polvo o humedad)
-  for (let i = 0; i < 50; i++) {
-    let x = (frameCount * 0.5 + i * 23) % (width + 100) - 50;
-    let y = height * 0.65 + sin(frameCount * 0.01 + i) * 20 + random(-5, 5);
-    let size = random(1, 3);
-    let alpha = map(y, height * 0.6, height * 0.8, 20, 80);
-    fill(255, 255, 255, alpha);
+  // Arbustos y hierba
+  for (let i = 0; i < 30; i++) {
+    let bushX = (i * 40 + frameCount * 0.05) % (width + 50) - 25;
+    let bushY = height * 0.68 + random(-5, 5);
+
+    fill(40, 70, 30, 80);
+    noStroke();
+    ellipse(bushX, bushY, 8, 6);
+  }
+
+  // ===== EFECTOS ATMOSFÉRICOS MEJORADOS =====
+
+  // Niebla estratificada con diferentes densidades
+  for (let layer = 0; layer < 3; layer++) {
+    let layerY = height * (0.6 + layer * 0.05);
+    let layerAlpha = map(layer, 0, 2, 20, 60);
+
+    for (let y = layerY; y < layerY + 20; y += 2) {
+      let alpha = map(y, layerY, layerY + 20, 0, layerAlpha);
+      let fogColor = color(
+        200 + layer * 10,
+        220 + layer * 5,
+        230 + layer * 5,
+        alpha
+      );
+      stroke(fogColor);
+      strokeWeight(1);
+      line(0, y, width, y);
+    }
+  }
+
+  // Partículas atmosféricas mejoradas (polvo, humedad, insectos)
+  for (let i = 0; i < 80; i++) {
+    let x = (frameCount * (0.3 + i * 0.01) + i * 17) % (width + 100) - 50;
+    let y = height * (0.65 + sin(frameCount * 0.005 + i * 0.1) * 0.05) + random(-10, 10);
+    let size = random(0.5, 2.5);
+    let alpha = map(y, height * 0.6, height * 0.8, 15, 90);
+
+    // Diferentes tipos de partículas
+    if (i % 4 === 0) {
+      // Polvo fino
+      fill(240, 230, 200, alpha);
+    } else if (i % 4 === 1) {
+      // Humedad
+      fill(255, 255, 255, alpha);
+    } else if (i % 4 === 2) {
+      // Insectos pequeños
+      fill(150, 150, 150, alpha * 0.7);
+      size *= 0.5;
+    } else {
+      // Partículas de luz
+      fill(255, 250, 200, alpha * 0.8);
+      size *= 0.3;
+    }
+
     noStroke();
     ellipse(x, y, size, size);
+  }
+
+  // Efectos de luz solar filtrándose a través de las nubes
+  if (sunAngle > 0) { // Solo durante el día
+    let sunRayCount = 8;
+    for (let i = 0; i < sunRayCount; i++) {
+      let rayX = width * 0.1 + (width * 0.8 / sunRayCount) * i;
+      let rayAlpha = sin(timeOfDay + i) * 30 + 10;
+
+      stroke(255, 255, 200, rayAlpha);
+      strokeWeight(2);
+      line(rayX, height * 0.4, rayX + 10, height * 0.8);
+    }
   }
 
   // Título
@@ -715,28 +731,54 @@ function draw() {
   scale(1.4); // Hacer el ala más grande para mejor visibilidad
   rotate(angleAttack * 0.3); // Rotación sutil
 
-  // Variables para efectos visuales mejorados
-  let lightDirection = createVector(0.5, -0.8, 0.3).normalize(); // Dirección de la luz
+  // Variables para efectos visuales mejorados con iluminación dinámica
+  let timeOfDay = (frameCount * 0.01) % (2 * PI); // Ciclo de día completo
+  let sunAngle = sin(timeOfDay) * PI/3; // Ángulo del sol (-60° a +60°)
+
+  // Dirección de la luz basada en el sol y ángulo de ataque
+  let lightDirection = createVector(
+    cos(sunAngle) * 0.7,
+    sin(sunAngle) * 0.8 - 0.2,
+    0.4 + sin(angleAttack * 0.1) * 0.2
+  ).normalize();
+
   let wingNormal = createVector(0, 0, 1); // Normal del ala (hacia arriba)
 
   // Calcular intensidad de luz para efectos 3D
   let lightIntensity = max(0, lightDirection.dot(wingNormal));
+  let ambientLight = 0.3; // Luz ambiental base
+  let totalLight = ambientLight + lightIntensity * 0.7;
 
-  // ===== TEXTURA METÁLICA CON GRADIENTES =====
-  // Base metálica con gradiente
-  for (let layer = 0; layer < 3; layer++) {
-    let alpha = map(layer, 0, 2, 255, 180);
+  // Color del sol basado en la hora del día
+  let sunColor = color(
+    map(sin(timeOfDay), -1, 1, 255, 255), // Rojo constante
+    map(sin(timeOfDay), -1, 1, 150, 255), // Verde varía
+    map(sin(timeOfDay), -1, 1, 100, 255)  // Azul varía (más azul al amanecer/atardecer)
+  );
+
+  // ===== TEXTURA METÁLICA CON ILUMINACIÓN DINÁMICA =====
+  // Base metálica con gradiente afectado por la iluminación
+  for (let layer = 0; layer < 4; layer++) {
+    let layerLight = totalLight + layer * 0.1;
+    let alpha = map(layer, 0, 3, 255, 150) * layerLight;
+
+    // Color base metálico afectado por la luz del sol
+    let baseR = map(layer, 0, 3, 60, 140) * layerLight;
+    let baseG = map(layer, 0, 3, 65, 150) * layerLight;
+    let baseB = map(layer, 0, 3, 75, 160) * layerLight;
+
+    // Aplicar tinte del sol
     let metallicColor = color(
-      map(layer, 0, 2, 80, 120),  // Más claro en capas superiores
-      map(layer, 0, 2, 85, 125),
-      map(layer, 0, 2, 95, 135)
+      constrain(baseR + red(sunColor) * 0.1, 0, 255),
+      constrain(baseG + green(sunColor) * 0.1, 0, 255),
+      constrain(baseB + blue(sunColor) * 0.1, 0, 255)
     );
 
     fill(red(metallicColor), green(metallicColor), blue(metallicColor), alpha);
-    stroke(red(metallicColor) * 0.8, green(metallicColor) * 0.8, blue(metallicColor) * 0.8, alpha * 0.8);
+    stroke(red(metallicColor) * 0.7, green(metallicColor) * 0.7, blue(metallicColor) * 0.7, alpha * 0.7);
     strokeWeight(1);
 
-    // Dibujar perfil con gradiente metálico
+    // Dibujar perfil con gradiente metálico mejorado
     beginShape();
     vertex(leadingEdgeX, leadingEdgeY);
     bezierVertex(-120 + layer * 2, -25 + layer, -60 + layer, -45 + layer, 0, -55 + layer);
@@ -748,32 +790,47 @@ function draw() {
     endShape(CLOSE);
   }
 
-  // ===== BRILLOS METÁLICOS =====
-  // Brillos especulares en la superficie
-  stroke(255, 255, 255, 150);
-  strokeWeight(1);
-  noFill();
+  // ===== BRILLOS ESPECULARES DINÁMICOS =====
+  // Brillos especulares que cambian con la iluminación
+  let specularIntensity = pow(max(0, lightDirection.dot(wingNormal)), 8) * 0.8;
 
-  // Brillo principal (highlight)
-  beginShape();
-  vertex(leadingEdgeX + 10, leadingEdgeY - 5);
-  bezierVertex(-80, -15, -20, -25, 20, -30);
-  bezierVertex(80, -30, 140, -20, 170, -10);
-  endShape();
+  if (specularIntensity > 0.1) {
+    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 255);
+    strokeWeight(2);
 
-  // Brillos secundarios
-  stroke(255, 255, 255, 80);
-  beginShape();
-  vertex(leadingEdgeX + 20, leadingEdgeY - 2);
-  bezierVertex(-60, -8, 0, -12, 40, -15);
-  bezierVertex(100, -15, 150, -8, 180, -3);
-  endShape();
+    // Brillo principal (highlight) - más intenso con buena iluminación
+    beginShape();
+    vertex(leadingEdgeX + 10, leadingEdgeY - 5);
+    bezierVertex(-80, -15, -20, -25, 20, -30);
+    bezierVertex(80, -30, 140, -20, 170, -10);
+    endShape();
 
-  // ===== SOMBRAS 3D =====
-  // Sombras volumétricas basadas en dirección de luz
+    // Brillos secundarios con intensidad variable
+    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 150);
+    beginShape();
+    vertex(leadingEdgeX + 20, leadingEdgeY - 2);
+    bezierVertex(-60, -8, 0, -12, 40, -15);
+    bezierVertex(100, -15, 150, -8, 180, -3);
+    endShape();
+
+    // Brillo de borde de ataque
+    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 100);
+    strokeWeight(1);
+    beginShape();
+    vertex(leadingEdgeX, leadingEdgeY - 3);
+    bezierVertex(leadingEdgeX + 30, leadingEdgeY - 8, leadingEdgeX + 60, leadingEdgeY - 6, leadingEdgeX + 90, leadingEdgeY - 4);
+    endShape();
+  }
+
+  // ===== SOMBRAS 3D DINÁMICAS =====
+  // Sombras volumétricas basadas en dirección de luz y hora del día
   push();
-  translate(3, 3); // Offset para sombra
-  fill(0, 0, 0, 40 * (1 - lightIntensity));
+  let shadowOffsetX = lightDirection.x * 8;
+  let shadowOffsetY = lightDirection.y * 8;
+  translate(shadowOffsetX, shadowOffsetY);
+
+  let shadowAlpha = (1 - totalLight) * 80 + 20; // Más oscura cuando menos luz
+  fill(0, 0, 0, shadowAlpha);
   noStroke();
 
   // Sombra del perfil principal
@@ -1494,6 +1551,24 @@ function hideTutorial() {
   select('#tutorial-modal').style('display', 'none');
 }
 
+function togglePanel() {
+  document.body.classList.toggle('panel-hidden');
+  // Update button text
+  let isHidden = document.body.classList.contains('panel-hidden');
+  if (togglePanelBtn) {
+    togglePanelBtn.html(isHidden ? 'Mostrar' : 'Ocultar');
+  }
+  // Resize canvas after toggling panel
+  setTimeout(resizeCanvasForPanel, 300); // Wait for CSS transition to complete
+}
+
+function resizeCanvasForPanel() {
+  let panelHidden = document.body.classList.contains('panel-hidden');
+  let canvasWidth = panelHidden ? min(1400, windowWidth - 20) : min(1000, windowWidth - 320);
+  let canvasHeight = panelHidden ? min(1000, windowHeight - 20) : min(700, windowHeight - 20);
+  resizeCanvas(canvasWidth, canvasHeight);
+}
+
 function exportData() {
   let data = {
     angle: angleSlider.value(),
@@ -1903,112 +1978,193 @@ function setWeather(weather) {
 
 function updateWeather() {
   if (currentWeather === 'rain') {
-    // Add new raindrops
-    if (frameCount % 3 === 0) {
+    // ===== LLUVIA MEJORADA =====
+    // Diferentes intensidades de lluvia basadas en velocidad del viento
+    let rainIntensity = map(windSpeed, 10, 100, 0.05, 0.3);
+
+    if (random() < rainIntensity) {
       rainDrops.push({
         x: random(width),
-        y: 0,
-        speed: random(8, 15),
-        length: random(10, 20)
+        y: random(-50, 0),
+        speed: random(12, 18) + windSpeed * 0.1,
+        length: random(15, 25),
+        thickness: random(1, 3),
+        splashTimer: 0
       });
     }
 
-    // Update and draw raindrops
+    // Actualizar y dibujar gotas de lluvia con efectos mejorados
     for (let i = rainDrops.length - 1; i >= 0; i--) {
       let drop = rainDrops[i];
       drop.y += drop.speed;
-      drop.x += windSpeed * 0.1; // Wind affects rain direction
+      drop.x += windSpeed * 0.08 + sin(frameCount * 0.1 + i) * 0.5; // Movimiento ondulado
 
-      if (drop.y > height) {
-        rainDrops.splice(i, 1);
-      } else {
-        stroke(150, 200, 255, 150);
-        strokeWeight(2);
-        line(drop.x, drop.y, drop.x + windSpeed * 0.05, drop.y + drop.length);
+      if (drop.y > height - 50) {
+        // Efecto de salpicadura al tocar el suelo
+        drop.splashTimer++;
+        if (drop.splashTimer < 5) {
+          // Dibujar salpicadura
+          stroke(200, 220, 255, 150 - drop.splashTimer * 30);
+          strokeWeight(drop.thickness);
+          let splashSize = 8 - drop.splashTimer;
+          line(drop.x, height - 45, drop.x + random(-splashSize, splashSize), height - 45 - random(2, 6));
+          line(drop.x, height - 45, drop.x + random(-splashSize, splashSize), height - 45 - random(2, 6));
+        } else {
+          rainDrops.splice(i, 1);
+          continue;
+        }
       }
+
+      // Dibujar gota de lluvia con gradiente
+      stroke(150, 200, 255, 180);
+      strokeWeight(drop.thickness);
+      line(drop.x, drop.y, drop.x + windSpeed * 0.03, drop.y + drop.length);
     }
 
-    // Limit raindrops for performance
-    if (rainDrops.length > 200) {
-      rainDrops.splice(0, rainDrops.length - 200);
+    // Limitar gotas para rendimiento
+    if (rainDrops.length > 250) {
+      rainDrops.splice(0, rainDrops.length - 250);
     }
+
+    // Efecto de cielo nublado durante la lluvia
+    fill(100, 120, 140, 80);
+    rect(0, 0, width, height * 0.4);
 
   } else if (currentWeather === 'snow') {
-    // Add new snowflakes
-    if (frameCount % 5 === 0) {
+    // ===== NIEVE MEJORADA =====
+    if (random() < 0.08) {
       snowFlakes.push({
         x: random(width),
-        y: 0,
-        speed: random(1, 3),
-        size: random(2, 5),
-        drift: random(-0.5, 0.5)
+        y: random(-30, 0),
+        speed: random(0.5, 2),
+        size: random(3, 8),
+        drift: random(-1, 1),
+        rotation: random(TWO_PI),
+        rotationSpeed: random(-0.1, 0.1),
+        windInfluence: random(0.5, 1.5)
       });
     }
 
-    // Update and draw snowflakes
+    // Actualizar y dibujar copos de nieve con física mejorada
     for (let i = snowFlakes.length - 1; i >= 0; i--) {
       let flake = snowFlakes[i];
       flake.y += flake.speed;
-      flake.x += flake.drift + windSpeed * 0.02;
+      flake.x += flake.drift + windSpeed * 0.01 * flake.windInfluence;
+      flake.rotation += flake.rotationSpeed;
 
-      if (flake.y > height) {
-        snowFlakes.splice(i, 1);
-      } else {
-        fill(255, 255, 255, 200);
-        noStroke();
-        ellipse(flake.x, flake.y, flake.size, flake.size);
+      // Física de copos: flotan y se derriten cerca del suelo
+      if (flake.y > height - 100) {
+        flake.speed *= 0.98; // Desaceleración al acercarse al suelo
+        flake.size *= 0.995; // Se derriten ligeramente
       }
+
+      if (flake.y > height || flake.size < 1) {
+        snowFlakes.splice(i, 1);
+        continue;
+      }
+
+      // Dibujar copo de nieve con forma hexagonal
+      push();
+      translate(flake.x, flake.y);
+      rotate(flake.rotation);
+      fill(255, 255, 255, 220);
+      noStroke();
+
+      // Copo hexagonal simple pero efectivo
+      beginShape();
+      for (let angle = 0; angle < TWO_PI; angle += PI/3) {
+        let x = cos(angle) * flake.size * 0.5;
+        let y = sin(angle) * flake.size * 0.5;
+        vertex(x, y);
+      }
+      endShape(CLOSE);
+      pop();
     }
 
-    // Limit snowflakes for performance
-    if (snowFlakes.length > 150) {
-      snowFlakes.splice(0, snowFlakes.length - 150);
+    // Limitar copos para rendimiento
+    if (snowFlakes.length > 200) {
+      snowFlakes.splice(0, snowFlakes.length - 200);
+    }
+
+    // Efecto de nieve acumulada en el suelo
+    if (frameCount % 60 === 0 && snowFlakes.length > 10) {
+      fill(255, 255, 255, 30);
+      noStroke();
+      rect(0, height - 20, width, 20);
     }
 
   } else if (currentWeather === 'storm') {
-    // Rain effect
-    if (frameCount % 2 === 0) {
+    // ===== TORMENTA MEJORADA =====
+    // Lluvia torrencial
+    if (random() < 0.15) {
       rainDrops.push({
         x: random(width),
-        y: 0,
-        speed: random(12, 20),
-        length: random(15, 25)
+        y: random(-100, 0),
+        speed: random(18, 28) + windSpeed * 0.2,
+        length: random(20, 35),
+        thickness: random(2, 4)
       });
     }
 
-    // Update rain
+    // Actualizar lluvia de tormenta
     for (let i = rainDrops.length - 1; i >= 0; i--) {
       let drop = rainDrops[i];
       drop.y += drop.speed;
-      drop.x += windSpeed * 0.15; // Stronger wind effect
+      drop.x += windSpeed * 0.2 + sin(frameCount * 0.2 + i) * 2; // Movimiento caótico
 
       if (drop.y > height) {
         rainDrops.splice(i, 1);
       } else {
-        stroke(100, 150, 255, 180);
-        strokeWeight(3);
-        line(drop.x, drop.y, drop.x + windSpeed * 0.08, drop.y + drop.length);
+        stroke(80, 120, 200, 200);
+        strokeWeight(drop.thickness);
+        line(drop.x, drop.y, drop.x + windSpeed * 0.1, drop.y + drop.length);
       }
     }
 
-    if (rainDrops.length > 300) {
-      rainDrops.splice(0, rainDrops.length - 300);
+    if (rainDrops.length > 400) {
+      rainDrops.splice(0, rainDrops.length - 400);
     }
 
-    // Lightning effect
-    if (random() < 0.005) { // Random lightning
+    // Relámpagos mejorados
+    if (random() < 0.008) {
       lightningFlash = 255;
+      lightningTimer = 0;
     }
 
     if (lightningFlash > 0) {
+      // Flash de relámpago con efecto de ramas
       fill(255, 255, 255, lightningFlash);
       rect(0, 0, width, height);
-      lightningFlash -= 15;
+
+      // Dibujar rayo si es el primer frame del flash
+      if (lightningTimer === 0) {
+        stroke(255, 255, 255, 255);
+        strokeWeight(3);
+        let lightningX = random(width * 0.2, width * 0.8);
+        let lightningY = 0;
+
+        // Rayo zigzagueante
+        beginShape();
+        vertex(lightningX, lightningY);
+        for (let y = 0; y < height; y += random(20, 40)) {
+          lightningX += random(-30, 30);
+          vertex(lightningX, y);
+        }
+        endShape();
+      }
+
+      lightningFlash -= 20;
+      lightningTimer++;
     }
 
-    // Darker sky during storm
-    fill(50, 50, 80, 100);
+    // Cielo muy oscuro durante tormenta
+    fill(20, 20, 50, 120);
     rect(0, 0, width, height);
+
+    // Viento fuerte que afecta las nubes
+    if (frameCount % 2 === 0) {
+      cloudOffset += windSpeed * 0.02;
+    }
   }
 }
 
@@ -2075,4 +2231,8 @@ async function fetchRandomAirplaneImage() {
     console.error('Error fetching airplane data:', error);
     alert('Error al cargar datos del avión');
   }
+}
+
+function windowResized() {
+  resizeCanvasForPanel();
 }
