@@ -1,4 +1,12 @@
 let angleSlider, windSlider, altitudeSlider, massSlider;
+
+// ===== ANIMACIÓN SUAVE DE SLIDERS =====
+let angleTarget = 0, angleCurrent = 0;
+let windTarget = 70, windCurrent = 70;
+let altitudeTarget = 0, altitudeCurrent = 0;
+let massTarget = 80, massCurrent = 80;
+let sliderAnimationSpeed = 0.1; // Velocidad de interpolación (0-1)
+
 let angleAttack = 0;
 let liftMagnitude = 0;
 let flowOffset = 0;
@@ -144,6 +152,75 @@ function setFontScale(scale) {
   console.log("Escala de fuente:", accessibilityFontScale);
 }
 
+// ===== SISTEMA DE TOOLTIPS =====
+let currentTooltip = null;
+let tooltipElement = null;
+
+function createTooltipElement() {
+  if (tooltipElement) return;
+  
+  tooltipElement = document.createElement('div');
+  tooltipElement.id = 'tooltip';
+  tooltipElement.style.cssText = `
+    position: fixed;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    pointer-events: none;
+    z-index: 1000;
+    max-width: 250px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    display: none;
+    transition: opacity 0.2s ease;
+  `;
+  document.body.appendChild(tooltipElement);
+}
+
+function showTooltip(text, x, y) {
+  if (!tooltipElement) createTooltipElement();
+  
+  tooltipElement.textContent = text;
+  tooltipElement.style.left = x + 'px';
+  tooltipElement.style.top = (y - 40) + 'px';
+  tooltipElement.style.display = 'block';
+  tooltipElement.style.opacity = '1';
+  currentTooltip = text;
+}
+
+function hideTooltip() {
+  if (tooltipElement) {
+    tooltipElement.style.opacity = '0';
+    setTimeout(() => {
+      if (tooltipElement) tooltipElement.style.display = 'none';
+    }, 200);
+  }
+  currentTooltip = null;
+}
+
+function addTooltipToElement(element, text) {
+  if (!element) return;
+  
+  element.addEventListener('mouseenter', (e) => {
+    showTooltip(text, e.clientX, e.clientY);
+  });
+  
+  element.addEventListener('mousemove', (e) => {
+    if (currentTooltip === text) {
+      showTooltip(text, e.clientX, e.clientY);
+    }
+  });
+  
+  element.addEventListener('mouseleave', () => {
+    if (currentTooltip === text) {
+      hideTooltip();
+    }
+  });
+}
+
 function preload() {
   // No sounds to load
 }
@@ -181,6 +258,12 @@ function initializeDOMElements() {
   altitudeSlider = select('#altitude-slider');
   massSlider = select('#mass-slider');
 
+  // Initialize slider target values
+  if (angleSlider) angleTarget = angleCurrent = angleSlider.value();
+  if (windSlider) windTarget = windCurrent = windSlider.value();
+  if (altitudeSlider) altitudeTarget = altitudeCurrent = altitudeSlider.value();
+  if (massSlider) massTarget = massCurrent = massSlider.value();
+
   // Get buttons
   let resetBtn = select('#reset-btn');
   let tutorialBtn = select('#tutorial-btn');
@@ -199,12 +282,26 @@ function initializeDOMElements() {
 
   // Add event listeners
   if (angleSlider) {
-    angleSlider.input(updateParameters);
+    angleSlider.input(() => {
+      angleTarget = angleSlider.value();
+    });
     console.log('Angle slider initialized');
   }
-  if (windSlider) windSlider.input(updateParameters);
-  if (altitudeSlider) altitudeSlider.input(updateParameters);
-  if (massSlider) massSlider.input(updateParameters);
+  if (windSlider) windSlider.input(() => {
+    windTarget = windSlider.value();
+  });
+  if (altitudeSlider) altitudeSlider.input(() => {
+    altitudeTarget = altitudeSlider.value();
+  });
+  if (massSlider) massSlider.input(() => {
+    massTarget = massSlider.value();
+  });
+
+  // Add tooltips to sliders
+  addTooltipToElement(document.getElementById('angle-slider'), 'Ángulo de ataque del ala (grados). Afecta la sustentación y resistencia.');
+  addTooltipToElement(document.getElementById('wind-slider'), 'Velocidad del viento (m/s). Mayor velocidad aumenta la sustentación.');
+  addTooltipToElement(document.getElementById('altitude-slider'), 'Altitud (metros). La densidad del aire disminuye con la altura.');
+  addTooltipToElement(document.getElementById('mass-slider'), 'Masa del avión (kg). Afecta el peso y la fuerza necesaria para volar.');
 
   // Button listeners
   if (resetBtn) resetBtn.mousePressed(resetSimulation);
@@ -221,6 +318,69 @@ function initializeDOMElements() {
   if (rainBtn) rainBtn.mousePressed(() => setWeather('rain'));
   if (snowBtn) snowBtn.mousePressed(() => setWeather('snow'));
   if (stormBtn) stormBtn.mousePressed(() => setWeather('storm'));
+
+  // Add tooltips to buttons
+  addTooltipToElement(document.getElementById('reset-btn'), 'Reiniciar simulación con valores por defecto');
+  addTooltipToElement(document.getElementById('tutorial-btn'), 'Mostrar tutorial interactivo paso a paso');
+  addTooltipToElement(document.getElementById('export-btn'), 'Exportar datos de la simulación');
+  addTooltipToElement(document.getElementById('save-btn'), 'Guardar configuración actual');
+  addTooltipToElement(document.getElementById('load-btn'), 'Cargar configuración guardada');
+  addTooltipToElement(document.getElementById('weather-clear'), 'Clima despejado - condiciones normales');
+  addTooltipToElement(document.getElementById('weather-rain'), 'Lluvia - reduce visibilidad y afecta aerodinámica');
+  addTooltipToElement(document.getElementById('weather-snow'), 'Nieve - baja temperatura y acumulación');
+  addTooltipToElement(document.getElementById('weather-storm'), 'Tormenta - vientos fuertes y turbulencia');
+
+  // Add tooltips to accessibility controls
+  addTooltipToElement(document.getElementById('high-contrast'), 'Alternar modo alto contraste para mejor visibilidad');
+  addTooltipToElement(document.getElementById('reduced-motion'), 'Reducir animaciones para evitar mareos');
+  addTooltipToElement(document.getElementById('font-scale'), 'Ajustar tamaño de fuente (80%-200%)');
+
+  // ===== SISTEMA DE GAUGES CIRCULARES =====
+  function drawCircularGauge(x, y, radius, value, maxValue, minValue = 0, label = '', unit = '', color = [52, 152, 219], tooltip = '') {
+    // Fondo del gauge
+    fill(30, 30, 30, 150);
+    stroke(60, 60, 60);
+    strokeWeight(2);
+    circle(x, y, radius * 2);
+    
+    // Arco del progreso
+    let angle = map(value, minValue, maxValue, -PI/2, PI/2 * 3); // De -90° a 270°
+    stroke(color[0], color[1], color[2]);
+    strokeWeight(6);
+    noFill();
+    arc(x, y, radius * 1.8, radius * 1.8, -PI/2, angle);
+    
+    // Valor numérico
+    fill(255);
+    noStroke();
+    textAlign(CENTER);
+    textSize(getAccessibleFontSize(12));
+    text(Math.round(value * 10) / 10 + (unit ? ' ' + unit : ''), x, y + 4);
+    
+    // Etiqueta
+    if (label) {
+      textSize(getAccessibleFontSize(10));
+      fill(200);
+      text(label, x, y + radius + 15);
+    }
+    
+    // Marcas de referencia
+    stroke(100);
+    strokeWeight(1);
+    for (let i = 0; i <= 10; i++) {
+      let markAngle = map(i, 0, 10, -PI/2, PI/2 * 3);
+      let markX = x + cos(markAngle) * (radius * 1.6);
+      let markY = y + sin(markAngle) * (radius * 1.6);
+      let markX2 = x + cos(markAngle) * (radius * 1.4);
+      let markY2 = y + sin(markAngle) * (radius * 1.4);
+      line(markX, markY, markX2, markY2);
+    }
+
+    // Tooltip si se proporciona
+    if (tooltip && mouseX > x - radius && mouseX < x + radius && mouseY > y - radius && mouseY < y + radius) {
+      showTooltip(tooltip, mouseX, mouseY);
+    }
+  }
 
   // ===== CONTROLES EDUCATIVOS =====
   // Get educational control elements
@@ -300,6 +460,15 @@ function initializeDOMElements() {
   console.log('DOM elements initialized');
 }
 
+// ===== ANIMACIÓN SUAVE DE SLIDERS =====
+function updateSliderAnimations() {
+  // Interpolar suavemente hacia los valores objetivo
+  angleCurrent = lerp(angleCurrent, angleTarget, sliderAnimationSpeed);
+  windCurrent = lerp(windCurrent, windTarget, sliderAnimationSpeed);
+  altitudeCurrent = lerp(altitudeCurrent, altitudeTarget, sliderAnimationSpeed);
+  massCurrent = lerp(massCurrent, massTarget, sliderAnimationSpeed);
+}
+
 function updateParameters() {
   // Check if sliders are initialized before using them
   if (!angleSlider || !windSlider || !altitudeSlider || !massSlider) {
@@ -307,10 +476,10 @@ function updateParameters() {
     return;
   }
 
-  // Update variables from sliders
-  angleAttack = radians(angleSlider.value());
-  windSpeed = windSlider.value();
-  altitude = altitudeSlider.value();
+  // Update variables from interpolated slider values (animación suave)
+  angleAttack = radians(angleCurrent);
+  windSpeed = windCurrent;
+  altitude = altitudeCurrent;
   mass = massSlider.value();
 
   // Calculate air density based on altitude (simplified)
@@ -578,6 +747,9 @@ async function loadMaterialTextures() {
 function draw() {
   console.log('Draw called');
   clear(); // Clear for P2D
+
+  // Update slider animations
+  updateSliderAnimations();
 
   // Camera effects for flight sensation
   let cameraShake = 0;
@@ -3211,5 +3383,31 @@ function mousePressed() {
     if (mouseX > width - 80 && mouseX < width - 20 && mouseY > 10 && mouseY < 40) {
       currentComparisonIndex = min(comparisonConfigs.length - 1, currentComparisonIndex + 1);
     }
+  }
+
+  // ===== DIBUJAR GAUGES CIRCULARES =====
+  // Solo dibujar si no estamos en modo tutorial o comparación
+  if (!tutorialMode && !comparisonMode) {
+    // Calcular valores para los gauges
+    let liftDragRatio = liftForce / max(dragForce, 0.1); // Evitar división por cero
+    let airspeed = windSpeed;
+    let angleOfAttack = degrees(angleAttack);
+    let currentAltitude = altitude;
+
+    // Gauge 1: Lift/Drag Ratio (esquina superior izquierda)
+    drawCircularGauge(80, 80, 40, liftDragRatio, 10, 0, 'L/D Ratio', '', [52, 152, 219], 
+      'Relación Lift/Drag: ' + Math.round(liftDragRatio * 10) / 10 + '. Mayor valor = mejor eficiencia aerodinámica');
+
+    // Gauge 2: Airspeed (esquina superior derecha)
+    drawCircularGauge(width - 80, 80, 40, airspeed, 100, 0, 'Velocidad', 'km/h', [46, 204, 113],
+      'Velocidad del viento: ' + Math.round(airspeed) + ' km/h. Afecta la fuerza de sustentación y resistencia');
+
+    // Gauge 3: Angle of Attack (esquina inferior izquierda)
+    drawCircularGauge(80, height - 80, 40, angleOfAttack, 20, -10, 'Ángulo', '°', [230, 126, 34],
+      'Ángulo de ataque: ' + Math.round(angleOfAttack * 10) / 10 + '°. Óptimo entre 8-12° para máxima sustentación');
+
+    // Gauge 4: Altitude (esquina inferior derecha)
+    drawCircularGauge(width - 80, height - 80, 40, currentAltitude, 10000, 0, 'Altitud', 'm', [155, 89, 182],
+      'Altitud: ' + Math.round(currentAltitude) + ' m. Afecta la densidad del aire y las fuerzas aerodinámicas');
   }
 }

@@ -110,9 +110,9 @@
 - [x] **EFECTOS DE VÓRTICE**: Mejorar visualización de vórtices con espirales animadas y colores diferenciados
 
 ### Interfaz de Usuario y Controles
-- [ ] **SLIDERS CON ANIMACIÓN**: Agregar animaciones suaves cuando se mueven los sliders con preview en tiempo real
-- [ ] **TOOLTIPS INFORMATIVOS**: Mostrar información contextual al pasar el mouse sobre elementos (ángulos, fuerzas, etc.)
-- [ ] **INDICADORES VISUALES**: Agregar gauges circulares para mostrar valores críticos (lift/drag ratio, velocidad)
+- [x] **SLIDERS CON ANIMACIÓN**: Agregar animaciones suaves cuando se mueven los sliders con preview en tiempo real
+- [x] **TOOLTIPS INFORMATIVOS**: Mostrar información contextual al pasar el mouse sobre elementos (ángulos, fuerzas, etc.)
+- [x] **INDICADORES VISUALES**: Agregar gauges circulares para mostrar valores críticos (lift/drag ratio, velocidad)
 - [ ] **MODO OSCURO/CLARO**: Permitir alternar entre temas visuales para mejor comodidad
 
 ### Efectos Ambientales y Atmosféricos
