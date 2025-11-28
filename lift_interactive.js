@@ -1,12 +1,4 @@
 let angleSlider, windSlider, altitudeSlider, massSlider;
-
-// ===== ANIMACIÓN SUAVE DE SLIDERS =====
-let angleTarget = 0, angleCurrent = 0;
-let windTarget = 70, windCurrent = 70;
-let altitudeTarget = 0, altitudeCurrent = 0;
-let massTarget = 80, massCurrent = 80;
-let sliderAnimationSpeed = 0.1; // Velocidad de interpolación (0-1)
-
 let angleAttack = 0;
 let liftMagnitude = 0;
 let flowOffset = 0;
@@ -18,13 +10,11 @@ let weight = mass * 9.81; // N
 let bgImage;
 let P1 = 101325; // Upper surface pressure
 let P2 = 101325; // Lower surface pressure
-let currentWeather = 'clear'; // Current weather condition
-let rainDrops = []; // Array of raindrop objects
-let snowFlakes = []; // Array of snowflake objects
-let lightningFlash = 0; // Lightning flash intensity
-let lightningTimer = 0; // Lightning flash timer
 let flowParticles = []; // Array of flow particles following aerodynamic paths
-let vortices = []; // Array of vortex effects at wing tips
+
+// Accessibility variables
+let highContrastMode = false;
+let reducedMotionMode = false;
 
 // Bloom effect variables
 let bloomEnabled = true;
@@ -52,174 +42,11 @@ let lodDistanceThreshold = 200; // Distance from center where LOD kicks in
 // Graphics quality control variables
 let bloomSlider, dofSlider, motionBlurSlider, lodSlider;
 
-// ===== CONTROLES EDUCATIVOS =====
-let educationalLegendsCheckbox, pressureDiagramCheckbox, velocityDiagramCheckbox, forceDiagramCheckbox;
-let tutorialModeBtn, comparisonModeBtn;
-
-// ===== VARIABLES PARA CARACTERÍSTICAS EDUCATIVAS =====
-// Leyendas interactivas
-let showEducationalLegends = false;
-let legendFontSize = 14;
-let legendBoxWidth = 200;
-let legendBoxHeight = 80;
-
-// Diagramas superpuestos
-let showPressureDiagram = false;
-let showVelocityDiagram = false;
-let showForceDiagram = false;
-
-// ===== CONFIGURACIONES DE ACCESIBILIDAD =====
-let highContrastMode = false;
-let reducedMotion = false;
-let accessibilityFontScale = 1.0; // Factor de escala para fuentes (1.0 = normal, 1.2 = 20% más grande, etc.)
-let minFontSize = 12; // Tamaño mínimo de fuente para legibilidad
-
-// Modo tutorial paso a paso
-let tutorialMode = false;
-let tutorialStep = 0;
-let tutorialSteps = [
-  "🎓 Bienvenido al Tutorial Interactivo de Aerodinámica\n\nDescubre los principios que permiten volar a los aviones",
-  "✈️ El Ala y la Sustentación\n\nEl ala genera una fuerza hacia arriba llamada 'sustentación' que contrarresta el peso del avión",
-  "🌪️ Principio de Bernoulli\n\nLa superficie superior del ala es más curva, por lo que el aire viaja más rápido y crea menor presión",
-  "⚖️ Diferencia de Presiones\n\nLa presión inferior es mayor que la superior, creando una fuerza neta hacia arriba",
-  "📐 Ángulo de Ataque\n\nCambia el ángulo del ala para ver cómo afecta la sustentación. ¡Prueba valores entre 0° y 15°!",
-  "💨 Velocidad del Viento\n\nMayor velocidad del aire = mayor sustentación. Observa cómo cambian los vectores de velocidad",
-  "🏔️ Efecto de la Altitud\n\nA mayor altitud, el aire es menos denso. ¿Cómo afecta esto a la sustentación?",
-  "⚠️ El Peligro del Stall\n\nSi el ángulo supera los 15°, la sustentación disminuye drásticamente. ¡Esto es el 'stall'!",
-  "🔄 Fuerzas en Equilibrio\n\nSustentación = Peso y Empuje = Resistencia. El avión vuela cuando estas fuerzas se equilibran",
-  "🎯 ¡Tutorial Completado!\n\nAhora eres un experto en aerodinámica. ¡Experimenta con todos los controles!"
-];
-
-// Comparaciones visuales
-let comparisonMode = false;
-let comparisonConfigs = [
-  {angle: 0, name: "Sin ángulo de ataque"},
-  {angle: 5, name: "Ángulo óptimo (5°)"},
-  {angle: 15, name: "Ángulo alto (15°)"},
-  {angle: 20, name: "Cerca del stall (20°)"}
-];
-let currentComparisonIndex = 0;
-
-// Weather API variables
-let weatherData = null;
-let weatherApiKey = 'YOUR_OPENWEATHERMAP_API_KEY'; // Replace with actual API key
-let currentCity = 'Buenos Aires,AR'; // Default location
-let weatherUpdateInterval = 600000; // 10 minutes in milliseconds
-
 // Material textures variables
 let materialTextures = {};
 let fuselageTexture = null;
 let wingTexture = null;
 let engineTexture = null;
-
-// ===== FUNCIONES DE ACCESIBILIDAD =====
-
-// Función para obtener el tamaño de fuente escalado según accesibilidad
-function getAccessibleFontSize(baseSize) {
-  let scaledSize = baseSize * accessibilityFontScale;
-  return Math.max(scaledSize, minFontSize);
-}
-
-// Función para obtener colores con alto contraste
-function getAccessibleColor(r, g, b, a = 255) {
-  if (highContrastMode) {
-    // Convertir a blanco/negro de alto contraste
-    let brightness = (r + g + b) / 3;
-    if (brightness > 128) {
-      return [255, 255, 255, a]; // Blanco para colores claros
-    } else {
-      return [0, 0, 0, a]; // Negro para colores oscuros
-    }
-  }
-  return [r, g, b, a];
-}
-
-// Función para alternar modo de alto contraste
-function toggleHighContrastMode() {
-  highContrastMode = !highContrastMode;
-  console.log("Modo de alto contraste:", highContrastMode ? "Activado" : "Desactivado");
-}
-
-// Función para alternar reducción de movimiento
-function toggleReducedMotion() {
-  reducedMotion = !reducedMotion;
-  console.log("Reducción de movimiento:", reducedMotion ? "Activada" : "Desactivada");
-}
-
-// Función para ajustar escala de fuente
-function setFontScale(scale) {
-  accessibilityFontScale = Math.max(0.8, Math.min(2.0, scale)); // Limitar entre 0.8x y 2.0x
-  console.log("Escala de fuente:", accessibilityFontScale);
-}
-
-// ===== SISTEMA DE TOOLTIPS =====
-let currentTooltip = null;
-let tooltipElement = null;
-
-function createTooltipElement() {
-  if (tooltipElement) return;
-  
-  tooltipElement = document.createElement('div');
-  tooltipElement.id = 'tooltip';
-  tooltipElement.style.cssText = `
-    position: fixed;
-    background: rgba(0, 0, 0, 0.9);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-family: Arial, sans-serif;
-    pointer-events: none;
-    z-index: 1000;
-    max-width: 250px;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    display: none;
-    transition: opacity 0.2s ease;
-  `;
-  document.body.appendChild(tooltipElement);
-}
-
-function showTooltip(text, x, y) {
-  if (!tooltipElement) createTooltipElement();
-  
-  tooltipElement.textContent = text;
-  tooltipElement.style.left = x + 'px';
-  tooltipElement.style.top = (y - 40) + 'px';
-  tooltipElement.style.display = 'block';
-  tooltipElement.style.opacity = '1';
-  currentTooltip = text;
-}
-
-function hideTooltip() {
-  if (tooltipElement) {
-    tooltipElement.style.opacity = '0';
-    setTimeout(() => {
-      if (tooltipElement) tooltipElement.style.display = 'none';
-    }, 200);
-  }
-  currentTooltip = null;
-}
-
-function addTooltipToElement(element, text) {
-  if (!element) return;
-  
-  element.addEventListener('mouseenter', (e) => {
-    showTooltip(text, e.clientX, e.clientY);
-  });
-  
-  element.addEventListener('mousemove', (e) => {
-    if (currentTooltip === text) {
-      showTooltip(text, e.clientX, e.clientY);
-    }
-  });
-  
-  element.addEventListener('mouseleave', () => {
-    if (currentTooltip === text) {
-      hideTooltip();
-    }
-  });
-}
 
 function preload() {
   // No sounds to load
@@ -238,15 +65,21 @@ function setup() {
   // Initialize DOM elements immediately
   initializeDOMElements();
 
-  // updateParameters() is now called at the end of initializeDOMElements()
-
   // Load material textures
   loadMaterialTextures();
 
   // Initialize flow particles
   initializeFlowParticles();
 
-  console.log('Setup completed');
+  // Set default values immediately
+  angleAttack = radians(window.defaultValues ? window.defaultValues.angleAttack : 5);
+  windSpeed = window.defaultValues ? window.defaultValues.windSpeed : 70;
+  altitude = window.defaultValues ? window.defaultValues.altitude : 0;
+  mass = window.defaultValues ? window.defaultValues.mass : 80;
+  rho = 1.225 * exp(-altitude / 8000);
+  weight = mass * 9.81;
+
+  console.log('Setup completed with default values');
 }
 
 function initializeDOMElements() {
@@ -258,11 +91,12 @@ function initializeDOMElements() {
   altitudeSlider = select('#altitude-slider');
   massSlider = select('#mass-slider');
 
-  // Initialize slider target values
-  if (angleSlider) angleTarget = angleCurrent = angleSlider.value();
-  if (windSlider) windTarget = windCurrent = windSlider.value();
-  if (altitudeSlider) altitudeTarget = altitudeCurrent = altitudeSlider.value();
-  if (massSlider) massTarget = massCurrent = massSlider.value();
+  console.log('Sliders found:', {
+    angleSlider: !!angleSlider,
+    windSlider: !!windSlider,
+    altitudeSlider: !!altitudeSlider,
+    massSlider: !!massSlider
+  });
 
   // Get buttons
   let resetBtn = select('#reset-btn');
@@ -274,34 +108,23 @@ function initializeDOMElements() {
   let togglePanelBtn = select('#toggle-panel-btn');
   let showPanelBtn = select('#show-panel-btn');
 
-  // Weather buttons
-  let clearBtn = select('#weather-clear');
-  let rainBtn = select('#weather-rain');
-  let snowBtn = select('#weather-snow');
-  let stormBtn = select('#weather-storm');
+  // Get accessibility checkboxes
+  let highContrastCheckbox = document.getElementById('high-contrast');
+  let reducedMotionCheckbox = document.getElementById('reduced-motion');
+
+  console.log('Accessibility checkboxes found:', {
+    highContrastCheckbox: !!highContrastCheckbox,
+    reducedMotionCheckbox: !!reducedMotionCheckbox
+  });
 
   // Add event listeners
   if (angleSlider) {
-    angleSlider.input(() => {
-      angleTarget = angleSlider.value();
-    });
+    angleSlider.input(updateParameters);
     console.log('Angle slider initialized');
   }
-  if (windSlider) windSlider.input(() => {
-    windTarget = windSlider.value();
-  });
-  if (altitudeSlider) altitudeSlider.input(() => {
-    altitudeTarget = altitudeSlider.value();
-  });
-  if (massSlider) massSlider.input(() => {
-    massTarget = massSlider.value();
-  });
-
-  // Add tooltips to sliders
-  addTooltipToElement(document.getElementById('angle-slider'), 'Ángulo de ataque del ala (grados). Afecta la sustentación y resistencia.');
-  addTooltipToElement(document.getElementById('wind-slider'), 'Velocidad del viento (m/s). Mayor velocidad aumenta la sustentación.');
-  addTooltipToElement(document.getElementById('altitude-slider'), 'Altitud (metros). La densidad del aire disminuye con la altura.');
-  addTooltipToElement(document.getElementById('mass-slider'), 'Masa del avión (kg). Afecta el peso y la fuerza necesaria para volar.');
+  if (windSlider) windSlider.input(updateParameters);
+  if (altitudeSlider) altitudeSlider.input(updateParameters);
+  if (massSlider) massSlider.input(updateParameters);
 
   // Button listeners
   if (resetBtn) resetBtn.mousePressed(resetSimulation);
@@ -313,160 +136,14 @@ function initializeDOMElements() {
   if (togglePanelBtn) togglePanelBtn.mousePressed(togglePanel);
   if (showPanelBtn) showPanelBtn.mousePressed(togglePanel);
 
-  // Weather buttons
-  if (clearBtn) clearBtn.mousePressed(() => setWeather('clear'));
-  if (rainBtn) rainBtn.mousePressed(() => setWeather('rain'));
-  if (snowBtn) snowBtn.mousePressed(() => setWeather('snow'));
-  if (stormBtn) stormBtn.mousePressed(() => setWeather('storm'));
-
-  // Add tooltips to buttons
-  addTooltipToElement(document.getElementById('reset-btn'), 'Reiniciar simulación con valores por defecto');
-  addTooltipToElement(document.getElementById('tutorial-btn'), 'Mostrar tutorial interactivo paso a paso');
-  addTooltipToElement(document.getElementById('export-btn'), 'Exportar datos de la simulación');
-  addTooltipToElement(document.getElementById('save-btn'), 'Guardar configuración actual');
-  addTooltipToElement(document.getElementById('load-btn'), 'Cargar configuración guardada');
-  addTooltipToElement(document.getElementById('weather-clear'), 'Clima despejado - condiciones normales');
-  addTooltipToElement(document.getElementById('weather-rain'), 'Lluvia - reduce visibilidad y afecta aerodinámica');
-  addTooltipToElement(document.getElementById('weather-snow'), 'Nieve - baja temperatura y acumulación');
-  addTooltipToElement(document.getElementById('weather-storm'), 'Tormenta - vientos fuertes y turbulencia');
-
-  // Add tooltips to accessibility controls
-  addTooltipToElement(document.getElementById('high-contrast'), 'Alternar modo alto contraste para mejor visibilidad');
-  addTooltipToElement(document.getElementById('reduced-motion'), 'Reducir animaciones para evitar mareos');
-  addTooltipToElement(document.getElementById('font-scale'), 'Ajustar tamaño de fuente (80%-200%)');
-
-  // ===== SISTEMA DE GAUGES CIRCULARES =====
-  function drawCircularGauge(x, y, radius, value, maxValue, minValue = 0, label = '', unit = '', color = [52, 152, 219], tooltip = '') {
-    // Fondo del gauge
-    fill(30, 30, 30, 150);
-    stroke(60, 60, 60);
-    strokeWeight(2);
-    circle(x, y, radius * 2);
-    
-    // Arco del progreso
-    let angle = map(value, minValue, maxValue, -PI/2, PI/2 * 3); // De -90° a 270°
-    stroke(color[0], color[1], color[2]);
-    strokeWeight(6);
-    noFill();
-    arc(x, y, radius * 1.8, radius * 1.8, -PI/2, angle);
-    
-    // Valor numérico
-    fill(255);
-    noStroke();
-    textAlign(CENTER);
-    textSize(getAccessibleFontSize(12));
-    text(Math.round(value * 10) / 10 + (unit ? ' ' + unit : ''), x, y + 4);
-    
-    // Etiqueta
-    if (label) {
-      textSize(getAccessibleFontSize(10));
-      fill(200);
-      text(label, x, y + radius + 15);
-    }
-    
-    // Marcas de referencia
-    stroke(100);
-    strokeWeight(1);
-    for (let i = 0; i <= 10; i++) {
-      let markAngle = map(i, 0, 10, -PI/2, PI/2 * 3);
-      let markX = x + cos(markAngle) * (radius * 1.6);
-      let markY = y + sin(markAngle) * (radius * 1.6);
-      let markX2 = x + cos(markAngle) * (radius * 1.4);
-      let markY2 = y + sin(markAngle) * (radius * 1.4);
-      line(markX, markY, markX2, markY2);
-    }
-
-    // Tooltip si se proporciona
-    if (tooltip && mouseX > x - radius && mouseX < x + radius && mouseY > y - radius && mouseY < y + radius) {
-      showTooltip(tooltip, mouseX, mouseY);
-    }
-  }
-
-  // ===== CONTROLES EDUCATIVOS =====
-  // Get educational control elements
-  educationalLegendsCheckbox = select('#educational-legends');
-  pressureDiagramCheckbox = select('#pressure-diagram');
-  velocityDiagramCheckbox = select('#velocity-diagram');
-  forceDiagramCheckbox = select('#force-diagram');
-  tutorialModeBtn = select('#tutorial-mode');
-  comparisonModeBtn = select('#comparison-mode');
-
-  // Educational control listeners
-  if (educationalLegendsCheckbox) {
-    educationalLegendsCheckbox.changed(() => {
-      showEducationalLegends = educationalLegendsCheckbox.checked();
-    });
-  }
-  if (pressureDiagramCheckbox) {
-    pressureDiagramCheckbox.changed(() => {
-      showPressureDiagram = pressureDiagramCheckbox.checked();
-    });
-  }
-  if (velocityDiagramCheckbox) {
-    velocityDiagramCheckbox.changed(() => {
-      showVelocityDiagram = velocityDiagramCheckbox.checked();
-    });
-  }
-  if (forceDiagramCheckbox) {
-    forceDiagramCheckbox.changed(() => {
-      showForceDiagram = forceDiagramCheckbox.checked();
-    });
-  }
-  if (tutorialModeBtn) {
-    tutorialModeBtn.mousePressed(toggleTutorialMode);
-  }
-  if (comparisonModeBtn) {
-    comparisonModeBtn.mousePressed(toggleComparisonMode);
-  }
-
-  // ===== CONTROLES DE ACCESIBILIDAD =====
-  // Get accessibility control elements
-  let highContrastCheckbox = document.getElementById('high-contrast');
-  let reducedMotionCheckbox = document.getElementById('reduced-motion');
-  let fontScaleSlider = document.getElementById('font-scale');
-  let fontScaleValue = document.getElementById('font-scale-value');
-
-  console.log('Accessibility elements found:', {
-    highContrastCheckbox: !!highContrastCheckbox,
-    reducedMotionCheckbox: !!reducedMotionCheckbox,
-    fontScaleSlider: !!fontScaleSlider,
-    fontScaleValue: !!fontScaleValue
-  });
-
-  // Accessibility control listeners
-  if (highContrastCheckbox) {
-    highContrastCheckbox.addEventListener('change', () => {
-      toggleHighContrastMode();
-    });
-  }
-  if (reducedMotionCheckbox) {
-    reducedMotionCheckbox.addEventListener('change', () => {
-      toggleReducedMotion();
-    });
-  }
-  if (fontScaleSlider) {
-    fontScaleSlider.addEventListener('input', () => {
-      let scale = parseFloat(fontScaleSlider.value);
-      setFontScale(scale);
-      if (fontScaleValue) {
-        fontScaleValue.textContent = Math.round(scale * 100) + '%';
-      }
-    });
-  }
+  // Accessibility checkbox listeners
+  if (highContrastCheckbox) highContrastCheckbox.addEventListener('change', toggleHighContrast);
+  if (reducedMotionCheckbox) reducedMotionCheckbox.addEventListener('change', toggleReducedMotion);
 
   // Initialize parameters after all DOM elements are set up
   updateParameters();
 
   console.log('DOM elements initialized');
-}
-
-// ===== ANIMACIÓN SUAVE DE SLIDERS =====
-function updateSliderAnimations() {
-  // Interpolar suavemente hacia los valores objetivo
-  angleCurrent = lerp(angleCurrent, angleTarget, sliderAnimationSpeed);
-  windCurrent = lerp(windCurrent, windTarget, sliderAnimationSpeed);
-  altitudeCurrent = lerp(altitudeCurrent, altitudeTarget, sliderAnimationSpeed);
-  massCurrent = lerp(massCurrent, massTarget, sliderAnimationSpeed);
 }
 
 function updateParameters() {
@@ -476,10 +153,10 @@ function updateParameters() {
     return;
   }
 
-  // Update variables from interpolated slider values (animación suave)
-  angleAttack = radians(angleCurrent);
-  windSpeed = windCurrent;
-  altitude = altitudeCurrent;
+  // Update variables from sliders
+  angleAttack = radians(angleSlider.value());
+  windSpeed = windSlider.value();
+  altitude = altitudeSlider.value();
   mass = massSlider.value();
 
   // Calculate air density based on altitude (simplified)
@@ -609,81 +286,6 @@ function getLODLevel(distance) {
   return 0.2;
 }
 
-async function fetchWeather() {
-  try {
-    console.log('Fetching weather data...');
-    const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${currentCity}&appid=${weatherApiKey}&units=metric`);
-    
-    if (!response.ok) {
-      throw new Error(`Weather API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    weatherData = {
-      temperature: data.main.temp,
-      pressure: data.main.pressure * 100, // Convert hPa to Pa
-      humidity: data.main.humidity,
-      windSpeed: data.wind.speed,
-      windDirection: data.wind.deg || 0,
-      description: data.weather[0].description,
-      city: data.name,
-      country: data.sys.country,
-      timestamp: Date.now()
-    };
-    
-    // Update physics parameters based on weather
-    updatePhysicsFromWeather();
-    
-    console.log('Weather data updated:', weatherData);
-    
-    return true;
-  } catch (error) {
-    console.error('Failed to fetch weather data:', error);
-    // Fallback to default values
-    weatherData = {
-      temperature: 20,
-      pressure: 101325,
-      humidity: 60,
-      windSpeed: 5,
-      windDirection: 0,
-      description: 'Default conditions',
-      city: 'Default',
-      country: 'XX',
-      timestamp: Date.now()
-    };
-    updatePhysicsFromWeather();
-    return false;
-  }
-}
-
-function updatePhysicsFromWeather() {
-  if (!weatherData) return;
-  
-  // Update air density based on temperature and pressure
-  // ρ = P / (R * T) where R is gas constant for air
-  const R = 287.05; // J/(kg·K) for dry air
-  const T = weatherData.temperature + 273.15; // Convert to Kelvin
-  rho = weatherData.pressure / (R * T);
-  
-  // Adjust wind speed
-  windSpeed = weatherData.windSpeed;
-  
-  // Update altitude based on pressure (simplified)
-  // This is a rough approximation
-  altitude = Math.max(0, (101325 - weatherData.pressure) / 11.5); // Rough conversion
-  
-  // Update UI sliders
-  if (windSlider) windSlider.value(windSpeed);
-  if (altitudeSlider) altitudeSlider.value(altitude);
-  
-  // Recalculate physics
-  updateParameters();
-}
-
-function updateWeatherUI() {
-  // Weather UI removed
-}
-
 async function loadMaterialTextures() {
   try {
     console.log('Loading material textures...');
@@ -748,8 +350,9 @@ function draw() {
   console.log('Draw called');
   clear(); // Clear for P2D
 
-  // Update slider animations
-  updateSliderAnimations();
+  // Variables para efectos visuales mejorados con iluminación dinámica
+  let timeOfDay = (frameCount * 0.01) % (2 * PI); // Ciclo de día completo
+  let sunAngle = sin(timeOfDay) * PI/3; // Ángulo del sol (-60° a +60°)
 
   // Camera effects for flight sensation
   let cameraShake = 0;
@@ -760,10 +363,6 @@ function draw() {
   cameraShake = sin(frameCount * 0.1) * map(windSpeed, 0, 100, 0, 2);
   cameraRoll = sin(frameCount * 0.05) * map(degrees(angleAttack), -10, 20, -0.5, 0.5);
   cameraPitch = cos(frameCount * 0.08) * map(altitude, 0, 10000, 0, 1);
-
-  // Variables para efectos visuales mejorados con iluminación dinámica
-  let timeOfDay = (frameCount * 0.01) % (2 * PI); // Ciclo de día completo
-  let sunAngle = sin(timeOfDay) * PI/3; // Ángulo del sol (-60° a +60°)
 
   // Apply camera transformation
   push();
@@ -796,16 +395,34 @@ function draw() {
     line(0, height * 0.7, width, height * 0.7);
   }
 
-  // Don't draw airplane and flows until sliders are initialized
-  if (!angleSlider || !windSlider || !altitudeSlider || !massSlider) {
-    // Show loading message
-    textSize(getAccessibleFontSize(24));
-    textAlign(CENTER);
-    let [r, g, b, a] = getAccessibleColor(255, 255, 255, 255);
-    fill(r, g, b, a);
-    text('Cargando simulación...', width / 2, height / 2);
-    return;
+  // Initialize with default values
+  if (!angleSlider) {
+    angleAttack = radians(5);
+  } else {
+    angleAttack = radians(angleSlider.value());
   }
+
+  if (!windSlider) {
+    windSpeed = 70;
+  } else {
+    windSpeed = windSlider.value();
+  }
+
+  if (!altitudeSlider) {
+    altitude = 0;
+  } else {
+    altitude = altitudeSlider.value();
+  }
+
+  if (!massSlider) {
+    mass = 80;
+  } else {
+    mass = massSlider.value();
+  }
+
+  // Update parameters with current values
+  rho = 1.225 * exp(-altitude / 8000);
+  weight = mass * 9.81;
 
   // Nubes volumétricas con profundidad
   let cloudOffset = frameCount * 0.02; // Movimiento lento de nubes
@@ -1045,20 +662,17 @@ function draw() {
   }
 
   // Título
-  textSize(getAccessibleFontSize(28));
+  textSize(28);
   textAlign(CENTER);
-  let [fillR, fillG, fillB, fillA] = getAccessibleColor(255, 255, 255, 255);
-  fill(fillR, fillG, fillB, fillA);
-  let [strokeR, strokeG, strokeB, strokeA] = getAccessibleColor(0, 0, 0, 255);
-  stroke(strokeR, strokeG, strokeB, strokeA);
+  fill(255);
+  stroke(0);
   strokeWeight(2);
   text('Simulador Interactivo de Sustentación', width / 2, 50);
 
   // Etiqueta del slider
-  textSize(getAccessibleFontSize(16));
+  textSize(16);
   textAlign(LEFT);
-  let [sliderR, sliderG, sliderB, sliderA] = getAccessibleColor(255, 255, 255, 255);
-  fill(sliderR, sliderG, sliderB, sliderA);
+  fill(255);
   noStroke();
   text('Ángulo de Ataque: ' + angleSlider.value() + ' grados', 20, 15);
 
@@ -1093,184 +707,94 @@ function draw() {
     map(sin(timeOfDay), -1, 1, 100, 255)  // Azul varía (más azul al amanecer/atardecer)
   );
 
-  // ===== TEXTURA METÁLICA AVANZADA CON GRADIENTES RADIALES =====
-  // Gradientes metálicos más realistas con efectos de profundidad
-  for (let layer = 0; layer < 6; layer++) { // Más capas para mayor profundidad
-    let layerLight = totalLight + layer * 0.08;
-    let layerDepth = layer * 0.15; // Profundidad para efecto 3D
+  // ===== TEXTURA METÁLICA CON ILUMINACIÓN DINÁMICA =====
+  // Base metálica con gradiente afectado por la iluminación
+  for (let layer = 0; layer < 4; layer++) {
+    let layerLight = totalLight + layer * 0.1;
+    let alpha = map(layer, 0, 3, 255, 150) * layerLight;
 
-    // Gradiente radial desde el centro hacia los bordes
-    let centerX = 0; // Centro del ala
-    let centerY = -15; // Centro vertical del ala
+    // Color base metálico afectado por la luz del sol
+    let baseR = map(layer, 0, 3, 60, 140) * layerLight;
+    let baseG = map(layer, 0, 3, 65, 150) * layerLight;
+    let baseB = map(layer, 0, 3, 75, 160) * layerLight;
 
-    // Color base metálico con variación radial
-    for (let r = 0; r < 180; r += 15) { // Dibujar en anillos radiales
-      let radialFactor = map(r, 0, 180, 1.0, 0.6); // Más brillante en el centro
-      let alpha = map(layer, 0, 5, 255, 120) * layerLight * radialFactor;
-
-      // Color metálico con variaciones cromáticas
-      let metallicR = map(layer + r * 0.01, 0, 6, 70, 160) * layerLight * radialFactor;
-      let metallicG = map(layer + r * 0.008, 0, 6, 75, 170) * layerLight * radialFactor;
-      let metallicB = map(layer + r * 0.012, 0, 6, 85, 180) * layerLight * radialFactor;
-
-      // Aplicar tinte del sol con mayor intensidad
-      let finalColor = color(
-        constrain(metallicR + red(sunColor) * 0.15, 0, 255),
-        constrain(metallicG + green(sunColor) * 0.15, 0, 255),
-        constrain(metallicB + blue(sunColor) * 0.15, 0, 255)
-      );
-
-      fill(red(finalColor), green(finalColor), blue(finalColor), alpha);
-      stroke(red(finalColor) * 0.8, green(finalColor) * 0.8, blue(finalColor) * 0.8, alpha * 0.8);
-      strokeWeight(0.5);
-
-      // Dibujar sección radial del perfil
-      beginShape();
-      // Calcular puntos en el perfil para esta capa radial
-      let innerRadius = r;
-      let outerRadius = r + 15;
-
-      // Parte superior del ala
-      for (let angle = -PI/2; angle <= PI/2; angle += PI/24) {
-        let x = centerX + cos(angle) * outerRadius;
-        let y = centerY + sin(angle) * outerRadius * 0.3; // Ala más delgada
-        vertex(x, y - layerDepth);
-      }
-
-      // Parte inferior del ala
-      for (let angle = PI/2; angle <= 3*PI/2; angle += PI/24) {
-        let x = centerX + cos(angle) * outerRadius;
-        let y = centerY + sin(angle) * outerRadius * 0.2; // Ala inferior más curva
-        vertex(x, y - layerDepth);
-      }
-      endShape(CLOSE);
-    }
-  }
-
-  // ===== TEXTURAS SUPERFICIALES =====
-  // Texturas sutiles de rugosidad superficial para mayor realismo
-  push();
-  noFill();
-  stroke(255, 255, 255, 8); // Blanco muy sutil
-  strokeWeight(0.5);
-
-  // Patrón de rugosidad aleatoria pero consistente
-  randomSeed(42); // Semilla para consistencia
-  for (let i = 0; i < 50; i++) {
-    let x = random(-150, 200);
-    let y = random(-60, 40);
-    let size = random(1, 3);
-
-    // Solo dibujar si el punto está dentro del perfil del ala
-    if (isPointInWing(x, y)) {
-      point(x, y);
-    }
-  }
-
-  // Líneas de tensión superficial sutiles
-  stroke(255, 255, 255, 5);
-  strokeWeight(0.3);
-  for (let i = 0; i < 8; i++) {
-    let startX = -120 + i * 40;
-    let startY = -30 + sin(i * 0.5) * 5;
-    let endX = startX + 30;
-    let endY = startY + cos(i * 0.3) * 8;
-
-    if (isPointInWing(startX, startY) && isPointInWing(endX, endY)) {
-      line(startX, startY, endX, endY);
-    }
-  }
-  pop();
-
-  // ===== EFECTOS DE REFLEJO ESPECULAR AVANZADOS =====
-  // Reflejos especulares que responden dinámicamente al ángulo de luz
-  let specularIntensity = pow(max(0, lightDirection.dot(wingNormal)), 16) * 1.2; // Más sensible
-
-  if (specularIntensity > 0.05) {
-    // Reflejo principal - más realista con forma elíptica
-    push();
-    translate(lightDirection.x * 20, lightDirection.y * 20); // Offset basado en dirección de luz
-
-    // Elipse de reflejo principal
-    fill(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 180);
-    noStroke();
-    ellipse(20, -25, 40 * specularIntensity, 15 * specularIntensity);
-
-    // Reflejos secundarios con blur progresivo
-    for (let i = 1; i <= 3; i++) {
-      let secondaryIntensity = specularIntensity * (1 - i * 0.2);
-      fill(red(sunColor), green(sunColor), blue(sunColor), secondaryIntensity * 120);
-      ellipse(20 + i * 15, -25 + i * 5, 25 * secondaryIntensity, 10 * secondaryIntensity);
-    }
-    pop();
-
-    // Reflejos lineales en bordes
-    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 200);
-    strokeWeight(3);
-    noFill();
-
-    // Arco de reflejo en borde de ataque
-    beginShape();
-    for (let t = 0; t <= 1; t += 0.1) {
-      let x = leadingEdgeX + t * 60;
-      let y = leadingEdgeY - 8 + sin(t * PI) * 4;
-      vertex(x, y);
-    }
-    endShape();
-
-    // Reflejos puntuales en áreas curvas
-    strokeWeight(2);
-    let highlightPoints = [
-      {x: 40, y: -35}, {x: 80, y: -40}, {x: 120, y: -35},
-      {x: -20, y: -30}, {x: -60, y: -25}
-    ];
-
-    for (let point of highlightPoints) {
-      let pointIntensity = specularIntensity * random(0.7, 1.3);
-      stroke(red(sunColor), green(sunColor), blue(sunColor), pointIntensity * 150);
-      point(point.x, point.y);
-    }
-  }
-
-  // ===== SOMBRAS 3D DINÁMICAS MULTICAPA =====
-  // Sombras volumétricas con múltiples capas y blur variable
-  for (let shadowLayer = 0; shadowLayer < 3; shadowLayer++) {
-    push();
-
-    // Offset progresivo para efecto de profundidad
-    let shadowOffsetX = lightDirection.x * (8 + shadowLayer * 4);
-    let shadowOffsetY = lightDirection.y * (8 + shadowLayer * 4);
-    translate(shadowOffsetX, shadowOffsetY);
-
-    // Blur variable basado en distancia e intensidad de luz
-    let blurAmount = shadowLayer * 2;
-    let shadowAlpha = (1 - totalLight) * (60 - shadowLayer * 15) + 15;
-
-    // Color de sombra con tinte azulado para mayor realismo
-    let shadowColor = color(
-      20 + shadowLayer * 10, // Más rojo en capas lejanas
-      20 + shadowLayer * 10, // Más verde en capas lejanas
-      40 + shadowLayer * 15  // Más azul en capas lejanas
+    // Aplicar tinte del sol
+    let metallicColor = color(
+      constrain(baseR + red(sunColor) * 0.1, 0, 255),
+      constrain(baseG + green(sunColor) * 0.1, 0, 255),
+      constrain(baseB + blue(sunColor) * 0.1, 0, 255)
     );
 
-    fill(red(shadowColor), green(shadowColor), blue(shadowColor), shadowAlpha);
-    noStroke();
+    fill(red(metallicColor), green(metallicColor), blue(metallicColor), alpha);
+    stroke(red(metallicColor) * 0.7, green(metallicColor) * 0.7, blue(metallicColor) * 0.7, alpha * 0.7);
+    strokeWeight(1);
 
-    // Sombra escalada para efecto de profundidad
-    scale(1 + shadowLayer * 0.1);
-
-    // Sombra del perfil principal con deformación sutil
+    // Dibujar perfil con gradiente metálico mejorado
     beginShape();
     vertex(leadingEdgeX, leadingEdgeY);
-    bezierVertex(-120 + blurAmount, -25 + blurAmount, -60 + blurAmount, -45 + blurAmount, 0, -55 + blurAmount);
-    bezierVertex(60 - blurAmount, -55 + blurAmount, 120 - blurAmount, -45 + blurAmount, 180 - blurAmount, -25 + blurAmount);
-    vertex(200 - blurAmount, blurAmount);
-    bezierVertex(180 - blurAmount, 15 - blurAmount, 120 - blurAmount, 25 - blurAmount, 60 - blurAmount, 30 - blurAmount);
-    bezierVertex(0, 30 - blurAmount, -60 + blurAmount, 25 - blurAmount, -120 + blurAmount, 15 - blurAmount);
-    bezierVertex(-150 + blurAmount, 8 - blurAmount, -120 + blurAmount, 10 - blurAmount, -90 + blurAmount, 12 - blurAmount, leadingEdgeX, leadingEdgeY);
+    bezierVertex(-120 + layer * 2, -25 + layer, -60 + layer, -45 + layer, 0, -55 + layer);
+    bezierVertex(60 - layer, -55 + layer, 120 - layer * 2, -45 + layer, 180 - layer * 3, -25 + layer);
+    vertex(200 - layer * 4, layer * 0.5);
+    bezierVertex(180 - layer * 3, 15 - layer, 120 - layer * 2, 25 - layer, 60 - layer, 30 - layer);
+    bezierVertex(0, 30 - layer, -60 + layer, 25 - layer, -120 + layer * 2, 15 - layer);
+    bezierVertex(-150 + layer * 3, 8 - layer, -120 + layer * 2, 10 - layer, -90 + layer, 12 - layer);
     endShape(CLOSE);
-    pop();
   }
+
+  // ===== BRILLOS ESPECULARES DINÁMICOS =====
+  // Brillos especulares que cambian con la iluminación
+  let specularIntensity = pow(max(0, lightDirection.dot(wingNormal)), 8) * 0.8;
+
+  if (specularIntensity > 0.1) {
+    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 255);
+    strokeWeight(2);
+
+    // Brillo principal (highlight) - más intenso con buena iluminación
+    beginShape();
+    vertex(leadingEdgeX + 10, leadingEdgeY - 5);
+    bezierVertex(-80, -15, -20, -25, 20, -30);
+    bezierVertex(80, -30, 140, -20, 170, -10);
+    endShape();
+
+    // Brillos secundarios con intensidad variable
+    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 150);
+    beginShape();
+    vertex(leadingEdgeX + 20, leadingEdgeY - 2);
+    bezierVertex(-60, -8, 0, -12, 40, -15);
+    bezierVertex(100, -15, 150, -8, 180, -3);
+    endShape();
+
+    // Brillo de borde de ataque
+    stroke(red(sunColor), green(sunColor), blue(sunColor), specularIntensity * 100);
+    strokeWeight(1);
+    beginShape();
+    vertex(leadingEdgeX, leadingEdgeY - 3);
+    bezierVertex(leadingEdgeX + 30, leadingEdgeY - 8, leadingEdgeX + 60, leadingEdgeY - 6, leadingEdgeX + 90, leadingEdgeY - 4);
+    endShape();
+  }
+
+  // ===== SOMBRAS 3D DINÁMICAS =====
+  // Sombras volumétricas basadas en dirección de luz y hora del día
+  push();
+  let shadowOffsetX = lightDirection.x * 8;
+  let shadowOffsetY = lightDirection.y * 8;
+  translate(shadowOffsetX, shadowOffsetY);
+
+  let shadowAlpha = (1 - totalLight) * 80 + 20; // Más oscura cuando menos luz
+  fill(0, 0, 0, shadowAlpha);
+  noStroke();
+
+  // Sombra del perfil principal
+  beginShape();
+  vertex(leadingEdgeX, leadingEdgeY);
+  bezierVertex(-120, -25, -60, -45, 0, -55);
+  bezierVertex(60, -55, 120, -45, 180, -25);
+  vertex(200, 0);
+  bezierVertex(180, 15, 120, 25, 60, 30);
+  bezierVertex(0, 30, -60, 25, -120, 15);
+  bezierVertex(-150, 8, -120, 10, -90, 12, leadingEdgeX, leadingEdgeY);
+  endShape(CLOSE);
+  pop();
 
   // ===== DETALLES DE SUPERFICIE =====
   // Paneles estructurales
@@ -1445,7 +969,7 @@ function draw() {
   // Número de serie del ala - más visible con efecto 3D
   // Sombra del texto
   fill(0, 0, 0, 100);
-  textSize(getAccessibleFontSize(10));
+  textSize(10);
   textAlign(CENTER);
   text('NACA 2412', 1, 46);
 
@@ -1456,10 +980,10 @@ function draw() {
   text('NACA 2412', 0, 45);
 
   // Etiqueta del borde de ataque con mejor diseño
-  fill(255, 165, 0);
-  stroke(0);
-  strokeWeight(2);
-  textSize(getAccessibleFontSize(8));
+  fill(255, 255, 0);
+  stroke(150, 150, 0);
+  strokeWeight(1);
+  textSize(8);
   text('Borde de Ataque', leadingEdgeX - 20, leadingEdgeY - 15);
 
   // Indicador de dirección de vuelo
@@ -1493,11 +1017,11 @@ function draw() {
 
   // Indicador de velocidad (vector de velocidad)
   let speedVectorLength = map(windSpeed, 0, 100, 20, 60);
-  stroke(255, 165, 0, 200); // Naranja para velocidad
+  stroke(255, 255, 0, 200); // Amarillo para velocidad
   strokeWeight(3);
   line(0, 0, speedVectorLength, 0);
   // Punta de flecha
-  fill(255, 165, 0, 200);
+  fill(255, 255, 0, 200);
   noStroke();
   triangle(speedVectorLength, 0, speedVectorLength - 8, -3, speedVectorLength - 8, 3);
 
@@ -1528,36 +1052,24 @@ function draw() {
   // Texto HUD
   fill(0, 255, 0, 220);
   textAlign(CENTER);
-  textSize(getAccessibleFontSize(8));
+  textSize(8);
   text(Math.round(windSpeed) + ' m/s', 40, -25);
   text(Math.round(altitude) + ' m', -40, -25);
   text(Math.round(liftMagnitude) + ' N', 40, 35);
 
   pop();
 
-  // Update and draw aerodynamic flow particles (solo cuando no está en modo tutorial y no reducedMotion)
-  if (!tutorialMode && !reducedMotion) {
-    updateFlowParticles();
-    updateVortices();
-    drawFlowParticles();
-    drawVortices();
-  }
+  // Update and draw aerodynamic flow particles (with same transformations as wing)
+  push();
+  translate(width / 2, height / 2);
+  scale(1.4);
+  rotate(angleAttack * 0.3);
+  updateFlowParticles();
+  drawFlowParticles();
+  pop();
 
-  // ===== CARACTERÍSTICAS EDUCATIVAS =====
-  // No dibujar diagramas y elementos gráficos cuando está en modo tutorial
-  if (!tutorialMode) {
-    drawEducationalLegends();
-    drawPressureDiagram();
-    drawVelocityDiagram();
-    drawForceDiagram();
-    drawActiveDiagramIndicators();
-  }
-  drawTutorialOverlay();
-  drawComparisonMode();
-
-  // Enhanced aerodynamic flow visualization following NACA 2412 profile (solo cuando no está en modo tutorial)
-  if (!tutorialMode) {
-    noFill();
+  // Enhanced aerodynamic flow visualization following NACA 2412 profile
+  noFill();
 
   // Upper surface flow (fast air, low pressure) - accelerated flow with NACA contour following
   for (let i = 0; i < 8; i++) {
@@ -1942,40 +1454,31 @@ function draw() {
 
   // Flecha de Sustentación (azul, oscilante y dinámica) - emerge del borde de ataque
   let liftLength = liftMagnitude / 5;
-  let oscillation = reducedMotion ? 0 : sin(frameCount * 0.1) * 5; // Oscilación ligera, reducida si reducedMotion
+  let oscillation = sin(frameCount * 0.1) * 5; // Oscilación ligera
   let leadingEdgeWorldX = width / 2 - 180 * 1.4; // Posición del borde de ataque en coordenadas del mundo
   let leadingEdgeWorldY = height / 2; // Centro vertical
 
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY + oscillation,
            leadingEdgeWorldX, leadingEdgeWorldY - liftLength + oscillation, 'blue', 6);
-  let [liftR, liftG, liftB, liftA] = getAccessibleColor(0, 100, 255, 255);
-  fill(liftR, liftG, liftB, liftA);
-  textSize(getAccessibleFontSize(16));
+  fill(0, 100, 255);
+  textSize(16);
   text('Sustentación', leadingEdgeWorldX + 20, leadingEdgeWorldY - liftLength / 2 + oscillation);
 
   // Flecha de Peso (rojo, emerge del borde de ataque hacia abajo)
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY,
            leadingEdgeWorldX, leadingEdgeWorldY + 80, 'red', 6);
-  let [weightR, weightG, weightB, weightA] = getAccessibleColor(255, 0, 0, 255);
-  fill(weightR, weightG, weightB, weightA);
+  fill(255, 0, 0);
   text('Peso', leadingEdgeWorldX + 20, leadingEdgeWorldY + 90);
 
   // Etiquetas de flujo
   textAlign(LEFT);
-  let [fastAirR, fastAirG, fastAirB, fastAirA] = getAccessibleColor(173, 216, 230, 255);
-  fill(fastAirR, fastAirG, fastAirB, fastAirA);
-  textSize(getAccessibleFontSize(14));
+  fill(173, 216, 230);
+  textSize(14);
   text('Aire Rápido (Baja P)', 50, height / 2 - 80);
-  let [slowAirR, slowAirG, slowAirB, slowAirA] = getAccessibleColor(255, 160, 122, 255);
-  fill(slowAirR, slowAirG, slowAirB, slowAirA);
+  fill(255, 160, 122);
   text('Aire Lento (Alta P)', 50, height / 2 + 100);
 
 
-
-  // Update weather effects
-  updateWeather();
-
-  } // Fin de la condición !tutorialMode para visualización aerodinámica
 
   // Close camera transformation
   pop();
@@ -2169,135 +1672,40 @@ function drawVortex(centerX, centerY, strength, direction) {
 
 function initializeFlowParticles() {
   flowParticles = [];
-  vortices = []; // Initialize vortices array
 
-  // Wing transformation parameters
-  let wingCenterX = width/2;
-  let wingCenterY = height/2;
-  let scaleFactor = 1.4;
-  let rotationAngle = angleAttack * 0.3;
-
-  // Create particles for upper surface (faster flow)
+  // Create particles for upper surface (faster flow) - in local wing coordinates
   for (let i = 0; i < 15; i++) {
-    // Start particles at random positions along the wing chord
+    // Start particles at random positions along the wing chord (local coordinates)
     let chordPos = random(-160, 160); // Along chord length
     let upperOffset = random(-60, -20); // Above wing surface
 
-    // Apply wing transformations to get screen coordinates
-    let localX = chordPos;
-    let localY = upperOffset;
-
-    // Apply rotation
-    let cosRot = cos(rotationAngle);
-    let sinRot = sin(rotationAngle);
-    let rotatedX = localX * cosRot - localY * sinRot;
-    let rotatedY = localX * sinRot + localY * cosRot;
-
-    // Apply scaling and translation
-    let screenX = rotatedX * scaleFactor + wingCenterX;
-    let screenY = rotatedY * scaleFactor + wingCenterY;
-
     flowParticles.push({
-      x: screenX,
-      y: screenY,
+      x: chordPos,
+      y: upperOffset,
       vx: 2 + random(1),
       vy: 0,
       surface: 'upper',
       age: random(100),
       maxAge: 200 + random(100),
-      size: 1.5 + random(1),
       trail: []
     });
   }
 
-  // Create particles for lower surface (slower flow)
-  for (let i = 0; i < 12; i++) {
-    // Start particles at random positions along the wing chord
-    let chordPos = random(-160, 160); // Along chord length
-    let lowerOffset = random(15, 45); // Below wing surface
-
-    // Apply wing transformations to get screen coordinates
-    let localX = chordPos;
-    let localY = lowerOffset;
-
-    // Apply rotation
-    let cosRot = cos(rotationAngle);
-    let sinRot = sin(rotationAngle);
-    let rotatedX = localX * cosRot - localY * sinRot;
-    let rotatedY = localX * sinRot + localY * cosRot;
-
-    // Apply scaling and translation
-    let screenX = rotatedX * scaleFactor + wingCenterX;
-    let screenY = rotatedY * scaleFactor + wingCenterY;
+  // Create particles for lower surface (slower flow) - in local wing coordinates
+  for (let i = 0; i < 10; i++) {
+    let chordPos = random(-160, 160);
+    let lowerOffset = random(20, 60); // Below wing surface
 
     flowParticles.push({
-      x: screenX,
-      y: screenY,
-      vx: 1 + random(0.5),
+      x: chordPos,
+      y: lowerOffset,
+      vx: 1.5 + random(0.5),
       vy: 0,
       surface: 'lower',
       age: random(100),
-      maxAge: 250 + random(100),
-      size: 1.2 + random(0.8),
+      maxAge: 180 + random(80),
       trail: []
     });
-  }
-
-  // ===== INICIALIZAR VÓRTICES =====
-  // Vórtices en los bordes de ataque y salida del ala
-  let vortexPositions = [
-    {x: -180, y: 0, type: 'leading'}, // Borde de ataque
-    {x: 180, y: 0, type: 'trailing'}  // Borde de salida
-  ];
-
-  for (let pos of vortexPositions) {
-    // Aplicar transformaciones del ala
-    let localX = pos.x;
-    let localY = pos.y;
-
-    // Apply rotation
-    let cosRot = cos(rotationAngle);
-    let sinRot = sin(rotationAngle);
-    let rotatedX = localX * cosRot - localY * sinRot;
-    let rotatedY = localX * sinRot + localY * cosRot;
-
-    // Apply scaling and translation
-    let screenX = rotatedX * scaleFactor + wingCenterX;
-    let screenY = rotatedY * scaleFactor + wingCenterY;
-
-    vortices.push({
-      x: screenX,
-      y: screenY,
-      type: pos.type,
-      strength: pos.type === 'leading' ? 2.0 : 1.5,
-      rotation: 0,
-      particles: []
-    });
-  }
-}
-
-function updateVortices() {
-  for (let vortex of vortices) {
-    // Rotación del vórtice
-    vortex.rotation += vortex.strength * 0.1;
-
-    // Actualizar partículas del vórtice (efecto espiral)
-    vortex.particles = [];
-    let numParticles = 8;
-
-    for (let i = 0; i < numParticles; i++) {
-      let angle = vortex.rotation + (i * TWO_PI / numParticles);
-      let radius = 5 + i * 2; // Radio creciente para efecto espiral
-
-      let particleX = vortex.x + cos(angle) * radius;
-      let particleY = vortex.y + sin(angle) * radius;
-
-      vortex.particles.push({
-        x: particleX,
-        y: particleY,
-        alpha: map(i, 0, numParticles - 1, 150, 30)
-      });
-    }
   }
 }
 
@@ -2305,134 +1713,13 @@ function updateFlowParticles() {
   for (let i = flowParticles.length - 1; i >= 0; i--) {
     let p = flowParticles[i];
 
-    // Update trail
-    p.trail.push({x: p.x, y: p.y});
-    if (p.trail.length > 8) {
-      p.trail.shift();
-    }
-
-    // Calculate wing-relative position
-    let wingCenterX = width/2;
-    let wingCenterY = height/2;
-    let scaleFactor = 1.4;
-    let rotationAngle = angleAttack * 0.3;
-
-    // Transform particle position to wing coordinate system
-    let localX = (p.x - wingCenterX) / scaleFactor;
-    let localY = (p.y - wingCenterY) / scaleFactor;
-
-    // Apply inverse rotation to get position relative to unrotated wing
-    let cosRot = cos(-rotationAngle);
-    let sinRot = sin(-rotationAngle);
-    let wingLocalX = localX * cosRot - localY * sinRot;
-    let wingLocalY = localX * sinRot + localY * cosRot;
-
-    // Wing geometry parameters (NACA 2412 profile approximation)
-    let chordLength = 360; // From leadingEdgeX -180 to trailing edge ~180
-    let maxThickness = 55; // Maximum thickness of airfoil
-
-    if (p.surface === 'upper') {
-      // Upper surface: faster flow following NACA 2412 upper curve
-      let t = map(wingLocalX, -180, 180, 0, 1); // Parameter along chord
-
-      // NACA 2412 upper surface approximation using Bézier-like curve
-      let upperY;
-      if (t < 0.5) {
-        // Leading edge region - more curved
-        let curveFactor = sin(t * PI);
-        upperY = -maxThickness * 0.5 * curveFactor * (1 - t*2);
-      } else {
-        // Trailing edge region - straighter
-        let trailT = (t - 0.5) * 2;
-        upperY = -maxThickness * 0.3 * (1 - trailT*trailT);
-      }
-
-      // Calculate desired Y position on upper surface
-      let targetY = upperY;
-
-      // Velocity based on position along chord (Bernoulli principle)
-      let baseSpeed = map(t, 0, 1, 2.8, 2.2); // Faster at leading edge
-      p.vx = baseSpeed + sin(wingLocalX * 0.008 + frameCount * 0.03) * 0.3;
-
-      // Curve toward upper surface
-      let surfaceOffset = wingLocalY - targetY;
-      if (abs(surfaceOffset) > 5) {
-        p.vy = -abs(surfaceOffset) * 0.1 - 0.05; // Curve toward surface
-      } else {
-        p.vy = sin(wingLocalX * 0.012 + frameCount * 0.025) * 0.15;
-      }
-
-      // Leading edge special handling
-      if (wingLocalX > -180 && wingLocalX < -100) {
-        let leadingFactor = map(wingLocalX, -180, -100, 1, 0);
-        p.vy -= leadingFactor * 0.4; // Strong curve around leading edge
-      }
-
-    } else {
-      // Lower surface: slower flow following NACA 2412 lower curve
-      let t = map(wingLocalX, -180, 180, 0, 1);
-
-      // NACA 2412 lower surface approximation
-      let lowerY;
-      if (t < 0.4) {
-        // Leading edge region
-        let curveFactor = sin(t * PI * 0.8);
-        lowerY = maxThickness * 0.3 * curveFactor;
-      } else {
-        // Trailing edge region - cambered
-        let trailT = (t - 0.4) / 0.6;
-        lowerY = maxThickness * 0.15 * (1 - trailT);
-      }
-
-      // Calculate desired Y position on lower surface
-      let targetY = lowerY;
-
-      // Slower velocity on lower surface
-      let baseSpeed = map(t, 0, 1, 1.4, 1.0);
-      p.vx = baseSpeed + sin(wingLocalX * 0.005 + frameCount * 0.02) * 0.2;
-
-      // Curve toward lower surface
-      let surfaceOffset = wingLocalY - targetY;
-      if (abs(surfaceOffset) > 5) {
-        p.vy = surfaceOffset * 0.08 + 0.02; // Curve toward surface
-      } else {
-        p.vy = sin(wingLocalX * 0.008 + frameCount * 0.018) * 0.1;
-      }
-
-      // Leading edge special handling
-      if (wingLocalX > -180 && wingLocalX < -120) {
-        let leadingFactor = map(wingLocalX, -180, -120, 1, 0);
-        p.vy += leadingFactor * 0.3; // Gentle curve around leading edge
-      }
-    }
-
-    // ===== TURBULENCIA REALISTA =====
-    // Agregar movimiento ondulatorio para simular turbulencia real
-    let turbulenceStrength = 0.8; // Intensidad de la turbulencia
-    let turbulenceScale = 0.02; // Escala de las ondas de turbulencia
-
-    // Componentes de turbulencia basados en posición y tiempo
-    let turbulenceX = sin(wingLocalX * turbulenceScale + frameCount * 0.05) * turbulenceStrength;
-    let turbulenceY = cos(wingLocalY * turbulenceScale * 0.7 + frameCount * 0.03) * turbulenceStrength * 0.6;
-
-    // Turbulencia más intensa cerca del borde de ataque y salida
-    let edgeFactor = 1;
-    if (abs(wingLocalX) > 150) { // Cerca del borde de salida
-      edgeFactor = 1.5;
-    } else if (abs(wingLocalX) < 50) { // Cerca del borde de ataque
-      edgeFactor = 1.3;
-    }
-
-    turbulenceX *= edgeFactor;
-    turbulenceY *= edgeFactor;
-
-    // Aplicar turbulencia a la velocidad
-    p.vx += turbulenceX * 0.1;
-    p.vy += turbulenceY * 0.08;
-
-    // Update position
+    // Update particle position
     p.x += p.vx;
     p.y += p.vy;
+
+    // Add slight turbulence
+    p.vx += sin(frameCount * 0.02 + p.x * 0.01) * 0.05;
+    p.vy += cos(frameCount * 0.015 + p.y * 0.01) * 0.03;
 
     // Age particle
     p.age++;
@@ -2446,8 +1733,6 @@ function updateFlowParticles() {
         p.x = -50;
         p.y = height/2 + 20 + random(40); // Start below wing
       }
-      p.age = 0;
-      p.trail = [];
     }
   }
 }
@@ -2456,140 +1741,37 @@ function drawFlowParticles() {
   noStroke();
 
   for (let p of flowParticles) {
-    // ===== COLORES DINÁMICOS BASADOS EN VELOCIDAD =====
-    // Calcular velocidad total de la partícula
-    let speed = sqrt(p.vx * p.vx + p.vy * p.vy);
-
-    // Mapear velocidad a colores: azul frío (lento) → rojo cálido (rápido)
-    let speedNormalized = constrain(map(speed, 0.5, 4.0, 0, 1), 0, 1);
-
-    // Gradiente de colores: azul → cian → verde → amarillo → rojo
-    let r, g, b;
-    if (speedNormalized < 0.25) {
-      // Azul → Cian (velocidades muy bajas)
-      let t = speedNormalized / 0.25;
-      r = 0;
-      g = map(t, 0, 1, 100, 200);
-      b = map(t, 0, 1, 255, 255);
-    } else if (speedNormalized < 0.5) {
-      // Cian → Verde (velocidades bajas)
-      let t = (speedNormalized - 0.25) / 0.25;
-      r = 0;
-      g = map(t, 0, 1, 200, 255);
-      b = map(t, 0, 1, 255, 100);
-    } else if (speedNormalized < 0.75) {
-      // Verde → Amarillo (velocidades medias)
-      let t = (speedNormalized - 0.5) / 0.25;
-      r = map(t, 0, 1, 0, 255);
-      g = 255;
-      b = map(t, 0, 1, 100, 0);
-    } else {
-      // Amarillo → Rojo (velocidades altas)
-      let t = (speedNormalized - 0.75) / 0.25;
-      r = 255;
-      g = map(t, 0, 1, 255, 100);
-      b = 0;
-    }
-
-    // Intensidad del color basada en la edad de la partícula
-    let ageAlpha = map(p.age, 0, p.maxAge, 255, 50);
-
-    // Draw trail with dynamic colors
-    for (let i = 0; i < p.trail.length - 1; i++) {
-      let trailAlpha = map(i, 0, p.trail.length - 1, ageAlpha * 0.1, ageAlpha * 0.4);
-      let trailSize = map(i, 0, p.trail.length - 1, p.size * 0.2, p.size * 0.6);
-
-      fill(r, g, b, trailAlpha);
-      ellipse(p.trail[i].x, p.trail[i].y, trailSize, trailSize);
-    }
-
-    // Draw main particle with dynamic color
-    fill(r, g, b, ageAlpha);
-    ellipse(p.x, p.y, p.size, p.size);
-  }
-
-  // ===== TRAILS DE CONDENSACIÓN =====
-  // Agregar estelas de vapor en áreas de baja presión (alta velocidad)
-  for (let p of flowParticles) {
+    // Draw main particle
     if (p.surface === 'upper') {
-      let speed = sqrt(p.vx * p.vx + p.vy * p.vy);
-
-      // Alta velocidad = baja presión = condensación posible
-      if (speed > 3.0 && random() < 0.02) { // Probabilidad baja pero visible
-        // Crear partícula de condensación
-        let condensationX = p.x + random(-5, 5);
-        let condensationY = p.y + random(-3, 3);
-
-        // Color blanco azulado para el vapor
-        fill(220, 240, 255, 80);
-
-        // Forma ovalada para simular gotas de condensación
-        ellipse(condensationX, condensationY, 2, 4);
-
-        // Trail sutil de la condensación
-        for (let i = 0; i < 3; i++) {
-          let trailX = condensationX - i * 2;
-          let trailY = condensationY - i * 1;
-          let trailAlpha = 80 - i * 25;
-
-          fill(220, 240, 255, trailAlpha);
-          ellipse(trailX, trailY, 1, 2);
-        }
-      }
-    }
-  }
-}
-
-function drawVortices() {
-  noFill();
-  strokeWeight(1.5);
-
-  for (let vortex of vortices) {
-    // Color del vórtice basado en el tipo
-    if (vortex.type === 'leading') {
-      stroke(100, 150, 255, 120); // Azul para borde de ataque
+      fill(0, 200, 255, 150); // Blue for upper surface (faster flow)
     } else {
-      stroke(255, 100, 100, 100); // Rojo para borde de salida
+      fill(255, 200, 0, 130); // Orange for lower surface (slower flow)
     }
 
-    // Dibujar espiral del vórtice
-    beginShape();
-    for (let particle of vortex.particles) {
-      vertex(particle.x, particle.y);
-    }
-    endShape();
+    // Draw particle as small ellipse
+    ellipse(p.x, p.y, 3, 3);
 
-    // Dibujar partículas del vórtice
-    noStroke();
-    for (let particle of vortex.particles) {
-      if (vortex.type === 'leading') {
-        fill(100, 150, 255, particle.alpha);
-      } else {
-        fill(255, 100, 100, particle.alpha);
+    // Draw subtle trail
+    if (p.age > 10) {
+      let trailLength = min(8, floor(p.age / 5));
+      for (let i = 1; i <= trailLength; i++) {
+        let trailX = p.x - p.vx * i * 0.5;
+        let trailY = p.y - p.vy * i * 0.5;
+        let alpha = map(i, 1, trailLength, 100, 20);
+
+        if (p.surface === 'upper') {
+          fill(0, 150, 255, alpha);
+        } else {
+          fill(255, 150, 0, alpha);
+        }
+
+        ellipse(trailX, trailY, 2, 2);
       }
-      ellipse(particle.x, particle.y, 2, 2);
     }
   }
 }
 
-function setWeather(weather) {
-  currentWeather = weather;
-
-  // Update button states
-  select('#weather-clear').removeClass('active');
-  select('#weather-rain').removeClass('active');
-  select('#weather-snow').removeClass('active');
-  select('#weather-storm').removeClass('active');
-
-  select('#weather-' + weather).addClass('active');
-
-  // Reset weather effects
-  rainDrops = [];
-  snowFlakes = [];
-  lightningFlash = 0;
-}
-
-function updateWeather() {
+function drawWeather() {
   if (currentWeather === 'rain') {
     // ===== LLUVIA MEJORADA =====
     // Diferentes intensidades de lluvia basadas en velocidad del viento
@@ -2774,640 +1956,64 @@ function updateWeather() {
     fill(20, 20, 50, 120);
     rect(0, 0, width, height);
 
-    // Viento fuerte que afecta las nubes
-    if (frameCount % 2 === 0) {
-      cloudOffset += windSpeed * 0.02;
-    }
   }
 }
 
+// API Integration Functions
+async function fetchRandomAirplaneImage() {
+  try {
+    // Simulate fetching airplane data
+    // In a real implementation, you would use FlightAware API or similar
+    const mockAirplaneData = {
+      model: ['Boeing 737', 'Airbus A320', 'Boeing 787', 'Airbus A350'][floor(random(4))],
+      airline: ['Aerolineas Argentinas', 'LATAM', 'Iberia', 'American Airlines'][floor(random(4))],
+      registration: 'LV-' + ['ABC', 'DEF', 'GHI', 'JKL'][floor(random(4))],
+      imageUrl: null // Would be a real image URL from API
+    };
 
+    // Update airplane display info
+    select('#airplane-info').html(
+      `${mockAirplaneData.airline} - ${mockAirplaneData.model}<br>` +
+      `Matrícula: ${mockAirplaneData.registration}`
+    );
 
-function isPointInWing(x, y) {
-  // Función auxiliar para determinar si un punto está dentro del perfil del ala
-  // Usando una aproximación simplificada del perfil NACA
-  let chord = 320; // Longitud de la cuerda
-  let thickness = 0.12; // Espesor relativo
+    console.log('Airplane data loaded:', mockAirplaneData);
+    alert(`Avión cargado: ${mockAirplaneData.model} de ${mockAirplaneData.airline}`);
 
-  // Coordenadas normalizadas
-  let xn = (x + 150) / chord; // Centrar en el borde de ataque
-
-  if (xn < 0 || xn > 1) return false;
-
-  // Perfil NACA simétrico simplificado
-  let yt = thickness * chord * (0.2969 * sqrt(xn) - 0.1260 * xn - 0.3516 * pow(xn, 2) + 0.2843 * pow(xn, 3) - 0.1015 * pow(xn, 4));
-
-  // Verificar si el punto está dentro del espesor del perfil
-  return abs(y) <= yt;
-}
-
-function toggleTutorialMode() {
-  tutorialMode = !tutorialMode;
-  if (tutorialMode) {
-    tutorialStep = 0;
-    tutorialModeBtn.html('🎓 Salir Tutorial');
-    tutorialModeBtn.style('background', 'linear-gradient(145deg, #ff6b6b, #ee5a52)');
-  } else {
-    tutorialModeBtn.html('🎓 Modo Tutorial');
-    tutorialModeBtn.style('background', 'linear-gradient(145deg, #667eea, #764ba2)');
+  } catch (error) {
+    console.error('Error fetching airplane data:', error);
+    alert('Error al cargar datos del avión');
   }
 }
 
-function toggleComparisonMode() {
-  comparisonMode = !comparisonMode;
-  if (comparisonMode) {
-    currentComparisonIndex = 0;
-    comparisonModeBtn.html('📊 Salir Comparación');
-    comparisonModeBtn.style('background', 'linear-gradient(145deg, #ff9a9e, #fecfef)');
-  } else {
-    // Restaurar configuración original
-    angleSlider.value(5);
-    updateParameters();
-    comparisonModeBtn.html('📊 Comparaciones');
-    comparisonModeBtn.style('background', 'linear-gradient(145deg, #f093fb, #f5576c)');
-  }
-}
-
-function drawEducationalLegends() {
-  if (!showEducationalLegends) return;
-
-  textAlign(CENTER);
-  let mainFontSize = getAccessibleFontSize(12);
-  let smallFontSize = getAccessibleFontSize(10);
-  textSize(mainFontSize);
+// Accessibility functions
+function toggleHighContrast() {
+  highContrastMode = !highContrastMode;
+  let body = document.body;
   
-  // Aplicar colores accesibles
-  let [textR, textG, textB, textA] = getAccessibleColor(255, 255, 255, 220);
-  fill(textR, textG, textB, textA);
-  let [strokeR, strokeG, strokeB, strokeA] = getAccessibleColor(0, 0, 0, 150);
-  stroke(strokeR, strokeG, strokeB, strokeA);
-  strokeWeight(1);
-
-  // Distribuir leyendas horizontalmente en la parte inferior
-  let legendY = height - 80; // Más arriba para evitar cortes
-  let spacing = width / 4; // Dividir el ancho en 4 secciones
-
-  // ===== LEYENDA 1: SUSTENTACIÓN =====
-  let legend1X = spacing * 0.5;
-  // Caja de fondo con gradiente
-  fill(0, 100, 0, 180); // Verde para sustentación
-  noStroke();
-  rect(legend1X - 60, legendY - 35, 120, 50, 8);
-
-  // Icono de flecha hacia arriba
-  stroke(255, 255, 255, 255);
-  strokeWeight(3);
-  line(legend1X, legendY - 25, legend1X, legendY - 15);
-  line(legend1X, legendY - 25, legend1X - 3, legendY - 20);
-  line(legend1X, legendY - 25, legend1X + 3, legendY - 20);
-
-  // Texto
-  fill(255, 255, 255, 255);
-  noStroke();
-  text("SUSTENTACIÓN", legend1X, legendY - 5);
-  textSize(smallFontSize);
-  text("Fuerza ↑", legend1X, legendY + 8);
-
-  // ===== LEYENDA 2: ARRASTRE =====
-  let legend2X = spacing * 1.5;
-  // Caja de fondo con gradiente
-  fill(100, 0, 0, 180); // Rojo para arrastre
-  noStroke();
-  rect(legend2X - 60, legendY - 35, 120, 50, 8);
-
-  // Icono de flecha hacia la derecha
-  stroke(255, 255, 255, 255);
-  strokeWeight(3);
-  line(legend2X - 10, legendY - 20, legend2X + 10, legendY - 20);
-  line(legend2X + 10, legendY - 20, legend2X + 5, legendY - 23);
-  line(legend2X + 10, legendY - 20, legend2X + 5, legendY - 17);
-
-  // Texto
-  fill(255, 255, 255, 255);
-  noStroke();
-  textSize(mainFontSize);
-  text("ARRASTRE", legend2X, legendY - 5);
-  textSize(smallFontSize);
-  text("Resistencia →", legend2X, legendY + 8);
-
-  // ===== LEYENDA 3: PARTÍCULAS =====
-  let legend3X = spacing * 2.5;
-  // Caja de fondo con gradiente
-  fill(0, 0, 100, 180); // Azul para partículas
-  noStroke();
-  rect(legend3X - 70, legendY - 35, 140, 50, 8);
-
-  // Iconos de partículas (círculos pequeños)
-  fill(0, 150, 255, 255); // Azul superior
-  noStroke();
-  ellipse(legend3X - 25, legendY - 20, 6, 6);
-  fill(255, 100, 0, 255); // Rojo inferior
-  ellipse(legend3X - 10, legendY - 15, 6, 6);
-  fill(0, 200, 255, 255); // Azul superior
-  ellipse(legend3X + 5, legendY - 18, 4, 4);
-
-  // Texto
-  fill(255, 255, 255, 255);
-  textSize(mainFontSize);
-  text("PARTÍCULAS", legend3X, legendY - 5);
-  textSize(smallFontSize);
-  text("Azul: superior | Rojo: inferior", legend3X, legendY + 8);
-
-  // ===== LEYENDA 4: PRESIÓN =====
-  let legend4X = spacing * 3.5;
-  // Caja de fondo con gradiente
-  fill(100, 0, 100, 180); // Púrpura para presión
-  noStroke();
-  rect(legend4X - 60, legendY - 35, 120, 50, 8);
-
-  // Icono de presión (ondas)
-  stroke(255, 255, 255, 255);
-  strokeWeight(2);
-  noFill();
-  arc(legend4X - 15, legendY - 20, 8, 8, PI, TWO_PI);
-  arc(legend4X - 5, legendY - 18, 6, 6, PI, TWO_PI);
-  arc(legend4X + 5, legendY - 22, 10, 10, PI, TWO_PI);
-
-  // Texto
-  fill(255, 255, 255, 255);
-  noStroke();
-  textSize(mainFontSize);
-  text("PRESIÓN", legend4X, legendY - 5);
-  textSize(smallFontSize);
-  text("Baja ↑ | Alta ↓", legend4X, legendY + 8);
-}
-
-function drawActiveDiagramIndicators() {
-  // Indicadores en la esquina superior derecha para mostrar qué diagramas están activos
-  let indicatorX = width - 120;
-  let indicatorY = 30;
-  let indicatorSpacing = 25;
-
-  textAlign(LEFT);
-  textSize(getAccessibleFontSize(10));
-
-  if (showPressureDiagram) {
-    fill(255, 0, 0, 200);
-    noStroke();
-    rect(indicatorX - 15, indicatorY - 8, 12, 12, 2);
-    fill(255, 255, 255, 255);
-    text("Presión", indicatorX, indicatorY + 2);
-    indicatorY += indicatorSpacing;
-  }
-
-  if (showVelocityDiagram) {
-    fill(255, 165, 0, 200);
-    noStroke();
-    rect(indicatorX - 15, indicatorY - 8, 12, 12, 2);
-    fill(255, 255, 255, 255);
-    text("Velocidad", indicatorX, indicatorY + 2);
-    indicatorY += indicatorSpacing;
-  }
-
-  if (showForceDiagram) {
-    fill(0, 255, 0, 200);
-    noStroke();
-    rect(indicatorX - 15, indicatorY - 8, 12, 12, 2);
-    fill(255, 255, 255, 255);
-    text("Fuerzas", indicatorX, indicatorY + 2);
-  }
-}
-
-function drawPressureDiagram() {
-  if (!showPressureDiagram) return;
-
-  // Diagrama de presiones sobre el ala - más sutil
-  push();
-  translate(width/2, height/2);
-
-  // Área de baja presión (superior) - más transparente
-  fill(255, 0, 0, 60);
-  noStroke();
-  beginShape();
-  vertex(-180, -55);
-  bezierVertex(-120, -45, -60, -35, 0, -30);
-  bezierVertex(60, -35, 120, -45, 180, -55);
-  vertex(200, -20);
-  bezierVertex(180, -10, 120, 0, 60, 5);
-  bezierVertex(0, 5, -60, 0, -120, -10);
-  bezierVertex(-150, -15, -180, -20, -180, -55);
-  endShape();
-
-  // Área de alta presión (inferior) - más transparente
-  fill(0, 0, 255, 60);
-  beginShape();
-  vertex(-180, 15);
-  bezierVertex(-120, 25, -60, 30, 0, 30);
-  bezierVertex(60, 30, 120, 25, 180, 15);
-  vertex(200, 40);
-  bezierVertex(180, 50, 120, 55, 60, 50);
-  bezierVertex(0, 50, -60, 55, -120, 50);
-  bezierVertex(-150, 45, -180, 40, -180, 15);
-  endShape();
-
-  // Etiquetas más pequeñas y mejor posicionadas
-  fill(255, 255, 255, 200);
-  textAlign(CENTER);
-  textSize(getAccessibleFontSize(10));
-  text("BAJA PRESIÓN", 0, -80);
-  text("ALTA PRESIÓN", 0, 80);
-  pop();
-}
-
-function drawVelocityDiagram() {
-  if (!showVelocityDiagram) return;
-
-  // Diagrama de velocidades - más sutil
-  push();
-  translate(width/2, height/2);
-
-  stroke(255, 165, 0, 120); // Más transparente
-  strokeWeight(2);
-  noFill();
-
-  // Vectores de velocidad en superficie superior (más rápidos) - menos vectores
-  for (let x = -100; x <= 100; x += 100) {
-    let y = -40;
-    let speed = map(abs(x), 0, 150, 3.5, 2.0);
-    let vectorLength = speed * 10; // Más cortos
-
-    line(x, y, x + vectorLength, y);
-    // Punta de flecha más pequeña
-    line(x + vectorLength, y, x + vectorLength - 3, y - 2);
-    line(x + vectorLength, y, x + vectorLength - 3, y + 2);
-  }
-
-  // Vectores de velocidad en superficie inferior (más lentos)
-  for (let x = -100; x <= 100; x += 100) {
-    let y = 40;
-    let speed = map(abs(x), 0, 150, 1.5, 1.0);
-    let vectorLength = speed * 10;
-
-    line(x, y, x + vectorLength, y);
-    line(x + vectorLength, y, x + vectorLength - 3, y - 2);
-    line(x + vectorLength, y, x + vectorLength - 3, y + 2);
-  }
-
-  // Etiqueta más pequeña
-  fill(255, 165, 0);
-  stroke(0);
-  strokeWeight(2);
-  textAlign(CENTER);
-  textSize(getAccessibleFontSize(10));
-  text("VELOCIDAD DEL AIRE", 0, -110);
-  pop();
-}
-
-function drawForceDiagram() {
-  if (!showForceDiagram) return;
-
-  // Diagrama de fuerzas - más sutil
-  push();
-  translate(width/2, height/2);
-
-  // Fuerza de sustentación - más sutil
-  stroke(0, 255, 0, 150);
-  strokeWeight(3);
-  let liftForce = 60; // Más corto
-  line(0, 0, 0, -liftForce);
-
-  // Punta de flecha
-  fill(0, 255, 0, 150);
-  noStroke();
-  triangle(-4, -liftForce, 4, -liftForce, 0, -liftForce - 8);
-
-  // Fuerza de arrastre - más sutil
-  stroke(255, 0, 0, 150);
-  strokeWeight(3);
-  let dragForce = 40;
-  line(0, 0, dragForce, 0);
-
-  fill(255, 0, 0, 150);
-  triangle(dragForce, -4, dragForce, 4, dragForce + 8, 0);
-
-  // Fuerza de peso - más sutil
-  stroke(255, 165, 0, 150);
-  strokeWeight(3);
-  let weightForce = 50;
-  line(0, 0, 0, weightForce);
-
-  fill(255, 165, 0, 150);
-  triangle(-4, weightForce, 4, weightForce, 0, weightForce + 8);
-
-  // Etiquetas más pequeñas
-  fill(255, 255, 255, 200);
-  textAlign(CENTER);
-  textSize(getAccessibleFontSize(10));
-  text("SUSTENTACIÓN", 0, -liftForce - 15);
-  text("ARRASTRE", dragForce + 25, 0);
-  text("PESO", 0, weightForce + 20);
-  pop();
-}
-
-function drawTutorialOverlay() {
-  if (!tutorialMode) return;
-
-  // Overlay semi-transparente con blur effect
-  fill(0, 0, 0, 150);
-  noStroke();
-  rect(0, 0, width, height);
-
-  // Caja principal del tutorial con gradiente
-  let boxWidth = min(600, width * 0.9); // Aumentado de 500 a 600
-  let boxHeight = min(400, height * 0.7); // Aumentado de 350 a 400
-  let boxX = width/2 - boxWidth/2;
-  let boxY = height/2 - boxHeight/2;
-
-  // Sombra de la caja
-  fill(0, 0, 0, 80);
-  noStroke();
-  rect(boxX + 8, boxY + 8, boxWidth, boxHeight, 20);
-
-  // Caja principal con gradiente
-  for (let i = 0; i < boxHeight; i++) {
-    let alpha = map(i, 0, boxHeight, 255, 220);
-    let r = map(i, 0, boxHeight, 255, 248);
-    let g = map(i, 0, boxHeight, 255, 249);
-    let b = map(i, 0, boxHeight, 255, 250);
-    stroke(r, g, b, alpha);
-    strokeWeight(1);
-    line(boxX, boxY + i, boxX + boxWidth, boxY + i);
-  }
-
-  // Borde de la caja
-  stroke(52, 152, 219, 200);
-  strokeWeight(3);
-  fill(255, 255, 255, 250);
-  rect(boxX, boxY, boxWidth, boxHeight, 20);
-
-  // Barra de progreso
-  let progressWidth = map(tutorialStep, 0, tutorialSteps.length - 1, 0, boxWidth - 40);
-  fill(52, 152, 219, 180);
-  noStroke();
-  rect(boxX + 20, boxY + boxHeight - 25, progressWidth, 6, 3);
-
-  // Indicador de paso
-  let [stepColorR, stepColorG, stepColorB, stepColorA] = getAccessibleColor(52, 152, 219, 255);
-  fill(stepColorR, stepColorG, stepColorB, stepColorA);
-  textAlign(CENTER);
-  textSize(getAccessibleFontSize(12));
-  text(`Paso ${tutorialStep + 1} de ${tutorialSteps.length}`, width/2, boxY + boxHeight - 35);
-
-  // Título
-  let [titleColorR, titleColorG, titleColorB, titleColorA] = getAccessibleColor(44, 62, 80, 255);
-  fill(titleColorR, titleColorG, titleColorB, titleColorA);
-  textAlign(CENTER);
-  textSize(getAccessibleFontSize(20));
-  text("Tutorial Interactivo", width/2, boxY + 40);
-
-  // Línea decorativa
-  stroke(52, 152, 219, 150);
-  strokeWeight(2);
-  line(width/2 - 50, boxY + 55, width/2 + 50, boxY + 55);
-
-  // Contenido del tutorial
-  let contentY = boxY + 80;
-  let maxTextWidth = boxWidth - 60; // Ancho máximo para el texto (con márgenes)
-  let lines = tutorialSteps[tutorialStep].split('\n');
-
-  // Función auxiliar para dividir texto largo en líneas que quepan
-  function wrapText(text, maxWidth) {
-    let words = text.split(' ');
-    let lines = [];
-    let currentLine = '';
-
-    for (let word of words) {
-      let testLine = currentLine + (currentLine ? ' ' : '') + word;
-      let testWidth = textWidth(testLine);
-
-      if (testWidth > maxWidth && currentLine) {
-        lines.push(currentLine);
-        currentLine = word;
-      } else {
-        currentLine = testLine;
-      }
-    }
-
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-
-    return lines;
-  }
-
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim() === '') continue;
-
-    let isTitle = lines[i].includes('🎓') || lines[i].includes('✈️') || lines[i].includes('🌪️') ||
-                  lines[i].includes('⚖️') || lines[i].includes('📐') || lines[i].includes('💨') ||
-                  lines[i].includes('🏔️') || lines[i].includes('⚠️') || lines[i].includes('🔄') ||
-                  lines[i].includes('🎯');
-
-    if (isTitle) {
-      // Título con emoji - dividir en líneas si es necesario
-      let [titleTextR, titleTextG, titleTextB, titleTextA] = getAccessibleColor(52, 152, 219, 255);
-      fill(titleTextR, titleTextG, titleTextB, titleTextA);
-      textSize(getAccessibleFontSize(18));
-      let wrappedLines = wrapText(lines[i], maxTextWidth);
-      for (let wrappedLine of wrappedLines) {
-        text(wrappedLine, width/2, contentY);
-        contentY += 35;
-      }
-    } else {
-      // Texto normal - dividir en líneas si es necesario
-      let [normalTextR, normalTextG, normalTextB, normalTextA] = getAccessibleColor(52, 73, 94, 255);
-      fill(normalTextR, normalTextG, normalTextB, normalTextA);
-      textSize(getAccessibleFontSize(14));
-      let wrappedLines = wrapText(lines[i], maxTextWidth);
-      for (let wrappedLine of wrappedLines) {
-        text(wrappedLine, width/2, contentY);
-        contentY += 25;
-      }
-    }
-  }
-
-  // Botones de navegación mejorados
-  let buttonY = boxY + boxHeight - 60;
-  let buttonWidth = 100;
-  let buttonHeight = 35;
-
-  // Botón anterior
-  if (tutorialStep > 0) {
-    // Sombra del botón
-    fill(0, 0, 0, 50);
-    noStroke();
-    rect(boxX + 30 + 2, buttonY + 2, buttonWidth, buttonHeight, 8);
-
-    // Botón principal
-    fill(100, 100, 255, 220);
-    stroke(100, 100, 255, 255);
-    strokeWeight(2);
-    rect(boxX + 30, buttonY, buttonWidth, buttonHeight, 8);
-
-    // Texto del botón
-    fill(255, 255, 255, 255);
-    textAlign(CENTER);
-    textSize(getAccessibleFontSize(14));
-    text("⬅️ Anterior", boxX + 30 + buttonWidth/2, buttonY + buttonHeight/2 + 5);
-  }
-
-  // Botón siguiente/finalizar
-  let rightButtonX = boxX + boxWidth - 30 - buttonWidth;
-
-  // Sombra del botón
-  fill(0, 0, 0, 50);
-  noStroke();
-  rect(rightButtonX + 2, buttonY + 2, buttonWidth, buttonHeight, 8);
-
-  // Botón principal
-  if (tutorialStep < tutorialSteps.length - 1) {
-    fill(100, 255, 100, 220);
-    stroke(100, 255, 100, 255);
-    strokeWeight(2);
-    rect(rightButtonX, buttonY, buttonWidth, buttonHeight, 8);
-
-    fill(255, 255, 255, 255);
-    textAlign(CENTER);
-    textSize(getAccessibleFontSize(14));
-    text("Siguiente ➡️", rightButtonX + buttonWidth/2, buttonY + buttonHeight/2 + 5);
+  if (highContrastMode) {
+    body.classList.add('high-contrast');
+    console.log('Modo Alto Contraste activado');
   } else {
-    fill(255, 100, 100, 220);
-    stroke(255, 100, 100, 255);
-    strokeWeight(2);
-    rect(rightButtonX, buttonY, buttonWidth, buttonHeight, 8);
-
-    fill(255, 255, 255, 255);
-    textAlign(CENTER);
-    textSize(getAccessibleFontSize(14));
-    text("🎉 Finalizar", rightButtonX + buttonWidth/2, buttonY + buttonHeight/2 + 5);
-  }
-
-  // Indicador visual de progreso (círculos)
-  let dotsY = boxY + boxHeight - 45;
-  let dotsSpacing = 20;
-  let totalDots = tutorialSteps.length;
-  let dotsStartX = width/2 - (totalDots * dotsSpacing) / 2;
-
-  for (let i = 0; i < totalDots; i++) {
-    if (i === tutorialStep) {
-      fill(52, 152, 219, 255);
-      stroke(52, 152, 219, 255);
-      strokeWeight(2);
-      ellipse(dotsStartX + i * dotsSpacing, dotsY, 12, 12);
-    } else if (i < tutorialStep) {
-      fill(100, 255, 100, 200);
-      stroke(100, 255, 100, 255);
-      strokeWeight(1);
-      ellipse(dotsStartX + i * dotsSpacing, dotsY, 8, 8);
-    } else {
-      fill(200, 200, 200, 150);
-      noStroke();
-      ellipse(dotsStartX + i * dotsSpacing, dotsY, 6, 6);
-    }
+    body.classList.remove('high-contrast');
+    console.log('Modo Alto Contraste desactivado');
   }
 }
 
-function drawComparisonMode() {
-  if (!comparisonMode) return;
-
-  // Aplicar configuración de comparación actual
-  let config = comparisonConfigs[currentComparisonIndex];
-  angleSlider.value(config.angle);
-  updateParameters();
-
-  // Overlay de comparación
-  fill(0, 0, 0, 200);
-  noStroke();
-  rect(0, 0, width, 60);
-
-  fill(255, 255, 255, 255);
-  textAlign(CENTER);
-  textSize(18);
-  text(config.name, width/2, 30);
-
-  textSize(14);
-  text(`Configuración ${currentComparisonIndex + 1} de ${comparisonConfigs.length}`, width/2, 50);
-
-  // Controles de navegación
-  fill(100, 100, 255, 255);
-  rect(20, 10, 60, 30, 5);
-  fill(255, 255, 255, 255);
-  textSize(12);
-  text("◀", 50, 28);
-
-  fill(100, 255, 100, 255);
-  rect(width - 80, 10, 60, 30, 5);
-  fill(255, 255, 255, 255);
-  text("▶", width - 50, 28);
+function toggleReducedMotion() {
+  reducedMotionMode = !reducedMotionMode;
+  
+  if (reducedMotionMode) {
+    // Reduce or pause animations
+    noLoop(); // Stop the draw loop
+    console.log('Movimiento reducido - animaciones pausadas');
+  } else {
+    // Resume animations
+    loop(); // Resume the draw loop
+    console.log('Movimiento restaurado - animaciones reanudadas');
+  }
 }
 
-function mousePressed() {
-  // Handle tutorial navigation
-  if (tutorialMode) {
-    let boxWidth = min(600, width * 0.9); // Actualizado para coincidir con drawTutorialOverlay
-    let boxHeight = min(400, height * 0.7); // Actualizado para coincidir con drawTutorialOverlay
-    let boxX = width/2 - boxWidth/2;
-    let boxY = height/2 - boxHeight/2;
-    let buttonY = boxY + boxHeight - 60;
-    let buttonWidth = 100;
-    let buttonHeight = 35;
-
-    // Botón anterior
-    if (tutorialStep > 0 &&
-        mouseX > boxX + 30 && mouseX < boxX + 30 + buttonWidth &&
-        mouseY > buttonY && mouseY < buttonY + buttonHeight) {
-      tutorialStep--;
-    }
-
-    // Botón siguiente/finalizar
-    let rightButtonX = boxX + boxWidth - 30 - buttonWidth;
-    if (mouseX > rightButtonX && mouseX < rightButtonX + buttonWidth &&
-        mouseY > buttonY && mouseY < buttonY + buttonHeight) {
-      if (tutorialStep < tutorialSteps.length - 1) {
-        tutorialStep++;
-      } else {
-        // Finalizar tutorial
-        toggleTutorialMode();
-      }
-    }
-  }
-
-  // Handle comparison navigation
-  if (comparisonMode) {
-    // Botón anterior
-    if (mouseX > 20 && mouseX < 80 && mouseY > 10 && mouseY < 40) {
-      currentComparisonIndex = max(0, currentComparisonIndex - 1);
-    }
-
-    // Botón siguiente
-    if (mouseX > width - 80 && mouseX < width - 20 && mouseY > 10 && mouseY < 40) {
-      currentComparisonIndex = min(comparisonConfigs.length - 1, currentComparisonIndex + 1);
-    }
-  }
-
-  // ===== DIBUJAR GAUGES CIRCULARES =====
-  // Solo dibujar si no estamos en modo tutorial o comparación
-  if (!tutorialMode && !comparisonMode) {
-    // Calcular valores para los gauges
-    let liftDragRatio = liftForce / max(dragForce, 0.1); // Evitar división por cero
-    let airspeed = windSpeed;
-    let angleOfAttack = degrees(angleAttack);
-    let currentAltitude = altitude;
-
-    // Gauge 1: Lift/Drag Ratio (esquina superior izquierda)
-    drawCircularGauge(80, 80, 40, liftDragRatio, 10, 0, 'L/D Ratio', '', [52, 152, 219], 
-      'Relación Lift/Drag: ' + Math.round(liftDragRatio * 10) / 10 + '. Mayor valor = mejor eficiencia aerodinámica');
-
-    // Gauge 2: Airspeed (esquina superior derecha)
-    drawCircularGauge(width - 80, 80, 40, airspeed, 100, 0, 'Velocidad', 'km/h', [46, 204, 113],
-      'Velocidad del viento: ' + Math.round(airspeed) + ' km/h. Afecta la fuerza de sustentación y resistencia');
-
-    // Gauge 3: Angle of Attack (esquina inferior izquierda)
-    drawCircularGauge(80, height - 80, 40, angleOfAttack, 20, -10, 'Ángulo', '°', [230, 126, 34],
-      'Ángulo de ataque: ' + Math.round(angleOfAttack * 10) / 10 + '°. Óptimo entre 8-12° para máxima sustentación');
-
-    // Gauge 4: Altitude (esquina inferior derecha)
-    drawCircularGauge(width - 80, height - 80, 40, currentAltitude, 10000, 0, 'Altitud', 'm', [155, 89, 182],
-      'Altitud: ' + Math.round(currentAltitude) + ' m. Afecta la densidad del aire y las fuerzas aerodinámicas');
-  }
+function windowResized() {
+  resizeCanvasForPanel();
 }

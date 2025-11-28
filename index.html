@@ -197,21 +197,6 @@
             }
         }
 
-        .weather-btn {
-            background-color: #666;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            margin: 2px;
-            cursor: pointer;
-            border-radius: 3px;
-        }
-        .weather-btn.active {
-            background-color: #4CAF50;
-        }
-        .weather-btn:hover {
-            background-color: #555;
-        }
         .airplane-btn {
             background-color: #666;
             color: white;
@@ -228,7 +213,34 @@
         .airplane-btn:hover {
             background-color: #555;
         }
+
+        /* High contrast mode styles */
+        body.high-contrast {
+            background: #000000 !important;
+            color: #FFFFFF !important;
+        }
+        body.high-contrast #data-panel {
+            background: #000000 !important;
+            color: #FFFFFF !important;
+            border: 3px solid #FFFFFF !important;
+        }
+        body.high-contrast .control-group {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid #FFFFFF !important;
+        }
+        body.high-contrast .value-display {
+            color: #FFFF00 !important;
+        }
+        body.high-contrast button {
+            background: #FFFFFF !important;
+            color: #000000 !important;
+            border: 2px solid #000000 !important;
+        }
+        body.high-contrast input[type="range"] {
+            background: #FFFFFF !important;
+        }
     </style>
+
 </head>
 <body>
     <div id="data-panel">
@@ -351,37 +363,6 @@
                 </svg>
                 Cargar Configuración
             </button>
-        </div>
-        
-        <div style="margin-bottom: 15px;">
-            <h4>Condiciones Climáticas</h4>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
-                <button id="weather-clear" class="weather-btn active" style="display: flex; align-items: center; justify-content: center; padding: 12px; border-radius: 8px; font-weight: 600; transition: all 0.2s ease;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;">
-                        <path d="M12 7C9.24 7 7 9.24 7 12S9.24 17 12 17 17 14.76 17 12 14.76 7 12 7M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
-                    </svg>
-                    Despejado
-                </button>
-                <button id="weather-rain" class="weather-btn" style="display: flex; align-items: center; justify-content: center; padding: 12px; border-radius: 8px; font-weight: 600; transition: all 0.2s ease;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;">
-                        <path d="M6 14L8 14L8 16L6 16L6 14M10 14L12 14L12 16L10 16L10 14M14 14L16 14L16 16L14 16L14 14M18 14L20 14L20 16L18 16L18 14M6 18L8 18L8 20L6 20L6 18M10 18L12 18L12 20L10 20L10 18M14 18L16 18L16 20L14 20L14 18M18 18L20 18L20 20L18 20L18 18M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
-                    </svg>
-                    Lluvia
-                </button>
-                <button id="weather-snow" class="weather-btn" style="display: flex; align-items: center; justify-content: center; padding: 12px; border-radius: 8px; font-weight: 600; transition: all 0.2s ease;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;">
-                        <path d="M6 14L8 14L8 16L6 16L6 14M10 14L12 14L12 16L10 16L10 14M14 14L16 14L16 16L14 16L14 14M18 14L20 14L20 16L18 16L18 14M6 18L8 18L8 20L6 20L6 18M10 18L12 18L12 20L10 20L10 18M14 18L16 18L16 20L14 18L14 20M18 18L20 18L20 20L18 20L18 18M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
-                    </svg>
-                    Nieve
-                </button>
-                <button id="weather-storm" class="weather-btn" style="display: flex; align-items: center; justify-content: center; padding: 12px; border-radius: 8px; font-weight: 600; transition: all 0.2s ease;">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;">
-                        <path d="M6 14L8 14L8 16L6 16L6 14M10 14L12 14L12 16L10 16L10 14M14 14L16 14L16 16L14 16L14 14M18 14L20 14L20 16L18 16L18 14M6 18L8 18L8 20L6 20L6 18M10 18L12 18L12 20L10 20L10 18M14 18L16 18L16 20L14 20L14 18M18 18L20 18L20 20L18 20L18 18M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
-                        <path d="M17 10L15 10L15 8L17 8L17 10M17 14L15 14L15 12L17 12L17 14Z"/>
-                    </svg>
-                    Tormenta
-                </button>
-            </div>
         </div>
         
         <div style="margin-bottom: 15px;">
