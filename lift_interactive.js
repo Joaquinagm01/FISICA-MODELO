@@ -2898,26 +2898,60 @@ function drawTutorialOverlay() {
 
   // Contenido del tutorial
   let contentY = boxY + 80;
+  let maxTextWidth = boxWidth - 60; // Ancho máximo para el texto (con márgenes)
   let lines = tutorialSteps[tutorialStep].split('\n');
+
+  // Función auxiliar para dividir texto largo en líneas que quepan
+  function wrapText(text, maxWidth) {
+    let words = text.split(' ');
+    let lines = [];
+    let currentLine = '';
+
+    for (let word of words) {
+      let testLine = currentLine + (currentLine ? ' ' : '') + word;
+      let testWidth = textWidth(testLine);
+
+      if (testWidth > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+
+    return lines;
+  }
 
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].trim() === '') continue;
 
-    if (lines[i].includes('🎓') || lines[i].includes('✈️') || lines[i].includes('🌪️') ||
-        lines[i].includes('⚖️') || lines[i].includes('📐') || lines[i].includes('💨') ||
-        lines[i].includes('🏔️') || lines[i].includes('⚠️') || lines[i].includes('🔄') ||
-        lines[i].includes('🎯')) {
-      // Título con emoji
+    let isTitle = lines[i].includes('🎓') || lines[i].includes('✈️') || lines[i].includes('🌪️') ||
+                  lines[i].includes('⚖️') || lines[i].includes('📐') || lines[i].includes('💨') ||
+                  lines[i].includes('🏔️') || lines[i].includes('⚠️') || lines[i].includes('🔄') ||
+                  lines[i].includes('🎯');
+
+    if (isTitle) {
+      // Título con emoji - dividir en líneas si es necesario
       fill(52, 152, 219, 255);
       textSize(18);
-      text(lines[i], width/2, contentY);
-      contentY += 35;
+      let wrappedLines = wrapText(lines[i], maxTextWidth);
+      for (let wrappedLine of wrappedLines) {
+        text(wrappedLine, width/2, contentY);
+        contentY += 35;
+      }
     } else {
-      // Texto normal
+      // Texto normal - dividir en líneas si es necesario
       fill(52, 73, 94, 255);
       textSize(14);
-      text(lines[i], width/2, contentY);
-      contentY += 25;
+      let wrappedLines = wrapText(lines[i], maxTextWidth);
+      for (let wrappedLine of wrappedLines) {
+        text(wrappedLine, width/2, contentY);
+        contentY += 25;
+      }
     }
   }
 
