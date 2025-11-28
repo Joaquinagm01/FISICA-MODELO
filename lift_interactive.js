@@ -1950,8 +1950,8 @@ function drawFlowParticles() {
       fill(255, 200, 0, 130); // Orange for lower surface (slower flow)
     }
 
-    // Draw particle as small ellipse
-    ellipse(p.x, p.y, 3, 3);
+    // Draw particle as small ellipse - REMOVED
+    // ellipse(p.x, p.y, 3, 3);
 
     // Draw subtle trail
     if (p.age > 10) {
@@ -1967,7 +1967,7 @@ function drawFlowParticles() {
           fill(255, 150, 0, alpha);
         }
 
-        ellipse(trailX, trailY, 2, 2);
+        // ellipse(trailX, trailY, 2, 2); - REMOVED
       }
     }
   }
@@ -2253,8 +2253,8 @@ function drawPressureDiagram() {
   scale(1.4);
 
   // Draw pressure distribution overlay
-  stroke(255, 100, 100, 180);
-  strokeWeight(2);
+  stroke(255, 100, 100, 220);
+  strokeWeight(3);
   noFill();
 
   // Upper surface pressure (suction)
@@ -2267,7 +2267,7 @@ function drawPressureDiagram() {
   endShape();
 
   // Lower surface pressure (positive)
-  stroke(100, 100, 255, 180);
+  stroke(100, 100, 255, 220);
   beginShape();
   for (let x = -180; x <= 200; x += 10) {
     let pressure = 0.3 * sin(PI * (x + 180) / 380);
@@ -2277,8 +2277,8 @@ function drawPressureDiagram() {
   endShape();
 
   // Pressure arrows
-  stroke(255, 100, 100, 150);
-  strokeWeight(1);
+  stroke(255, 100, 100, 200);
+  strokeWeight(2);
   for (let x = -150; x <= 150; x += 50) {
     let pressure = -0.5 * sin(PI * (x + 180) / 380);
     let y = pressure * 50 - 20;
@@ -2289,7 +2289,17 @@ function drawPressureDiagram() {
     line(x, y - arrowLength, x + 3, y - arrowLength + 5);
   }
 
-  pop();
+  // Lower surface arrows
+  stroke(100, 100, 255, 200);
+  for (let x = -150; x <= 150; x += 50) {
+    let pressure = 0.3 * sin(PI * (x + 180) / 380);
+    let y = pressure * 50 + 20;
+    let arrowLength = Math.abs(pressure) * 30;
+    line(x, y, x, y + arrowLength);
+    // Arrow head
+    line(x, y + arrowLength, x - 3, y + arrowLength - 5);
+    line(x, y + arrowLength, x + 3, y + arrowLength - 5);
+  }
 }
 
 function drawVelocityDiagram() {
@@ -2300,8 +2310,8 @@ function drawVelocityDiagram() {
   scale(1.4);
 
   // Draw velocity vectors
-  stroke(100, 255, 100, 180);
-  strokeWeight(2);
+  stroke(100, 255, 100, 220);
+  strokeWeight(3);
 
   // Streamlines around the wing
   for (let y = -60; y <= 60; y += 20) {
@@ -2319,8 +2329,8 @@ function drawVelocityDiagram() {
   }
 
   // Velocity arrows at key points
-  stroke(100, 255, 100, 150);
-  strokeWeight(1);
+  stroke(100, 255, 100, 200);
+  strokeWeight(2);
   for (let x = -150; x <= 150; x += 60) {
     for (let y = -40; y <= 40; y += 40) {
       let vx = windSpeed * (1 + 0.2 * sin(PI * (x + 180) / 380));
