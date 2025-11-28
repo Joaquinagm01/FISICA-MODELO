@@ -84,6 +84,11 @@
 - [ ] **NOTCH DEVICES**: Elementos se solapan con notch/cámara en dispositivos modernos
 
 ## Mejoras Implementadas
+- [x] **ANIMACIONES SUAVES**: Sistema de interpolación con easing functions para transiciones naturales en parámetros aerodinámicos
+- [x] **MICRO-INTERACCIONES**: Efectos hover, focus y click en botones y sliders con animaciones sutiles
+- [x] **ANIMACIONES EDUCATIVAS**: Cambios progresivos en fuerzas que permiten observar cómo afectan los parámetros
+- [x] **EFECTOS DE IMPACTO**: Flash visual rojo para stall warning y verde para máximo lift alcanzado
+- [x] **REDUCCIÓN DE MOVIMIENTO**: Respeta la configuración de accesibilidad para usuarios con sensibilidad al movimiento
 - [x] Flechas de fuerzas mejoradas con magnitudes variables, gradientes y valores numéricos
 - [x] Mejorada la visibilidad del texto "Peso" con alto contraste y efectos de sombra
 - [x] Mejorada la visibilidad de todas las etiquetas amarillas cambiando a naranja con contorno negro para mejor contraste
@@ -122,10 +127,10 @@
 - [ ] **EFECTOS DE ALTITUD**: Cambiar densidad de atmósfera visualmente según altitud (cielo más oscuro, estrellas)
 
 ### Animaciones y Transiciones
-- [ ] **SMOOTH TRANSITIONS**: Todas las animaciones deben tener easing functions para movimientos naturales
-- [ ] **MICRO-INTERACCIONES**: Feedback visual inmediato en botones, sliders y cambios de parámetros
-- [ ] **ANIMACIONES EDUCATIVAS**: Mostrar progresivamente cómo cambian las fuerzas al modificar parámetros
-- [ ] **EFECTOS DE IMPACTO**: Visual feedback cuando se alcanzan valores críticos (stall, máximo lift)
+- [x] **SMOOTH TRANSITIONS**: Todas las animaciones deben tener easing functions para movimientos naturales
+- [x] **MICRO-INTERACCIONES**: Feedback visual inmediato en botones, sliders y cambios de parámetros
+- [x] **ANIMACIONES EDUCATIVAS**: Mostrar progresivamente cómo cambian las fuerzas al modificar parámetros
+- [x] **EFECTOS DE IMPACTO**: Visual feedback cuando se alcanzan valores críticos (stall, máximo lift)
 
 ### Accesibilidad y UX
 - [x] **CONTRASTE MEJORADO**: Sistema de colores accesibles con función getAccessibleColor() que adapta colores según modo alto contraste

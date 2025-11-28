@@ -16,6 +16,32 @@ let flowParticles = []; // Array of flow particles following aerodynamic paths
 let highContrastMode = false;
 let reducedMotionMode = false;
 
+// Educational features variables
+let showEducationalLegends = false;
+let showPressureDiagram = false;
+let showVelocityDiagram = false;
+let showForceDiagram = false;
+
+// Animation and interpolation variables
+let targetAngleAttack = 0;
+let targetWindSpeed = 70;
+let targetAltitude = 0;
+let targetMass = 80;
+let currentAngleAttack = 0;
+let currentWindSpeed = 70;
+let currentAltitude = 0;
+let currentMass = 80;
+let animationSpeed = 0.05; // Easing factor (0-1, lower = smoother)
+
+// Critical value tracking for impact effects
+let stallWarning = false;
+let maxLiftWarning = false;
+let previousLiftMagnitude = 0;
+
+// Flash effect variables for impact feedback
+let stallFlashIntensity = 0;
+let maxLiftFlashIntensity = 0;
+
 // Bloom effect variables
 let bloomEnabled = true;
 let bloomIntensity = 0.8;
@@ -112,9 +138,22 @@ function initializeDOMElements() {
   let highContrastCheckbox = document.getElementById('high-contrast');
   let reducedMotionCheckbox = document.getElementById('reduced-motion');
 
+  // Get educational feature checkboxes
+  let educationalLegendsCheckbox = document.getElementById('educational-legends');
+  let pressureDiagramCheckbox = document.getElementById('pressure-diagram');
+  let velocityDiagramCheckbox = document.getElementById('velocity-diagram');
+  let forceDiagramCheckbox = document.getElementById('force-diagram');
+
   console.log('Accessibility checkboxes found:', {
     highContrastCheckbox: !!highContrastCheckbox,
     reducedMotionCheckbox: !!reducedMotionCheckbox
+  });
+
+  console.log('Educational checkboxes found:', {
+    educationalLegendsCheckbox: !!educationalLegendsCheckbox,
+    pressureDiagramCheckbox: !!pressureDiagramCheckbox,
+    velocityDiagramCheckbox: !!velocityDiagramCheckbox,
+    forceDiagramCheckbox: !!forceDiagramCheckbox
   });
 
   // Add event listeners
@@ -140,8 +179,17 @@ function initializeDOMElements() {
   if (highContrastCheckbox) highContrastCheckbox.addEventListener('change', toggleHighContrast);
   if (reducedMotionCheckbox) reducedMotionCheckbox.addEventListener('change', toggleReducedMotion);
 
+  // Educational feature checkbox listeners
+  if (educationalLegendsCheckbox) educationalLegendsCheckbox.addEventListener('change', toggleEducationalLegends);
+  if (pressureDiagramCheckbox) pressureDiagramCheckbox.addEventListener('change', togglePressureDiagram);
+  if (velocityDiagramCheckbox) velocityDiagramCheckbox.addEventListener('change', toggleVelocityDiagram);
+  if (forceDiagramCheckbox) forceDiagramCheckbox.addEventListener('change', toggleForceDiagram);
+
   // Initialize parameters after all DOM elements are set up
   updateParameters();
+
+  // Add micro-interactions to UI elements
+  addMicroInteractions();
 
   console.log('DOM elements initialized');
 }
@@ -153,11 +201,34 @@ function updateParameters() {
     return;
   }
 
-  // Update variables from sliders
-  angleAttack = radians(angleSlider.value());
-  windSpeed = windSlider.value();
-  altitude = altitudeSlider.value();
-  mass = massSlider.value();
+  // Update target values from sliders (smooth transitions will happen in draw())
+  targetAngleAttack = radians(angleSlider.value());
+  targetWindSpeed = windSlider.value();
+  targetAltitude = altitudeSlider.value();
+  targetMass = massSlider.value();
+
+  // Update UI values immediately for responsive feel
+  select('#angle-value').html(angleSlider.value() + '°');
+  select('#wind-value').html(targetWindSpeed + ' m/s');
+  select('#altitude-value').html(targetAltitude + ' m');
+  select('#mass-value').html(targetMass + ' kg');
+}
+
+// Smooth interpolation function for animations
+function interpolateParameters() {
+  // Smooth interpolation using easing
+  let easing = reducedMotionMode ? 0.3 : animationSpeed; // Faster when reduced motion is on
+
+  currentAngleAttack = lerp(currentAngleAttack, targetAngleAttack, easing);
+  currentWindSpeed = lerp(currentWindSpeed, targetWindSpeed, easing);
+  currentAltitude = lerp(currentAltitude, targetAltitude, easing);
+  currentMass = lerp(currentMass, targetMass, easing);
+
+  // Update actual physics variables
+  angleAttack = currentAngleAttack;
+  windSpeed = currentWindSpeed;
+  altitude = currentAltitude;
+  mass = currentMass;
 
   // Calculate air density based on altitude (simplified)
   rho = 1.225 * exp(-altitude / 8000); // Exponential decay approximation
@@ -165,15 +236,11 @@ function updateParameters() {
   // Calculate weight
   weight = mass * 9.81;
 
-  // Update UI values
-  select('#angle-value').html(angleSlider.value() + '°');
-  select('#wind-value').html(windSpeed + ' m/s');
-  select('#altitude-value').html(altitude + ' m');
-  select('#mass-value').html(mass + ' kg');
+  // Update physics UI values
   select('#weight-value').html(weight.toFixed(0) + ' N');
   select('#rho-value').html(rho.toFixed(3) + ' kg/m³');
 
-  let alpha_deg = angleSlider.value();
+  let alpha_deg = degrees(angleAttack);
   // More realistic lift coefficient (thin airfoil theory)
   let cl = 2 * PI * sin(angleAttack);
   // Simulate stall: reduction when α > 15°
@@ -181,7 +248,10 @@ function updateParameters() {
     cl *= max(0, 1 - (alpha_deg - 15) / 10);
   }
   // Lift magnitude (simplified, assuming wing area and dynamic pressure)
-  liftMagnitude = max(0, cl * 0.5 * rho * windSpeed**2 * 0.1); // Area = 0.1 m² approximation
+  let newLiftMagnitude = max(0, cl * 0.5 * rho * windSpeed**2 * 0.1); // Area = 0.1 m² approximation
+
+  // Smooth lift changes for educational animation
+  liftMagnitude = lerp(liftMagnitude, newLiftMagnitude, easing * 0.5); // Slower lift changes
 
   select('#lift-value').html(liftMagnitude.toFixed(0) + ' N');
 
@@ -198,6 +268,96 @@ function updateParameters() {
   select('#p2').html(P2.toFixed(0));
   select('#v1').html(v1.toFixed(0));
   select('#v2').html(v2.toFixed(0));
+
+  // Check for critical values and trigger impact effects
+  checkCriticalValues(alpha_deg, liftMagnitude);
+}
+
+// Check for critical aerodynamic values and trigger visual feedback
+function checkCriticalValues(alpha_deg, currentLift) {
+  let newStallWarning = alpha_deg > 12; // Warning before stall
+  let newMaxLiftWarning = currentLift > previousLiftMagnitude * 1.2; // Sudden lift increase
+
+  // Stall warning
+  if (newStallWarning && !stallWarning) {
+    stallWarning = true;
+    triggerStallWarning();
+  } else if (!newStallWarning && stallWarning) {
+    stallWarning = false;
+  }
+
+  // Max lift achievement
+  if (newMaxLiftWarning && !maxLiftWarning) {
+    maxLiftWarning = true;
+    triggerMaxLiftEffect();
+  } else if (!newMaxLiftWarning && maxLiftWarning) {
+    maxLiftWarning = false;
+  }
+
+  previousLiftMagnitude = currentLift;
+}
+
+// Visual impact effects for critical aerodynamic values
+function triggerStallWarning() {
+  if (reducedMotionMode) return; // Skip animations if reduced motion is enabled
+
+  stallFlashIntensity = 1.0; // Full intensity red flash
+  console.log('🚨 Stall warning triggered!');
+}
+
+function triggerMaxLiftEffect() {
+  if (reducedMotionMode) return; // Skip animations if reduced motion is enabled
+
+  maxLiftFlashIntensity = 1.0; // Full intensity green flash
+  console.log('✨ Maximum lift achieved!');
+}
+
+// Micro-interactions for UI elements
+function addMicroInteractions() {
+  // Add hover effects to buttons
+  let buttons = document.querySelectorAll('#data-panel button');
+  buttons.forEach(button => {
+    button.addEventListener('mouseenter', () => {
+      if (!reducedMotionMode) {
+        button.style.transform = 'scale(1.05)';
+        button.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+      }
+    });
+
+    button.addEventListener('mouseleave', () => {
+      if (!reducedMotionMode) {
+        button.style.transform = 'scale(1)';
+        button.style.boxShadow = '';
+      }
+    });
+
+    button.addEventListener('mousedown', () => {
+      if (!reducedMotionMode) {
+        button.style.transform = 'scale(0.95)';
+      }
+    });
+
+    button.addEventListener('mouseup', () => {
+      if (!reducedMotionMode) {
+        button.style.transform = 'scale(1.05)';
+        setTimeout(() => {
+          button.style.transform = 'scale(1)';
+        }, 150);
+      }
+    });
+  });
+
+  // Add focus effects to sliders
+  let sliders = document.querySelectorAll('#data-panel input[type="range"]');
+  sliders.forEach(slider => {
+    slider.addEventListener('focus', () => {
+      slider.style.boxShadow = '0 0 0 2px rgba(52, 152, 219, 0.5)';
+    });
+
+    slider.addEventListener('blur', () => {
+      slider.style.boxShadow = '';
+    });
+  });
 }
 
 function applyBloom(x, y, radius, intensity, color) {
@@ -349,6 +509,17 @@ async function loadMaterialTextures() {
 function draw() {
   console.log('Draw called');
   clear(); // Clear for P2D
+
+  // Smooth parameter interpolation for animations
+  interpolateParameters();
+
+  // Update flash effects
+  if (stallFlashIntensity > 0) {
+    stallFlashIntensity *= 0.95; // Fade out
+  }
+  if (maxLiftFlashIntensity > 0) {
+    maxLiftFlashIntensity *= 0.95; // Fade out
+  }
 
   // Variables para efectos visuales mejorados con iluminación dinámica
   let timeOfDay = (frameCount * 0.01) % (2 * PI); // Ciclo de día completo
@@ -738,6 +909,37 @@ function draw() {
     bezierVertex(180 - layer * 3, 15 - layer, 120 - layer * 2, 25 - layer, 60 - layer, 30 - layer);
     bezierVertex(0, 30 - layer, -60 + layer, 25 - layer, -120 + layer * 2, 15 - layer);
     bezierVertex(-150 + layer * 3, 8 - layer, -120 + layer * 2, 10 - layer, -90 + layer, 12 - layer);
+    endShape(CLOSE);
+  }
+
+  // ===== EFECTOS DE IMPACTO VISUAL =====
+  // Stall warning flash (red)
+  if (stallFlashIntensity > 0.01) {
+    fill(255, 0, 0, stallFlashIntensity * 100); // Red flash
+    noStroke();
+    beginShape();
+    vertex(leadingEdgeX, leadingEdgeY);
+    bezierVertex(-120, -25, -60, -45, 0, -55);
+    bezierVertex(60, -55, 120, -45, 180, -25);
+    vertex(200, 0);
+    bezierVertex(180, 15, 120, 25, 60, 30);
+    bezierVertex(0, 30, -60, 25, -120, 15);
+    bezierVertex(-150, 8, -120, 10, -90, 12);
+    endShape(CLOSE);
+  }
+
+  // Max lift success flash (green)
+  if (maxLiftFlashIntensity > 0.01) {
+    fill(0, 255, 0, maxLiftFlashIntensity * 100); // Green flash
+    noStroke();
+    beginShape();
+    vertex(leadingEdgeX, leadingEdgeY);
+    bezierVertex(-120, -25, -60, -45, 0, -55);
+    bezierVertex(60, -55, 120, -45, 180, -25);
+    vertex(200, 0);
+    bezierVertex(180, 15, 120, 25, 60, 30);
+    bezierVertex(0, 30, -60, 25, -120, 15);
+    bezierVertex(-150, 8, -120, 10, -90, 12);
     endShape(CLOSE);
   }
 
@@ -1795,19 +1997,19 @@ function drawWeather() {
       drop.x += windSpeed * 0.08 + sin(frameCount * 0.1 + i) * 0.5; // Movimiento ondulado
 
       if (drop.y > height - 50) {
-        // Efecto de salpicadura al tocar el suelo
-        drop.splashTimer++;
-        if (drop.splashTimer < 5) {
-          // Dibujar salpicadura
-          stroke(200, 220, 255, 150 - drop.splashTimer * 30);
-          strokeWeight(drop.thickness);
-          let splashSize = 8 - drop.splashTimer;
-          line(drop.x, height - 45, drop.x + random(-splashSize, splashSize), height - 45 - random(2, 6));
-          line(drop.x, height - 45, drop.x + random(-splashSize, splashSize), height - 45 - random(2, 6));
-        } else {
+        // Efecto de salpicadura al tocar el suelo - REMOVIDO
+        // drop.splashTimer++;
+        // if (drop.splashTimer < 5) {
+        //   // Dibujar salpicadura
+        //   stroke(200, 220, 255, 150 - drop.splashTimer * 30);
+        //   strokeWeight(drop.thickness);
+        //   let splashSize = 8 - drop.splashTimer;
+        //   line(drop.x, height - 45, drop.x + random(-splashSize, splashSize), height - 45 - random(2, 6));
+        //   line(drop.x, height - 45, drop.x + random(-splashSize, splashSize), height - 45 - random(2, 6));
+        // } else {
           rainDrops.splice(i, 1);
           continue;
-        }
+        // }
       }
 
       // Dibujar gota de lluvia con gradiente
@@ -1881,12 +2083,12 @@ function drawWeather() {
       snowFlakes.splice(0, snowFlakes.length - 200);
     }
 
-    // Efecto de nieve acumulada en el suelo
-    if (frameCount % 60 === 0 && snowFlakes.length > 10) {
-      fill(255, 255, 255, 30);
-      noStroke();
-      rect(0, height - 20, width, 20);
-    }
+    // Efecto de nieve acumulada en el suelo - REMOVIDO
+    // if (frameCount % 60 === 0 && snowFlakes.length > 10) {
+    //   fill(255, 255, 255, 30);
+    //   noStroke();
+    //   rect(0, height - 20, width, 20);
+    // }
 
   } else if (currentWeather === 'storm') {
     // ===== TORMENTA MEJORADA =====
@@ -1957,6 +2159,13 @@ function drawWeather() {
     rect(0, 0, width, height);
 
   }
+
+  // Draw educational diagrams (overlaid on wing)
+  drawPressureDiagram();
+  drawVelocityDiagram();
+  drawForceDiagram();
+  drawEducationalLegends();
+
 }
 
 // API Integration Functions
@@ -2012,6 +2221,231 @@ function toggleReducedMotion() {
     loop(); // Resume the draw loop
     console.log('Movimiento restaurado - animaciones reanudadas');
   }
+}
+
+// Educational feature toggle functions
+function toggleEducationalLegends() {
+  showEducationalLegends = !showEducationalLegends;
+  console.log('Educational legends:', showEducationalLegends ? 'enabled' : 'disabled');
+}
+
+function togglePressureDiagram() {
+  showPressureDiagram = !showPressureDiagram;
+  console.log('Pressure diagram:', showPressureDiagram ? 'enabled' : 'disabled');
+}
+
+function toggleVelocityDiagram() {
+  showVelocityDiagram = !showVelocityDiagram;
+  console.log('Velocity diagram:', showVelocityDiagram ? 'enabled' : 'disabled');
+}
+
+function toggleForceDiagram() {
+  showForceDiagram = !showForceDiagram;
+  console.log('Force diagram:', showForceDiagram ? 'enabled' : 'disabled');
+}
+
+// Educational diagram drawing functions
+function drawPressureDiagram() {
+  if (!showPressureDiagram) return;
+
+  push();
+  translate(width / 2, height / 2);
+  scale(1.4);
+
+  // Draw pressure distribution overlay
+  stroke(255, 100, 100, 180);
+  strokeWeight(2);
+  noFill();
+
+  // Upper surface pressure (suction)
+  beginShape();
+  for (let x = -180; x <= 200; x += 10) {
+    let pressure = -0.5 * sin(PI * (x + 180) / 380); // Simplified pressure distribution
+    let y = pressure * 50 - 20; // Scale and offset
+    vertex(x, y);
+  }
+  endShape();
+
+  // Lower surface pressure (positive)
+  stroke(100, 100, 255, 180);
+  beginShape();
+  for (let x = -180; x <= 200; x += 10) {
+    let pressure = 0.3 * sin(PI * (x + 180) / 380);
+    let y = pressure * 50 + 20;
+    vertex(x, y);
+  }
+  endShape();
+
+  // Pressure arrows
+  stroke(255, 100, 100, 150);
+  strokeWeight(1);
+  for (let x = -150; x <= 150; x += 50) {
+    let pressure = -0.5 * sin(PI * (x + 180) / 380);
+    let y = pressure * 50 - 20;
+    let arrowLength = Math.abs(pressure) * 30;
+    line(x, y, x, y - arrowLength);
+    // Arrow head
+    line(x, y - arrowLength, x - 3, y - arrowLength + 5);
+    line(x, y - arrowLength, x + 3, y - arrowLength + 5);
+  }
+
+  pop();
+}
+
+function drawVelocityDiagram() {
+  if (!showVelocityDiagram) return;
+
+  push();
+  translate(width / 2, height / 2);
+  scale(1.4);
+
+  // Draw velocity vectors
+  stroke(100, 255, 100, 180);
+  strokeWeight(2);
+
+  // Streamlines around the wing
+  for (let y = -60; y <= 60; y += 20) {
+    beginShape();
+    for (let x = -200; x <= 250; x += 10) {
+      // Simplified velocity field around airfoil
+      let vx = windSpeed * (1 + 0.2 * sin(PI * (x + 200) / 450));
+      let vy = 0;
+      if (x > -180 && x < 200 && Math.abs(y) < 50) {
+        vy = -0.1 * y * sin(PI * (x + 180) / 380);
+      }
+      vertex(x, y + vy * 10);
+    }
+    endShape();
+  }
+
+  // Velocity arrows at key points
+  stroke(100, 255, 100, 150);
+  strokeWeight(1);
+  for (let x = -150; x <= 150; x += 60) {
+    for (let y = -40; y <= 40; y += 40) {
+      let vx = windSpeed * (1 + 0.2 * sin(PI * (x + 180) / 380));
+      let vy = 0;
+      if (Math.abs(y) < 50) {
+        vy = -0.1 * y * sin(PI * (x + 180) / 380);
+      }
+      let speed = sqrt(vx*vx + vy*vy);
+      let scale = speed / windSpeed;
+      line(x, y, x + vx * 0.1, y + vy * 0.1);
+      // Arrow head
+      let angle = atan2(vy, vx);
+      let arrowX = x + vx * 0.1;
+      let arrowY = y + vy * 0.1;
+      line(arrowX, arrowY, arrowX - 5 * cos(angle - PI/6), arrowY - 5 * sin(angle - PI/6));
+      line(arrowX, arrowY, arrowX - 5 * cos(angle + PI/6), arrowY - 5 * sin(angle + PI/6));
+    }
+  }
+
+  pop();
+}
+
+function drawForceDiagram() {
+  if (!showForceDiagram) return;
+
+  push();
+  translate(width / 2, height / 2);
+  scale(1.4);
+
+  // Calculate forces
+  let lift = 0.5 * rho * windSpeed * windSpeed * wingArea * cl;
+  let drag = 0.5 * rho * windSpeed * windSpeed * wingArea * cd;
+  let weight = mass * 9.81;
+
+  // Draw force vectors
+  let centerX = 0;
+  let centerY = 0;
+
+  // Lift force (upward)
+  stroke(0, 255, 0, 200);
+  strokeWeight(4);
+  let liftScale = lift / 1000; // Scale for visualization
+  line(centerX, centerY, centerX, centerY - liftScale * 50);
+  // Arrow head
+  fill(0, 255, 0, 200);
+  noStroke();
+  triangle(centerX, centerY - liftScale * 50, centerX - 5, centerY - liftScale * 50 + 10, centerX + 5, centerY - liftScale * 50 + 10);
+
+  // Drag force (backward)
+  stroke(255, 0, 0, 200);
+  strokeWeight(4);
+  let dragScale = drag / 1000;
+  line(centerX, centerY, centerX - dragScale * 50, centerY);
+  fill(255, 0, 0, 200);
+  noStroke();
+  triangle(centerX - dragScale * 50, centerY, centerX - dragScale * 50 + 10, centerY - 5, centerX - dragScale * 50 + 10, centerY + 5);
+
+  // Weight force (downward)
+  stroke(255, 255, 0, 200);
+  strokeWeight(4);
+  let weightScale = weight / 1000;
+  line(centerX, centerY, centerX, centerY + weightScale * 50);
+  fill(255, 255, 0, 200);
+  noStroke();
+  triangle(centerX, centerY + weightScale * 50, centerX - 5, centerY + weightScale * 50 - 10, centerX + 5, centerY + weightScale * 50 - 10);
+
+  pop();
+}
+
+function drawEducationalLegends() {
+  if (!showEducationalLegends) return;
+
+  // Draw legend box
+  fill(0, 0, 0, 150);
+  stroke(255, 255, 255, 200);
+  strokeWeight(2);
+  rect(20, 20, 300, 200, 10);
+
+  // Legend title
+  fill(255);
+  noStroke();
+  textSize(16);
+  textAlign(LEFT);
+  text('Leyendas Educativas', 30, 45);
+
+  // Legend items
+  textSize(12);
+  let yPos = 70;
+
+  // Angle of attack
+  fill(255, 255, 0);
+  text('Ángulo de Ataque: ' + degrees(angleAttack).toFixed(1) + '°', 30, yPos);
+  yPos += 20;
+
+  // Wind speed
+  fill(100, 255, 100);
+  text('Velocidad del Viento: ' + windSpeed.toFixed(1) + ' m/s', 30, yPos);
+  yPos += 20;
+
+  // Altitude
+  fill(100, 100, 255);
+  text('Altitud: ' + altitude.toFixed(0) + ' m', 30, yPos);
+  yPos += 20;
+
+  // Lift coefficient
+  fill(255, 100, 100);
+  text('Coeficiente de Sustentación: ' + cl.toFixed(3), 30, yPos);
+  yPos += 20;
+
+  // Drag coefficient
+  fill(255, 150, 100);
+  text('Coeficiente de Resistencia: ' + cd.toFixed(3), 30, yPos);
+  yPos += 20;
+
+  // Forces
+  fill(0, 255, 0);
+  text('Sustentación: ' + (0.5 * rho * windSpeed * windSpeed * wingArea * cl).toFixed(0) + ' N', 30, yPos);
+  yPos += 20;
+
+  fill(255, 0, 0);
+  text('Resistencia: ' + (0.5 * rho * windSpeed * windSpeed * wingArea * cd).toFixed(0) + ' N', 30, yPos);
+  yPos += 20;
+
+  fill(255, 255, 0);
+  text('Peso: ' + (mass * 9.81).toFixed(0) + ' N', 30, yPos);
 }
 
 function windowResized() {
