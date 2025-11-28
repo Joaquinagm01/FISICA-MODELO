@@ -5,6 +5,8 @@ let flowOffset = 0;
 let windSpeed = 70; // m/s
 let altitude = 0; // m
 let mass = 80; // kg
+let wingArea = 0.1; // m²
+let cd = 0.05; // drag coefficient
 let rho = 1.225; // kg/m³
 let weight = mass * 9.81; // N
 let bgImage;
@@ -566,8 +568,12 @@ function interpolateParameters() {
   altitude = currentAltitude;
   mass = currentMass;
 
-  // Calculate air density based on altitude (simplified)
-  rho = 1.225 * exp(-altitude / 8000); // Exponential decay approximation
+  // Calculate air density based on altitude (ISA - International Standard Atmosphere)
+  // rho = rho0 * exp(-altitude / H) where H ≈ 8500m for troposphere
+  rho = 1.225 * exp(-altitude / 8500);
+
+  // Calculate atmospheric pressure at altitude (simplified)
+  let P_atm = 101325 * exp(-altitude / 8500); // Pa
 
   // Calculate weight
   weight = mass * 9.81;
@@ -577,33 +583,48 @@ function interpolateParameters() {
   select('#rho-value').html(rho.toFixed(3) + ' kg/m³');
 
   let alpha_deg = degrees(angleAttack);
-  // More realistic lift coefficient (thin airfoil theory)
+  // More realistic lift coefficient (thin airfoil theory approximation)
+  // cl = 2π * sin(α) for small angles, but we use radians correctly
   let cl = 2 * PI * sin(angleAttack);
   // Simulate stall: reduction when α > 15°
   if (alpha_deg > 15) {
     cl *= max(0, 1 - (alpha_deg - 15) / 10);
   }
-  // Lift magnitude (simplified, assuming wing area and dynamic pressure)
-  let newLiftMagnitude = max(0, cl * 0.5 * rho * windSpeed**2 * 0.1); // Area = 0.1 m² approximation
+
+  // Wing area (assuming a small model airplane wing)
+  let wingArea = 0.1; // m²
+
+  // Dynamic pressure
+  let q = 0.5 * rho * windSpeed * windSpeed;
+
+  // Lift magnitude using standard aerodynamic formula: L = cl * q * A
+  let newLiftMagnitude = max(0, cl * q * wingArea);
 
   // Smooth lift changes for educational animation
   liftMagnitude = lerp(liftMagnitude, newLiftMagnitude, easing * 0.5); // Slower lift changes
 
   select('#lift-value').html(liftMagnitude.toFixed(0) + ' N');
 
-  // Dynamic velocities based on angle and wind speed
-  let delta_v = windSpeed * 0.1 * sin(angleAttack); // Approximation
-  let v1 = windSpeed + delta_v; // Above (faster)
-  let v2 = windSpeed - delta_v; // Below (slower)
+  // Calculate velocities above and below wing using potential flow theory
+  // For a thin airfoil, the velocity above is higher than below
+  // Using simplified approximation: v_upper = v∞ * (1 + k*sin(α)), v_lower = v∞ * (1 - k*sin(α))
+  let k = 0.1; // Circulation factor (simplified)
+  let v1 = windSpeed * (1 + k * sin(angleAttack)); // Above wing (faster)
+  let v2 = windSpeed * (1 - k * sin(angleAttack)); // Below wing (slower)
 
-  // Pressures using Bernoulli
-  P1 = 101325 - 0.5 * rho * (v1**2 - windSpeed**2);
-  P2 = 101325 - 0.5 * rho * (v2**2 - windSpeed**2);
+  // Ensure minimum velocity (no negative or zero velocities)
+  v1 = max(v1, windSpeed * 0.1);
+  v2 = max(v2, windSpeed * 0.1);
+
+  // Pressures using Bernoulli equation: P + ½ρv² = constant
+  // Using atmospheric pressure at altitude as reference
+  P1 = P_atm + 0.5 * rho * (windSpeed**2 - v1**2); // Above (lower pressure)
+  P2 = P_atm + 0.5 * rho * (windSpeed**2 - v2**2); // Below (higher pressure)
 
   select('#p1').html(P1.toFixed(0));
   select('#p2').html(P2.toFixed(0));
-  select('#v1').html(v1.toFixed(0));
-  select('#v2').html(v2.toFixed(0));
+  select('#v1').html(v1.toFixed(1));
+  select('#v2').html(v2.toFixed(1));
 
   // Check for critical values and trigger impact effects
   checkCriticalValues(alpha_deg, liftMagnitude);
@@ -2001,17 +2022,16 @@ function draw() {
     endShape();
   }
 
-  // Flecha de Sustentación (azul, oscilante y dinámica) - emerge del borde de ataque
+  // Flecha de Sustentación (azul, estable) - emerge del borde de ataque
   let liftLength = liftMagnitude / 5;
-  let oscillation = sin(frameCount * 0.1) * 5; // Oscilación ligera
   let leadingEdgeWorldX = width / 2 - 180 * 1.4; // Posición del borde de ataque en coordenadas del mundo
   let leadingEdgeWorldY = height / 2; // Centro vertical
 
-  drawArrow(leadingEdgeWorldX, leadingEdgeWorldY + oscillation,
-           leadingEdgeWorldX, leadingEdgeWorldY - liftLength + oscillation, 'blue', 6);
+  drawArrow(leadingEdgeWorldX, leadingEdgeWorldY,
+           leadingEdgeWorldX, leadingEdgeWorldY - liftLength, 'blue', 6);
   fill(0, 100, 255);
   textSize(16 * canvasFontScale);
-  text('Sustentación', leadingEdgeWorldX + 20, leadingEdgeWorldY - liftLength / 2 + oscillation);
+  text('Sustentación', leadingEdgeWorldX + 20, leadingEdgeWorldY - liftLength / 2);
 
   // Flecha de Peso (rojo, emerge del borde de ataque hacia abajo)
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY,

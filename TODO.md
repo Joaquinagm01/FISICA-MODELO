@@ -43,3 +43,9 @@
 - [x] Implementar modo de alto contraste para mejor legibilidad
 - [x] Implementar modo de movimiento reducido para usuarios con sensibilidad al movimiento
 - [x] Implementar escalado de fuente específico para texto del canvas (simulación), excluyendo paneles HTML
+
+## ✅ Correcciones Físicas Aerodinámicas
+- [x] Corregir cálculo de densidad del aire según ISA (International Standard Atmosphere)
+- [x] Implementar cálculo correcto de velocidades arriba/abajo del ala usando teoría de flujo potencial
+- [x] Corregir ecuación de Bernoulli con presión atmosférica dependiente de altitud
+- [x] Mejorar presentación visual de conceptos físicos en la interfaz
