@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Simple de Ala</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .info {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="info">
+        <h1>Simulador Simple de Sustentación de Ala</h1>
+        <p>Esta simulación muestra cómo funciona la sustentación en las alas de avión.</p>
+        <ul>
+            <li><strong>Flechas verdes:</strong> Flujo de aire superior (más rápido, presión baja)</li>
+            <li><strong>Flechas rojas:</strong> Flujo de aire inferior (más lento, presión alta)</li>
+            <li><strong>Teclas ↑↓:</strong> Cambiar ángulo de ataque</li>
+        </ul>
+        <p>La diferencia de presión entre la superficie superior e inferior genera la fuerza de sustentación.</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="simple_wing.js"></script>
+</body>
+</html>
