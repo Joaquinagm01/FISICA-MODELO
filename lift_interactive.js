@@ -81,88 +81,113 @@ function preload() {
 
 function setup() {
   console.log('Setup called');
-  createCanvas(1000, 700, P2D); // Using P2D for compatibility
+
+  // Create canvas with responsive sizing
+  let canvasWidth = min(1000, windowWidth - 320); // Leave space for data panel
+  let canvasHeight = min(700, windowHeight - 20);
+  createCanvas(canvasWidth, canvasHeight);
   smooth(); // Enable anti-aliasing for smoother edges
-  console.log('Canvas created');
+  console.log('Canvas created with size:', canvasWidth, canvasHeight);
 
   // Airplane model is already initialized above
 
-  // Wait a bit for DOM to be fully ready
-  setTimeout(() => {
-    angleSlider = select('#angle-slider');
-    if (angleSlider) {
-      console.log('Angle slider found');
-      angleSlider.input(updateParameters);
-    } else {
-      console.log('Angle slider not found');
-    }
-    windSlider = select('#wind-slider');
-    if (windSlider) windSlider.input(updateParameters);
-    altitudeSlider = select('#altitude-slider');
-    if (altitudeSlider) altitudeSlider.input(updateParameters);
-    massSlider = select('#mass-slider');
-    if (massSlider) massSlider.input(updateParameters);
+  // Initialize DOM elements immediately
+  initializeDOMElements();
 
-    // Graphics quality sliders
-    bloomSlider = select('#bloom-slider');
-    if (bloomSlider) {
-      bloomSlider.input(updateGraphicsQuality);
-      bloomSlider.value(bloomIntensity * 100);
-    }
-    dofSlider = select('#dof-slider');
-    if (dofSlider) {
-      dofSlider.input(updateGraphicsQuality);
-      dofSlider.value(dofStrength * 100);
-    }
-    motionBlurSlider = select('#motion-blur-slider');
-    if (motionBlurSlider) {
-      motionBlurSlider.input(updateGraphicsQuality);
-      motionBlurSlider.value(motionBlurStrength * 100);
-    }
-    lodSlider = select('#lod-slider');
-    if (lodSlider) {
-      lodSlider.input(updateGraphicsQuality);
-      lodSlider.value(lodDistanceThreshold);
-    }
+  // updateParameters() is now called at the end of initializeDOMElements()
 
-    // Button event listeners
-    let resetBtn = select('#reset-btn');
-    if (resetBtn) resetBtn.mousePressed(resetSimulation);
-    let tutorialBtn = select('#tutorial-btn');
-    if (tutorialBtn) tutorialBtn.mousePressed(showTutorial);
-    let exportBtn = select('#export-btn');
-    if (exportBtn) exportBtn.mousePressed(exportData);
-    let closeTutorialBtn = select('#close-tutorial');
-    if (closeTutorialBtn) closeTutorialBtn.mousePressed(hideTutorial);
-    let saveBtn = select('#save-btn');
-    if (saveBtn) saveBtn.mousePressed(saveConfiguration);
-    let loadBtn = select('#load-btn');
-    if (loadBtn) loadBtn.mousePressed(loadConfiguration);
+  // Load material textures
+  loadMaterialTextures();
 
-    // Weather control buttons
-    let clearBtn = select('#weather-clear');
-    if (clearBtn) clearBtn.mousePressed(() => setWeather('clear'));
-    let rainBtn = select('#weather-rain');
-    if (rainBtn) rainBtn.mousePressed(() => setWeather('rain'));
-    let snowBtn = select('#weather-snow');
-    if (snowBtn) snowBtn.mousePressed(() => setWeather('snow'));
-    let stormBtn = select('#weather-storm');
-    if (stormBtn) stormBtn.mousePressed(() => setWeather('storm'));
+  // Initialize flow particles
+  initializeFlowParticles();
 
-    updateParameters(); // Initialize
-    setupGauges(); // Initialize instrument panel
-    
-    // Load material textures
-    loadMaterialTextures();
-    
-    // Initialize flow particles
-    initializeFlowParticles();
-    
-    console.log('Setup completed');
-  }, 100);
+  console.log('Setup completed');
+}
+
+function initializeDOMElements() {
+  console.log('Initializing DOM elements...');
+
+  // Get slider elements using p5.js select() for consistency
+  angleSlider = select('#angle-slider');
+  windSlider = select('#wind-slider');
+  altitudeSlider = select('#altitude-slider');
+  massSlider = select('#mass-slider');
+
+  // Get graphics sliders
+  bloomSlider = select('#bloom-slider');
+  dofSlider = select('#dof-slider');
+  motionBlurSlider = select('#motion-blur-slider');
+  lodSlider = select('#lod-slider');
+
+  // Get buttons
+  let resetBtn = select('#reset-btn');
+  let tutorialBtn = select('#tutorial-btn');
+  let exportBtn = select('#export-btn');
+  let closeTutorialBtn = select('#close-tutorial');
+  let saveBtn = select('#save-btn');
+  let loadBtn = select('#load-btn');
+
+  // Weather buttons
+  let clearBtn = select('#weather-clear');
+  let rainBtn = select('#weather-rain');
+  let snowBtn = select('#weather-snow');
+  let stormBtn = select('#weather-storm');
+
+  // Add event listeners
+  if (angleSlider) {
+    angleSlider.input(updateParameters);
+    console.log('Angle slider initialized');
+  }
+  if (windSlider) windSlider.input(updateParameters);
+  if (altitudeSlider) altitudeSlider.input(updateParameters);
+  if (massSlider) massSlider.input(updateParameters);
+
+  // Graphics sliders
+  if (bloomSlider) {
+    bloomSlider.input(updateGraphicsQuality);
+    bloomSlider.value(bloomIntensity * 100);
+  }
+  if (dofSlider) {
+    dofSlider.input(updateGraphicsQuality);
+    dofSlider.value(dofStrength * 100);
+  }
+  if (motionBlurSlider) {
+    motionBlurSlider.input(updateGraphicsQuality);
+    motionBlurSlider.value(motionBlurStrength * 100);
+  }
+  if (lodSlider) {
+    lodSlider.input(updateGraphicsQuality);
+    lodSlider.value(lodDistanceThreshold);
+  }
+
+  // Button listeners
+  if (resetBtn) resetBtn.mousePressed(resetSimulation);
+  if (tutorialBtn) tutorialBtn.mousePressed(showTutorial);
+  if (exportBtn) exportBtn.mousePressed(exportData);
+  if (closeTutorialBtn) closeTutorialBtn.mousePressed(hideTutorial);
+  if (saveBtn) saveBtn.mousePressed(saveConfiguration);
+  if (loadBtn) loadBtn.mousePressed(loadConfiguration);
+
+  // Weather buttons
+  if (clearBtn) clearBtn.mousePressed(() => setWeather('clear'));
+  if (rainBtn) rainBtn.mousePressed(() => setWeather('rain'));
+  if (snowBtn) snowBtn.mousePressed(() => setWeather('snow'));
+  if (stormBtn) stormBtn.mousePressed(() => setWeather('storm'));
+
+  // Initialize parameters after all DOM elements are set up
+  updateParameters();
+
+  console.log('DOM elements initialized');
 }
 
 function updateParameters() {
+  // Check if sliders are initialized before using them
+  if (!angleSlider || !windSlider || !altitudeSlider || !massSlider) {
+    console.log('Sliders not yet initialized, skipping updateParameters');
+    return;
+  }
+
   // Update variables from sliders
   angleAttack = radians(angleSlider.value());
   windSpeed = windSlider.value();
@@ -1440,13 +1465,15 @@ function draw() {
   fill(255, 160, 122);
   text('Aire Lento (Alta P)', 50, height / 2 + 100);
 
-  // Update instrument panel gauges
-  updateGauges();
+
 
   // Update weather effects
   updateWeather();
 
   // Close camera transformation
+  pop();
+
+  // Close the initial camera transformation push()
   pop();
 
 }
@@ -1607,95 +1634,13 @@ function drawVortex(centerX, centerY, strength, direction) {
   }
 }
 
-// Instrument Panel Gauges
-let airspeedGauge, altitudeGauge, angleGauge, liftGauge;
 
-function setupGauges() {
-  // Create gauge canvases
-  airspeedGauge = createGraphics(120, 120);
-  altitudeGauge = createGraphics(120, 120);
-  angleGauge = createGraphics(120, 120);
-  liftGauge = createGraphics(120, 120);
 
-  // Position them in the gauge divs
-  airspeedGauge.parent('airspeed-gauge');
-  altitudeGauge.parent('altitude-gauge');
-  angleGauge.parent('angle-gauge');
-  liftGauge.parent('lift-gauge');
-}
 
-function drawGauge(g, value, minVal, maxVal, label, unit, color = '#00ff00') {
-  g.clear();
-  g.background(0);
 
-  let centerX = g.width / 2;
-  let centerY = g.height / 2;
-  let radius = 45;
 
-  // Draw gauge background
-  g.stroke(100);
-  g.strokeWeight(2);
-  g.noFill();
-  g.ellipse(centerX, centerY, radius * 2);
 
-  // Draw scale marks
-  g.stroke(150);
-  g.strokeWeight(1);
-  for (let i = 0; i <= 10; i++) {
-    let angle = map(i, 0, 10, -PI * 0.75, PI * 0.75);
-    let x1 = centerX + cos(angle) * (radius - 5);
-    let y1 = centerY + sin(angle) * (radius - 5);
-    let x2 = centerX + cos(angle) * radius;
-    let y2 = centerY + sin(angle) * radius;
-    g.line(x1, y1, x2, y2);
 
-    // Draw numbers
-    if (i % 2 === 0) {
-      let numVal = map(i, 0, 10, minVal, maxVal);
-      let textX = centerX + cos(angle) * (radius - 15);
-      let textY = centerY + sin(angle) * (radius - 15);
-      g.fill(200);
-      g.noStroke();
-      g.textAlign(CENTER, CENTER);
-      g.textSize(8);
-      g.text(Math.round(numVal), textX, textY);
-    }
-  }
-
-  // Draw needle
-  let needleAngle = map(value, minVal, maxVal, -PI * 0.75, PI * 0.75);
-  g.stroke(color);
-  g.strokeWeight(3);
-  let needleX = centerX + cos(needleAngle) * (radius - 10);
-  let needleY = centerY + sin(needleAngle) * (radius - 10);
-  g.line(centerX, centerY, needleX, needleY);
-
-  // Draw center dot
-  g.fill(color);
-  g.noStroke();
-  g.ellipse(centerX, centerY, 6);
-
-  // Draw label
-  g.fill(255);
-  g.textAlign(CENTER, CENTER);
-  g.textSize(10);
-  g.text(label, centerX, centerY + radius + 10);
-}
-
-function updateGauges() {
-  if (airspeedGauge && altitudeGauge && angleGauge && liftGauge) {
-    drawGauge(airspeedGauge, windSpeed, 0, 100, 'AIRSPEED', 'm/s');
-    drawGauge(altitudeGauge, altitude, 0, 10000, 'ALTITUDE', 'm');
-    drawGauge(angleGauge, degrees(angleAttack), -10, 20, 'ANGLE', '°');
-    drawGauge(liftGauge, liftMagnitude, 0, 200, 'LIFT', 'N');
-
-    // Update gauge values in HTML
-    select('#airspeed-value').html(Math.round(windSpeed));
-    select('#altitude-gauge-value').html(Math.round(altitude));
-    select('#angle-gauge-value').html(degrees(angleAttack).toFixed(1));
-    select('#lift-gauge-value').html(Math.round(liftMagnitude));
-  }
-}
 
 function initializeFlowParticles() {
   flowParticles = [];
