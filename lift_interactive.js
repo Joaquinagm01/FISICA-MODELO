@@ -15,6 +15,8 @@ let flowParticles = []; // Array of flow particles following aerodynamic paths
 // Accessibility variables
 let highContrastMode = false;
 let reducedMotionMode = false;
+let fontScale = 1.0;
+let canvasFontScale = 1.0; // Scale factor for canvas text only
 
 // Educational features variables
 let showEducationalLegends = false;
@@ -68,11 +70,243 @@ let lodDistanceThreshold = 200; // Distance from center where LOD kicks in
 // Graphics quality control variables
 let bloomSlider, dofSlider, motionBlurSlider, lodSlider;
 
+// Mobile optimization variables
+let isLowEndDevice = false;
+let canvasScaleFactor = 1.0;
+let reducedQualityMode = false;
+
+// Pinch-to-zoom variables
+let initialDistance = 0;
+let initialScale = 1.0;
+let currentScale = 1.0;
+let zoomCenterX = 0;
+let zoomCenterY = 0;
+let isPinching = false;
+
 // Material textures variables
 let materialTextures = {};
 let fuselageTexture = null;
 let wingTexture = null;
 let engineTexture = null;
+
+// Throttling utility function for performance optimization
+function throttle(func, limit) {
+  let inThrottle;
+  return function() {
+    const args = arguments;
+    const context = this;
+    if (!inThrottle) {
+      func.apply(context, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  }
+}
+
+// Throttled version of updateParameters for better performance
+const throttledUpdateParameters = throttle(updateParameters, 16); // ~60fps
+
+// Function to detect low-end devices and adjust quality settings
+function detectLowEndDevice() {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  if (!isMobile) {
+    isLowEndDevice = false;
+    canvasScaleFactor = 1.0;
+    reducedQualityMode = false;
+    return;
+  }
+
+  // Check for various low-end indicators
+  const hasLowMemory = navigator.deviceMemory && navigator.deviceMemory < 4; // Less than 4GB RAM
+  const hasSlowHardwareConcurrency = navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4;
+  const hasSmallScreen = window.innerWidth * window.innerHeight < 300000; // Less than ~550x550 pixels
+  const isOldAndroid = /Android [2-6]/.test(navigator.userAgent);
+  const isOldiOS = /iPhone OS [1-9]|iPad.*OS [1-9]/.test(navigator.userAgent);
+
+  // Performance test - measure time to create a canvas and draw
+  const perfTestStart = performance.now();
+  const testCanvas = document.createElement('canvas');
+  testCanvas.width = testCanvas.height = 100;
+  const ctx = testCanvas.getContext('2d');
+  ctx.fillRect(0, 0, 100, 100);
+  const perfTestTime = performance.now() - perfTestStart;
+
+  // Consider device low-end if multiple conditions are met
+  const lowEndIndicators = [
+    hasLowMemory,
+    hasSlowHardwareConcurrency,
+    hasSmallScreen,
+    isOldAndroid,
+    isOldiOS,
+    perfTestTime > 5 // Canvas operations take more than 5ms
+  ].filter(Boolean).length;
+
+  isLowEndDevice = lowEndIndicators >= 2;
+  
+  if (isLowEndDevice) {
+    canvasScaleFactor = 0.75; // Reduce canvas size by 25%
+    reducedQualityMode = true;
+    console.log('Low-end device detected, enabling reduced quality mode');
+  } else {
+    canvasScaleFactor = 1.0;
+    reducedQualityMode = false;
+  }
+}
+
+// Function to calculate distance between two touch points
+function getTouchDistance(touch1, touch2) {
+  const dx = touch1.clientX - touch2.clientX;
+  const dy = touch1.clientY - touch2.clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+// Function to get center point between two touches
+function getTouchCenter(touch1, touch2) {
+  return {
+    x: (touch1.clientX + touch2.clientX) / 2,
+    y: (touch1.clientY + touch2.clientY) / 2
+  };
+}
+
+// Function to handle pinch-to-zoom gestures
+function handlePinchZoom(event) {
+  if (event.touches.length === 2) {
+    event.preventDefault();
+    
+    const touch1 = event.touches[0];
+    const touch2 = event.touches[1];
+    const distance = getTouchDistance(touch1, touch2);
+    const center = getTouchCenter(touch1, touch2);
+    
+    if (!isPinching) {
+      // Start of pinch gesture
+      isPinching = true;
+      initialDistance = distance;
+      initialScale = currentScale;
+      zoomCenterX = center.x;
+      zoomCenterY = center.y;
+    } else {
+      // Continue pinch gesture
+      const scale = distance / initialDistance;
+      currentScale = Math.max(0.5, Math.min(3.0, initialScale * scale)); // Limit zoom between 0.5x and 3.0x
+      
+      // Apply zoom to canvas
+      applyZoom(currentScale, center.x, center.y);
+    }
+  }
+}
+
+// Function to apply zoom transformation
+function applyZoom(scale, centerX, centerY) {
+  // This would require modifying the drawing functions to use scale
+  // For now, we'll implement a basic zoom that affects the entire canvas
+  push();
+  translate(centerX, centerY);
+  scale(scale);
+  translate(-centerX, -centerY);
+  // The drawing functions would need to be called here with the transformation
+  pop();
+}
+
+// Function to handle pinch end
+function handlePinchEnd(event) {
+  if (event.touches.length < 2) {
+    if (isPinching) {
+      hapticFeedback('light'); // Feedback when pinch gesture ends
+    }
+    isPinching = false;
+  }
+}
+
+// Function to provide haptic feedback on mobile devices
+function hapticFeedback(intensity = 'light') {
+  if (!navigator.vibrate) return; // Check if vibration is supported
+  
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (!isMobile) return; // Only vibrate on mobile devices
+  
+  let pattern;
+  switch (intensity) {
+    case 'light':
+      pattern = 50; // 50ms vibration
+      break;
+    case 'medium':
+      pattern = [50, 50, 50]; // 50ms on, 50ms off, 50ms on
+      break;
+    case 'heavy':
+      pattern = [100, 50, 100]; // Stronger vibration
+      break;
+    default:
+      pattern = 50;
+  }
+  
+  navigator.vibrate(pattern);
+}
+
+// Function to handle automatic dark mode based on system preference
+function initDarkMode() {
+  // Check if the browser supports the color scheme media query
+  if (window.matchMedia) {
+    const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    // Function to apply dark mode
+    function applyDarkMode(isDark) {
+      if (!document.body.classList.contains('dark-mode')) {
+        if (isDark) {
+          document.body.classList.add('system-dark-mode');
+          console.log('System dark mode applied');
+        } else {
+          document.body.classList.remove('system-dark-mode');
+          console.log('System light mode applied');
+        }
+      }
+    }
+    
+    // Apply initial preference
+    applyDarkMode(colorSchemeQuery.matches);
+    
+    // Listen for changes
+    colorSchemeQuery.addEventListener('change', (e) => {
+      applyDarkMode(e.matches);
+    });
+  }
+}
+
+// Function to update theme button icon
+function updateThemeIcon() {
+  const btn = document.getElementById('toggle-theme-btn');
+  if (btn) {
+    const svg = btn.querySelector('svg path');
+    if (svg) {
+      if (document.body.classList.contains('dark-mode')) {
+        svg.setAttribute('d', 'M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z');
+        console.log('Icon updated to moon');
+      } else {
+        svg.setAttribute('d', 'M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z');
+        console.log('Icon updated to sun');
+      }
+    } else {
+      console.log('SVG path not found');
+    }
+  } else {
+    console.log('Toggle theme button not found in updateThemeIcon');
+  }
+}
+
+// Function to toggle manual dark mode
+function toggleTheme() {
+  console.log('toggleTheme called');
+  if (document.body.classList.contains('dark-mode')) {
+    document.body.classList.remove('dark-mode');
+    document.body.classList.remove('system-dark-mode');
+  } else {
+    document.body.classList.add('dark-mode');
+    document.body.classList.remove('system-dark-mode');
+  }
+  updateThemeIcon();
+  console.log('Manual dark mode toggled');
+}
 
 function preload() {
   // No sounds to load
@@ -81,12 +315,27 @@ function preload() {
 function setup() {
   console.log('Setup called');
 
-  // Create canvas with responsive sizing
-  let canvasWidth = min(1000, windowWidth - 320); // Leave space for data panel
-  let canvasHeight = min(700, windowHeight - 20);
+  // Detect low-end devices and adjust quality settings
+  detectLowEndDevice();
+
+  // Create canvas with responsive sizing and quality adjustment
+  let canvasWidth = min(1000, windowWidth - 320) * canvasScaleFactor; // Leave space for data panel
+  let canvasHeight = min(700, windowHeight - 20) * canvasScaleFactor;
   createCanvas(canvasWidth, canvasHeight);
-  smooth(); // Enable anti-aliasing for smoother edges
-  console.log('Canvas created with size:', canvasWidth, canvasHeight);
+  
+  // Adjust graphics quality for low-end devices
+  if (reducedQualityMode) {
+    noSmooth(); // Disable anti-aliasing for better performance
+    bloomEnabled = false; // Disable bloom effect
+    dofEnabled = false; // Disable depth of field
+    motionBlurEnabled = false; // Disable motion blur
+    lodEnabled = true; // Keep LOD for performance
+    console.log('Reduced quality mode enabled for low-end device');
+  } else {
+    smooth(); // Enable anti-aliasing for smoother edges
+  }
+  
+  console.log('Canvas created with size:', canvasWidth, canvasHeight, 'scale factor:', canvasScaleFactor);
 
   // Initialize DOM elements immediately
   initializeDOMElements();
@@ -96,6 +345,9 @@ function setup() {
 
   // Initialize flow particles
   initializeFlowParticles();
+
+  // Initialize automatic dark mode
+  initDarkMode();
 
   // Set default values immediately
   angleAttack = radians(window.defaultValues ? window.defaultValues.angleAttack : 5);
@@ -109,7 +361,7 @@ function setup() {
 }
 
 function initializeDOMElements() {
-  console.log('Initializing DOM elements...');
+  console.log('=== Initializing DOM elements ===');
 
   // Get slider elements using p5.js select() for consistency
   angleSlider = select('#angle-slider');
@@ -127,16 +379,23 @@ function initializeDOMElements() {
   // Get buttons
   let resetBtn = select('#reset-btn');
   let tutorialBtn = select('#tutorial-btn');
+  let tutorialModeBtn = document.getElementById('tutorial-mode');
   let exportBtn = select('#export-btn');
   let closeTutorialBtn = select('#close-tutorial');
   let saveBtn = select('#save-btn');
   let loadBtn = select('#load-btn');
   let togglePanelBtn = select('#toggle-panel-btn');
   let showPanelBtn = select('#show-panel-btn');
+  let toggleThemeBtn = document.getElementById('toggle-theme-btn');
+
+  console.log('Toggle theme button found:', !!toggleThemeBtn);
+  console.log('Tutorial mode button found:', !!tutorialModeBtn);
+  console.log('Tutorial mode button element:', tutorialModeBtn);
 
   // Get accessibility checkboxes
   let highContrastCheckbox = document.getElementById('high-contrast');
   let reducedMotionCheckbox = document.getElementById('reduced-motion');
+  let fontScaleInput = document.getElementById('font-scale');
 
   // Get educational feature checkboxes
   let educationalLegendsCheckbox = document.getElementById('educational-legends');
@@ -149,6 +408,31 @@ function initializeDOMElements() {
     reducedMotionCheckbox: !!reducedMotionCheckbox
   });
 
+  // Synchronize initial state of accessibility features with checkboxes
+  if (highContrastCheckbox) {
+    highContrastCheckbox.checked = highContrastMode;
+    if (highContrastMode) {
+      document.body.classList.add('high-contrast');
+    }
+  }
+  if (reducedMotionCheckbox) {
+    reducedMotionCheckbox.checked = reducedMotionMode;
+  }
+  if (fontScaleInput) {
+    fontScaleInput.value = fontScale;
+    canvasFontScale = fontScale; // Initialize canvas font scale
+    let fontScaleValue = document.getElementById('font-scale-value');
+    if (fontScaleValue) {
+      fontScaleValue.textContent = Math.round(fontScale * 100) + '%';
+    }
+  }
+
+  console.log('Accessibility features initial state:', {
+    highContrastMode,
+    reducedMotionMode,
+    fontScale
+  });
+
   console.log('Educational checkboxes found:', {
     educationalLegendsCheckbox: !!educationalLegendsCheckbox,
     pressureDiagramCheckbox: !!pressureDiagramCheckbox,
@@ -156,34 +440,86 @@ function initializeDOMElements() {
     forceDiagramCheckbox: !!forceDiagramCheckbox
   });
 
-  // Add event listeners
+  // Synchronize initial state of educational features with checkboxes
+  if (educationalLegendsCheckbox) showEducationalLegends = educationalLegendsCheckbox.checked;
+  if (pressureDiagramCheckbox) showPressureDiagram = pressureDiagramCheckbox.checked;
+  if (velocityDiagramCheckbox) showVelocityDiagram = velocityDiagramCheckbox.checked;
+  if (forceDiagramCheckbox) showForceDiagram = forceDiagramCheckbox.checked;
+
+  console.log('Educational features initial state:', {
+    showEducationalLegends,
+    showPressureDiagram,
+    showVelocityDiagram,
+    showForceDiagram
+  });
+
+  // Add event listeners with throttling for better performance
   if (angleSlider) {
-    angleSlider.input(updateParameters);
-    console.log('Angle slider initialized');
+    angleSlider.input(throttledUpdateParameters);
+    // Add touch events for mobile devices
+    angleSlider.elt.addEventListener('touchstart', throttledUpdateParameters, { passive: true });
+    angleSlider.elt.addEventListener('touchmove', throttledUpdateParameters, { passive: true });
+    angleSlider.elt.addEventListener('touchend', throttledUpdateParameters, { passive: true });
+    console.log('Angle slider initialized with throttling');
   }
-  if (windSlider) windSlider.input(updateParameters);
-  if (altitudeSlider) altitudeSlider.input(updateParameters);
-  if (massSlider) massSlider.input(updateParameters);
+  if (windSlider) {
+    windSlider.input(throttledUpdateParameters);
+    windSlider.elt.addEventListener('touchstart', throttledUpdateParameters, { passive: true });
+    windSlider.elt.addEventListener('touchmove', throttledUpdateParameters, { passive: true });
+    windSlider.elt.addEventListener('touchend', throttledUpdateParameters, { passive: true });
+  }
+  if (altitudeSlider) {
+    altitudeSlider.input(throttledUpdateParameters);
+    altitudeSlider.elt.addEventListener('touchstart', throttledUpdateParameters, { passive: true });
+    altitudeSlider.elt.addEventListener('touchmove', throttledUpdateParameters, { passive: true });
+    altitudeSlider.elt.addEventListener('touchend', throttledUpdateParameters, { passive: true });
+  }
+  if (massSlider) {
+    massSlider.input(throttledUpdateParameters);
+    massSlider.elt.addEventListener('touchstart', throttledUpdateParameters, { passive: true });
+    massSlider.elt.addEventListener('touchmove', throttledUpdateParameters, { passive: true });
+    massSlider.elt.addEventListener('touchend', throttledUpdateParameters, { passive: true });
+  }
 
   // Button listeners
   if (resetBtn) resetBtn.mousePressed(resetSimulation);
   if (tutorialBtn) tutorialBtn.mousePressed(showTutorial);
+  if (tutorialModeBtn) {
+    tutorialModeBtn.addEventListener('click', showTutorial);
+    console.log('Tutorial mode button event listener added');
+  } else {
+    console.error('Tutorial mode button not found for event listener');
+  }
   if (exportBtn) exportBtn.mousePressed(exportData);
   if (closeTutorialBtn) closeTutorialBtn.mousePressed(hideTutorial);
   if (saveBtn) saveBtn.mousePressed(saveConfiguration);
   if (loadBtn) loadBtn.mousePressed(loadConfiguration);
   if (togglePanelBtn) togglePanelBtn.mousePressed(togglePanel);
   if (showPanelBtn) showPanelBtn.mousePressed(togglePanel);
+  if (toggleThemeBtn) {
+    toggleThemeBtn.addEventListener('click', toggleTheme);
+    console.log('Theme toggle event listener added');
+  }
+  updateThemeIcon();
 
   // Accessibility checkbox listeners
   if (highContrastCheckbox) highContrastCheckbox.addEventListener('change', toggleHighContrast);
   if (reducedMotionCheckbox) reducedMotionCheckbox.addEventListener('change', toggleReducedMotion);
+  if (fontScaleInput) fontScaleInput.addEventListener('input', updateFontScale);
 
   // Educational feature checkbox listeners
   if (educationalLegendsCheckbox) educationalLegendsCheckbox.addEventListener('change', toggleEducationalLegends);
   if (pressureDiagramCheckbox) pressureDiagramCheckbox.addEventListener('change', togglePressureDiagram);
   if (velocityDiagramCheckbox) velocityDiagramCheckbox.addEventListener('change', toggleVelocityDiagram);
   if (forceDiagramCheckbox) forceDiagramCheckbox.addEventListener('change', toggleForceDiagram);
+
+  // Add pinch-to-zoom event listeners for mobile devices
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile) {
+    document.addEventListener('touchmove', handlePinchZoom, { passive: false });
+    document.addEventListener('touchend', handlePinchEnd, { passive: true });
+    document.addEventListener('touchcancel', handlePinchEnd, { passive: true });
+  }
 
   // Initialize parameters after all DOM elements are set up
   updateParameters();
@@ -216,8 +552,8 @@ function updateParameters() {
 
 // Smooth interpolation function for animations
 function interpolateParameters() {
-  // Smooth interpolation using easing
-  let easing = reducedMotionMode ? 0.3 : animationSpeed; // Faster when reduced motion is on
+  // Smooth interpolation using easing - faster when reduced motion is enabled
+  let easing = reducedMotionMode ? 0.3 : animationSpeed;
 
   currentAngleAttack = lerp(currentAngleAttack, targetAngleAttack, easing);
   currentWindSpeed = lerp(currentWindSpeed, targetWindSpeed, easing);
@@ -510,15 +846,26 @@ function draw() {
   console.log('Draw called');
   clear(); // Clear for P2D
 
+  // Apply zoom transformation if pinching
+  if (isPinching || currentScale !== 1.0) {
+    push();
+    translate(width/2, height/2);
+    scale(currentScale);
+    translate(-width/2, -height/2);
+  }
+
   // Smooth parameter interpolation for animations
   interpolateParameters();
 
-  // Update flash effects
-  if (stallFlashIntensity > 0) {
-    stallFlashIntensity *= 0.95; // Fade out
-  }
-  if (maxLiftFlashIntensity > 0) {
-    maxLiftFlashIntensity *= 0.95; // Fade out
+  // Update flash effects (less frequent on low-end devices)
+  const flashUpdateFrequency = reducedQualityMode ? 3 : 1; // Update every 3rd frame on low-end
+  if (frameCount % flashUpdateFrequency === 0) {
+    if (stallFlashIntensity > 0) {
+      stallFlashIntensity *= 0.95; // Fade out
+    }
+    if (maxLiftFlashIntensity > 0) {
+      maxLiftFlashIntensity *= 0.95; // Fade out
+    }
   }
 
   // Variables para efectos visuales mejorados con iluminación dinámica
@@ -833,7 +1180,7 @@ function draw() {
   }
 
   // Título
-  textSize(28);
+  textSize(28 * canvasFontScale);
   textAlign(CENTER);
   fill(255);
   stroke(0);
@@ -841,7 +1188,7 @@ function draw() {
   text('Simulador Interactivo de Sustentación', width / 2, 50);
 
   // Etiqueta del slider
-  textSize(16);
+  textSize(16 * canvasFontScale);
   textAlign(LEFT);
   fill(255);
   noStroke();
@@ -1171,7 +1518,7 @@ function draw() {
   // Número de serie del ala - más visible con efecto 3D
   // Sombra del texto
   fill(0, 0, 0, 100);
-  textSize(10);
+  textSize(10 * canvasFontScale);
   textAlign(CENTER);
   text('NACA 2412', 1, 46);
 
@@ -1185,7 +1532,7 @@ function draw() {
   fill(255, 255, 0);
   stroke(150, 150, 0);
   strokeWeight(1);
-  textSize(8);
+  textSize(8 * canvasFontScale);
   text('Borde de Ataque', leadingEdgeX - 20, leadingEdgeY - 15);
 
   // Indicador de dirección de vuelo
@@ -1254,7 +1601,7 @@ function draw() {
   // Texto HUD
   fill(0, 255, 0, 220);
   textAlign(CENTER);
-  textSize(8);
+  textSize(8 * canvasFontScale);
   text(Math.round(windSpeed) + ' m/s', 40, -25);
   text(Math.round(altitude) + ' m', -40, -25);
   text(Math.round(liftMagnitude) + ' N', 40, 35);
@@ -1663,7 +2010,7 @@ function draw() {
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY + oscillation,
            leadingEdgeWorldX, leadingEdgeWorldY - liftLength + oscillation, 'blue', 6);
   fill(0, 100, 255);
-  textSize(16);
+  textSize(16 * canvasFontScale);
   text('Sustentación', leadingEdgeWorldX + 20, leadingEdgeWorldY - liftLength / 2 + oscillation);
 
   // Flecha de Peso (rojo, emerge del borde de ataque hacia abajo)
@@ -1675,7 +2022,7 @@ function draw() {
   // Etiquetas de flujo
   textAlign(LEFT);
   fill(173, 216, 230);
-  textSize(14);
+  textSize(14 * canvasFontScale);
   text('Aire Rápido (Baja P)', 50, height / 2 - 80);
   fill(255, 160, 122);
   text('Aire Lento (Alta P)', 50, height / 2 + 100);
@@ -1691,6 +2038,7 @@ function draw() {
 }
 
 function resetSimulation() {
+  hapticFeedback('medium'); // Haptic feedback for reset action
   angleSlider.value(5);
   windSlider.value(70);
   altitudeSlider.value(0);
@@ -1699,14 +2047,39 @@ function resetSimulation() {
 }
 
 function showTutorial() {
-  select('#tutorial-modal').style('display', 'block');
+  try {
+    hapticFeedback('light');
+    console.log('Showing tutorial modal');
+    let modal = document.getElementById('tutorial-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      console.log('Tutorial modal displayed successfully');
+    } else {
+      console.error('Tutorial modal element not found');
+    }
+  } catch (error) {
+    console.error('Error showing tutorial modal:', error);
+  }
 }
 
 function hideTutorial() {
-  select('#tutorial-modal').style('display', 'none');
+  try {
+    hapticFeedback('light');
+    console.log('Hiding tutorial modal');
+    let modal = document.getElementById('tutorial-modal');
+    if (modal) {
+      modal.style.display = 'none';
+      console.log('Tutorial modal hidden successfully');
+    } else {
+      console.error('Tutorial modal element not found');
+    }
+  } catch (error) {
+    console.error('Error hiding tutorial modal:', error);
+  }
 }
 
 function togglePanel() {
+  hapticFeedback('light');
   document.body.classList.toggle('panel-hidden');
   // Update button text
   let isHidden = document.body.classList.contains('panel-hidden');
@@ -1721,6 +2094,11 @@ function resizeCanvasForPanel() {
   let panelHidden = document.body.classList.contains('panel-hidden');
   let canvasWidth = panelHidden ? min(1400, windowWidth - 20) : min(1000, windowWidth - 320);
   let canvasHeight = panelHidden ? min(1000, windowHeight - 20) : min(700, windowHeight - 20);
+  
+  // Apply scale factor for low-end devices
+  canvasWidth *= canvasScaleFactor;
+  canvasHeight *= canvasScaleFactor;
+  
   resizeCanvas(canvasWidth, canvasHeight);
 }
 
@@ -1875,8 +2253,12 @@ function drawVortex(centerX, centerY, strength, direction) {
 function initializeFlowParticles() {
   flowParticles = [];
 
+  // Reduce particle count on low-end devices
+  const upperParticleCount = reducedQualityMode ? 8 : 15;
+  const lowerParticleCount = reducedQualityMode ? 5 : 10;
+
   // Create particles for upper surface (faster flow) - in local wing coordinates
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < upperParticleCount; i++) {
     // Start particles at random positions along the wing chord (local coordinates)
     let chordPos = random(-160, 160); // Along chord length
     let upperOffset = random(-60, -20); // Above wing surface
@@ -1894,7 +2276,7 @@ function initializeFlowParticles() {
   }
 
   // Create particles for lower surface (slower flow) - in local wing coordinates
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < lowerParticleCount; i++) {
     let chordPos = random(-160, 160);
     let lowerOffset = random(20, 60); // Below wing surface
 
@@ -2211,35 +2593,47 @@ function toggleHighContrast() {
 
 function toggleReducedMotion() {
   reducedMotionMode = !reducedMotionMode;
-  
+
   if (reducedMotionMode) {
-    // Reduce or pause animations
-    noLoop(); // Stop the draw loop
-    console.log('Movimiento reducido - animaciones pausadas');
+    console.log('Movimiento reducido - animaciones más rápidas (menos suaves)');
   } else {
-    // Resume animations
-    loop(); // Resume the draw loop
-    console.log('Movimiento restaurado - animaciones reanudadas');
+    console.log('Movimiento restaurado - animaciones normales');
+  }
+}
+
+function updateFontScale() {
+  let fontScaleInput = document.getElementById('font-scale');
+  let fontScaleValue = document.getElementById('font-scale-value');
+  if (fontScaleInput) {
+    fontScale = parseFloat(fontScaleInput.value);
+    canvasFontScale = fontScale; // Update canvas font scale
+    if (fontScaleValue) {
+      fontScaleValue.textContent = Math.round(fontScale * 100) + '%';
+    }
   }
 }
 
 // Educational feature toggle functions
 function toggleEducationalLegends() {
+  hapticFeedback('light');
   showEducationalLegends = !showEducationalLegends;
   console.log('Educational legends:', showEducationalLegends ? 'enabled' : 'disabled');
 }
 
 function togglePressureDiagram() {
+  hapticFeedback('light');
   showPressureDiagram = !showPressureDiagram;
   console.log('Pressure diagram:', showPressureDiagram ? 'enabled' : 'disabled');
 }
 
 function toggleVelocityDiagram() {
+  hapticFeedback('light');
   showVelocityDiagram = !showVelocityDiagram;
   console.log('Velocity diagram:', showVelocityDiagram ? 'enabled' : 'disabled');
 }
 
 function toggleForceDiagram() {
+  hapticFeedback('light');
   showForceDiagram = !showForceDiagram;
   console.log('Force diagram:', showForceDiagram ? 'enabled' : 'disabled');
 }
@@ -2248,13 +2642,17 @@ function toggleForceDiagram() {
 function drawPressureDiagram() {
   if (!showPressureDiagram) return;
 
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
+  const mobileScale = isMobile ? 0.8 : 1.0; // Reduce scale on mobile
+  const mobileStrokeWeight = isMobile ? 2 : 3; // Thinner strokes on mobile
+
   push();
   translate(width / 2, height / 2);
-  scale(1.4);
+  scale(1.4 * mobileScale);
 
   // Draw pressure distribution overlay
   stroke(255, 100, 100, 220);
-  strokeWeight(3);
+  strokeWeight(mobileStrokeWeight);
   noFill();
 
   // Upper surface pressure (suction)
@@ -2305,13 +2703,17 @@ function drawPressureDiagram() {
 function drawVelocityDiagram() {
   if (!showVelocityDiagram) return;
 
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
+  const mobileScale = isMobile ? 0.8 : 1.0;
+  const mobileStrokeWeight = isMobile ? 2 : 3;
+
   push();
   translate(width / 2, height / 2);
-  scale(1.4);
+  scale(1.4 * mobileScale);
 
   // Draw velocity vectors
   stroke(100, 255, 100, 220);
-  strokeWeight(3);
+  strokeWeight(mobileStrokeWeight);
 
   // Streamlines around the wing
   for (let y = -60; y <= 60; y += 20) {
@@ -2356,9 +2758,13 @@ function drawVelocityDiagram() {
 function drawForceDiagram() {
   if (!showForceDiagram) return;
 
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
+  const mobileScale = isMobile ? 0.8 : 1.0;
+  const mobileStrokeWeight = isMobile ? 3 : 4;
+
   push();
   translate(width / 2, height / 2);
-  scale(1.4);
+  scale(1.4 * mobileScale);
 
   // Calculate forces
   let lift = 0.5 * rho * windSpeed * windSpeed * wingArea * cl;
@@ -2371,7 +2777,7 @@ function drawForceDiagram() {
 
   // Lift force (upward)
   stroke(0, 255, 0, 200);
-  strokeWeight(4);
+  strokeWeight(mobileStrokeWeight);
   let liftScale = lift / 1000; // Scale for visualization
   line(centerX, centerY, centerX, centerY - liftScale * 50);
   // Arrow head
@@ -2412,12 +2818,12 @@ function drawEducationalLegends() {
   // Legend title
   fill(255);
   noStroke();
-  textSize(16);
+  textSize(16 * canvasFontScale);
   textAlign(LEFT);
   text('Leyendas Educativas', 30, 45);
 
   // Legend items
-  textSize(12);
+  textSize(12 * canvasFontScale);
   let yPos = 70;
 
   // Angle of attack
@@ -2456,6 +2862,11 @@ function drawEducationalLegends() {
 
   fill(255, 255, 0);
   text('Peso: ' + (mass * 9.81).toFixed(0) + ' N', 30, yPos);
+
+  // Close zoom transformation if applied
+  if (isPinching || currentScale !== 1.0) {
+    pop();
+  }
 }
 
 function windowResized() {

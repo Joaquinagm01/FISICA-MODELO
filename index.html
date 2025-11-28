@@ -22,7 +22,7 @@
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-            font-size: 14px;
+            font-size: 1em;
             max-height: 90vh;
             overflow-y: auto;
             backdrop-filter: blur(10px);
@@ -44,7 +44,7 @@
         #data-panel h3 {
             margin: 0 0 15px 0;
             color: #2c3e50;
-            font-size: 18px;
+            font-size: 1.125em; /* 18px / 16px */
             font-weight: 600;
             text-align: center;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
@@ -52,7 +52,7 @@
         #data-panel h4 {
             margin: 0 0 12px 0;
             color: #34495e;
-            font-size: 14px;
+            font-size: 1em; /* 14px / 14px */
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.8px;
@@ -135,7 +135,7 @@
             margin-bottom: 8px;
             font-weight: 600;
             color: #2c3e50;
-            font-size: 13px;
+            font-size: 0.8125rem; /* 13px / 16px */
         }
         .control-icon {
             width: 16px;
@@ -146,7 +146,7 @@
         .value-display {
             font-weight: bold;
             color: #3498db;
-            font-size: 14px;
+            font-size: 1em; /* 14px / 14px */
             margin-left: auto;
         }
         .physics-info {
@@ -155,7 +155,7 @@
             border-radius: 8px;
             padding: 12px;
             margin: 8px 0;
-            font-size: 12px;
+            font-size: 0.8571em; /* 12px / 14px */
             line-height: 1.4;
         }
         .physics-info strong {
@@ -167,7 +167,7 @@
                 right: 2.5%;
                 left: 2.5%;
                 top: 5px;
-                font-size: 10px;
+                font-size: 0.7143em; /* 10px / 14px */
                 padding: 8px;
                 max-height: 40vh;
             }
@@ -183,15 +183,15 @@
                 max-height: 100vh;
             }
             #data-panel h4 {
-                font-size: 10px;
+                font-size: 0.7143em; /* 10px / 14px */
             }
             .airplane-btn, .weather-btn {
                 padding: 2px 4px;
-                font-size: 9px;
+                font-size: 0.6429em; /* 9px / 14px */
                 margin: 1px;
             }
             #data-panel button {
-                font-size: 9px;
+                font-size: 0.6429em; /* 9px / 14px */
                 padding: 3px 4px;
                 margin: 1px;
             }
@@ -205,7 +205,7 @@
             margin: 2px;
             cursor: pointer;
             border-radius: 3px;
-            font-size: 11px;
+            font-size: 0.7857em; /* 11px / 14px */
         }
         .airplane-btn.active {
             background-color: #FF6B35;
@@ -218,26 +218,246 @@
         body.high-contrast {
             background: #000000 !important;
             color: #FFFFFF !important;
+            filter: contrast(200%) brightness(100%);
         }
         body.high-contrast #data-panel {
             background: #000000 !important;
             color: #FFFFFF !important;
-            border: 3px solid #FFFFFF !important;
+            border: 4px solid #FFFF00 !important;
+            box-shadow: 0 0 20px #FFFF00 !important;
         }
         body.high-contrast .control-group {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border: 1px solid #FFFFFF !important;
+            background: #000000 !important;
+            border: 2px solid #FFFFFF !important;
+            color: #FFFFFF !important;
         }
         body.high-contrast .value-display {
             color: #FFFF00 !important;
+            font-weight: bold !important;
+            text-shadow: 0 0 5px #FFFF00 !important;
         }
         body.high-contrast button {
-            background: #FFFFFF !important;
+            background: #FFFF00 !important;
             color: #000000 !important;
-            border: 2px solid #000000 !important;
+            border: 3px solid #000000 !important;
+            font-weight: bold !important;
+        }
+        body.high-contrast button:hover {
+            background: #FFFFFF !important;
+            box-shadow: 0 0 10px #FFFF00 !important;
         }
         body.high-contrast input[type="range"] {
             background: #FFFFFF !important;
+            border: 2px solid #FFFF00 !important;
+        }
+        body.high-contrast input[type="checkbox"] {
+            border: 2px solid #FFFFFF !important;
+            background: #000000 !important;
+        }
+        body.high-contrast label {
+            color: #FFFFFF !important;
+        }
+
+        /* Mobile touch-friendly controls */
+        @media (max-width: 768px) {
+            #data-panel button {
+                min-height: 44px;
+                min-width: 44px;
+                padding: 12px 16px;
+                font-size: 1.1429em; /* 16px / 14px */
+                margin: 4px;
+                border-radius: 8px;
+            }
+            
+            #data-panel input[type="range"] {
+                height: 20px;
+                margin: 12px 0;
+                -webkit-appearance: none;
+                appearance: none;
+                background: #ddd;
+                border-radius: 10px;
+            }
+            
+            #data-panel input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: #3498db;
+                cursor: pointer;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            }
+            
+            #data-panel input[type="range"]::-moz-range-thumb {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: #3498db;
+                cursor: pointer;
+                border: none;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            }
+            
+            #data-panel input[type="checkbox"] {
+                width: 20px;
+                height: 20px;
+                margin-right: 12px;
+                transform: scale(1.2);
+            }
+            
+            .control-group {
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+            
+            .control-label {
+                font-size: 1.1429em; /* 16px / 14px */
+                margin-bottom: 12px;
+            }
+            
+            .value-display {
+                font-size: 1.1429em; /* 16px / 14px */
+                margin-left: auto;
+            }
+            
+            /* Additional mobile typography optimizations */
+            #data-panel h3 {
+                font-size: 1.2857em; /* 18px / 14px */
+                margin-bottom: 16px;
+            }
+            
+            #data-panel h4 {
+                font-size: 1em; /* 14px / 14px */
+                margin: 12px 0 8px 0;
+            }
+            
+            .control-group h4 {
+                font-size: 16px;
+                margin-bottom: 12px;
+            }
+            
+            /* Improve readability on small screens */
+            #data-panel {
+                line-height: 1.4;
+            }
+            
+            /* Better spacing for touch targets */
+            .control-group {
+                margin-bottom: 20px;
+            }
+            
+            /* Ensure text doesn't get too small */
+            @media (max-width: 480px) {
+                #data-panel {
+                    font-size: 0.9286em; /* 13px / 14px */
+                }
+                
+                #data-panel h3 {
+                    font-size: 1.1429em; /* 16px / 14px */
+                }
+                
+                #data-panel button {
+                    font-size: 1em; /* 14px / 14px */
+                    padding: 10px 14px;
+                }
+            }
+        }
+
+        /* Automatic dark mode based on system preference */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(to bottom, #1a1a2e, #16213e);
+                color: #e0e0e0;
+            }
+            
+            #data-panel {
+                background: linear-gradient(145deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
+                border: 2px solid rgba(100, 149, 237, 0.3);
+                color: #e0e0e0;
+            }
+            
+            .control-group {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(100, 149, 237, 0.2);
+            }
+            
+            .control-label {
+                color: #b0b0b0;
+            }
+            
+            .value-display {
+                color: #87CEEB;
+            }
+            
+            button {
+                background: linear-gradient(145deg, #4a5568, #2d3748);
+                color: #e0e0e0;
+                border: 1px solid #4a5568;
+            }
+            
+            button:hover {
+                background: linear-gradient(145deg, #5a6578, #3d4758);
+            }
+            
+            input[type="range"] {
+                background: #4a5568;
+            }
+            
+            input[type="range"]::-webkit-slider-thumb {
+                background: #87CEEB;
+            }
+            
+            input[type="range"]::-moz-range-thumb {
+                background: #87CEEB;
+            }
+        }
+
+        /* Manual dark mode toggle */
+        body.dark-mode, body.system-dark-mode {
+            background: linear-gradient(to bottom, #1a1a2e, #16213e) !important;
+            color: #e0e0e0 !important;
+        }
+        
+        body.dark-mode #data-panel, body.system-dark-mode #data-panel {
+            background: linear-gradient(145deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95)) !important;
+            border: 2px solid rgba(100, 149, 237, 0.3) !important;
+            color: #e0e0e0 !important;
+        }
+        
+        body.dark-mode .control-group, body.system-dark-mode .control-group {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(100, 149, 237, 0.2) !important;
+        }
+        
+        body.dark-mode .control-label, body.system-dark-mode .control-label {
+            color: #b0b0b0 !important;
+        }
+        
+        body.dark-mode .value-display, body.system-dark-mode .value-display {
+            color: #87CEEB !important;
+        }
+        
+        body.dark-mode button, body.system-dark-mode button {
+            background: linear-gradient(145deg, #4a5568, #2d3748) !important;
+            color: #e0e0e0 !important;
+            border: 1px solid #4a5568 !important;
+        }
+        
+        body.dark-mode button:hover, body.system-dark-mode button:hover {
+            background: linear-gradient(145deg, #5a6578, #3d4758) !important;
+        }
+        
+        body.dark-mode input[type="range"], body.system-dark-mode input[type="range"] {
+            background: #4a5568 !important;
+        }
+        
+        body.dark-mode input[type="range"]::-webkit-slider-thumb, body.system-dark-mode input[type="range"]::-webkit-slider-thumb {
+            background: #87CEEB !important;
+        }
+        
+        body.dark-mode input[type="range"]::-moz-range-thumb, body.system-dark-mode input[type="range"]::-moz-range-thumb {
+            background: #87CEEB !important;
         }
     </style>
 
@@ -246,11 +466,11 @@
     <div id="data-panel">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <h3 style="margin: 0;">Datos en Tiempo Real</h3>
-            <button id="toggle-panel-btn" style="background: linear-gradient(145deg, #95a5a6, #7f8c8d); color: white; border: none; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 600; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); transition: all 0.3s ease; display: flex; align-items: center;">
+            <button id="toggle-theme-btn" style="background: linear-gradient(145deg, #f39c12, #e67e22); color: white; border: none; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-size: 0.7857em; font-weight: 600; box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3); transition: all 0.3s ease; display: flex; align-items: center;">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
-                    <path d="M15.41 16.59L10.83 12L15.41 7.41L14 6L8 12L14 18L15.41 16.59Z"/>
+                    <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z"/>
                 </svg>
-                Ocultar
+                Tema
             </button>
         </div>
         
@@ -264,7 +484,7 @@
                     Ángulo de Ataque
                     <span class="value-display" id="angle-value">5°</span>
                 </div>
-                <input type="range" id="angle-slider" min="-10" max="20" value="5" step="0.5">
+                <input type="range" id="angle-slider" min="-10" max="20" value="5" step="0.5" aria-label="Ángulo de ataque del ala en grados">
             </div>
             
             <div class="control-group">
@@ -276,7 +496,7 @@
                     Velocidad del Viento
                     <span class="value-display" id="wind-value">70 m/s</span>
                 </div>
-                <input type="range" id="wind-slider" min="10" max="100" value="70">
+                <input type="range" id="wind-slider" min="10" max="100" value="70" aria-label="Velocidad del viento en metros por segundo">
             </div>
             
             <div class="control-group">
@@ -287,7 +507,7 @@
                     Altitud
                     <span class="value-display" id="altitude-value">0 m</span>
                 </div>
-                <input type="range" id="altitude-slider" min="0" max="10000" value="0" step="100">
+                <input type="range" id="altitude-slider" min="0" max="10000" value="0" step="100" aria-label="Altitud en metros sobre el nivel del mar">
             </div>
             
             <div class="control-group">
@@ -299,7 +519,7 @@
                     Masa del Avión
                     <span class="value-display" id="mass-value">80 kg</span>
                 </div>
-                <input type="range" id="mass-slider" min="50" max="150" value="80">
+                <input type="range" id="mass-slider" min="50" max="150" value="80" aria-label="Masa del avión en kilogramos">
             </div>
         </div>
         
@@ -332,13 +552,13 @@
         
         <div style="margin-bottom: 20px;">
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px;">
-                <button id="reset-btn" style="background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; border: none; padding: 10px 8px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3); transition: all 0.2s ease;">
+                <button id="reset-btn" style="background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; border: none; padding: 10px 8px; border-radius: 8px; cursor: pointer; font-size: 0.75em; font-weight: 600; box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3); transition: all 0.2s ease;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
                         <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H19V9Z"/>
                     </svg>
                     Reiniciar
                 </button>
-                <button id="tutorial-btn" style="background: linear-gradient(145deg, #f39c12, #e67e22); color: white; border: none; padding: 10px 8px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3); transition: all 0.2s ease;">
+                <button id="tutorial-btn" style="background: linear-gradient(145deg, #f39c12, #e67e22); color: white; border: none; padding: 10px 8px; border-radius: 8px; cursor: pointer; font-size: 0.75em; font-weight: 600; box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3); transition: all 0.2s ease;">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
                         <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H19V9Z"/>
                     </svg>
@@ -370,7 +590,7 @@
             
             <div style="margin-bottom: 12px;">
                 <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" id="educational-legends" checked style="margin-right: 8px;">
+                    <input type="checkbox" id="educational-legends" style="margin-right: 8px;">
                     <span>Leyendas Interactivas</span>
                 </label>
             </div>
@@ -378,15 +598,15 @@
             <div style="margin-bottom: 12px;">
                 <h5 style="margin: 8px 0 4px 0; font-size: 12px; color: #666;">Diagramas Superpuestos:</h5>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 4px;">
-                    <input type="checkbox" id="pressure-diagram" checked style="margin-right: 8px;">
+                    <input type="checkbox" id="pressure-diagram" style="margin-right: 8px;">
                     <span style="font-size: 12px;">Presión</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 4px;">
-                    <input type="checkbox" id="velocity-diagram" checked style="margin-right: 8px;">
+                    <input type="checkbox" id="velocity-diagram" style="margin-right: 8px;">
                     <span style="font-size: 12px;">Velocidad</span>
                 </label>
                 <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" id="force-diagram" checked style="margin-right: 8px;">
+                    <input type="checkbox" id="force-diagram" style="margin-right: 8px;">
                     <span style="font-size: 12px;">Fuerzas</span>
                 </label>
             </div>
@@ -409,21 +629,21 @@
             
             <div style="margin-bottom: 12px;">
                 <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" id="high-contrast" style="margin-right: 8px;">
+                    <input type="checkbox" id="high-contrast" style="margin-right: 8px;" aria-label="Activar modo de alto contraste para mejor visibilidad">
                     <span>Modo Alto Contraste</span>
                 </label>
             </div>
             
             <div style="margin-bottom: 12px;">
                 <label style="display: flex; align-items: center; cursor: pointer;">
-                    <input type="checkbox" id="reduced-motion" style="margin-right: 8px;">
+                    <input type="checkbox" id="reduced-motion" style="margin-right: 8px;" aria-label="Reducir la velocidad de las animaciones">
                     <span>Reducir Movimiento</span>
                 </label>
             </div>
             
             <div style="margin-bottom: 12px;">
                 <label style="font-size: 12px; color: #666; margin-bottom: 4px; display: block;">Tamaño de Fuente:</label>
-                <input type="range" id="font-scale" min="0.8" max="2.0" step="0.1" value="1.0" style="width: 100%;">
+                <input type="range" id="font-scale" min="0.8" max="2.0" step="0.1" value="1.0" style="width: 100%;" aria-label="Escalar el tamaño de la fuente">
                 <div style="display: flex; justify-content: space-between; font-size: 10px; color: #999; margin-top: 2px;">
                     <span>Pequeño</span>
                     <span id="font-scale-value">100%</span>
@@ -433,8 +653,8 @@
         </div>
     </div>
     
-    <div id="tutorial-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; backdrop-filter: blur(5px);">
-        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background: linear-gradient(145deg, #ffffff, #f8f9fa); padding:30px; border-radius:20px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 2px solid rgba(52, 152, 219, 0.2);">
+    <div id="tutorial-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content: center; align-items: center;">
+        <div style="background: linear-gradient(145deg, #ffffff, #f8f9fa); padding:30px; border-radius:20px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 2px solid rgba(52, 152, 219, 0.2);">
             <div style="text-align: center; margin-bottom: 25px;">
                 <h2 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 24px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎓 Tutorial Interactivo</h2>
                 <h3 style="margin: 0; color: #3498db; font-size: 18px; font-weight: 500;">Principios de Sustentación</h3>
