@@ -89,7 +89,7 @@
         }
 
         /* Mobile specific optimizations */
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             body {
                 overflow: hidden !important; /* Prevent body scrolling on mobile */
             }
@@ -452,7 +452,7 @@
             background: #e0e0e0;
         }
 
-        #close-menu-btn {
+        #close-menu-btn, #mobile-close-menu-btn {
             align-self: flex-end;
             background: none;
             border: none;
@@ -466,6 +466,58 @@
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        #mobile-checklist-header {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        #mobile-checklist-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        #mobile-search-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        #mobile-checklist-search {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+        }
+
+        #mobile-checklist-search:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+
+        #mobile-clear-search {
+            width: 30px;
+            height: 30px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        #mobile-clear-search:hover {
+            background: #e0e0e0;
         }
 
         #quick-actions {
@@ -597,7 +649,7 @@
     </div>
 
     <!-- Mobile elements (hidden on desktop) -->
-    <div id="mobile-controls" style="display: none;">
+    <div id="mobile-controls">
         <h3>Controles de Test</h3>
         <label>Ángulo de Ataque: <span id="mobile-angle-value">5</span>°</label><br>
         <input type="range" id="mobile-angle-slider" min="0" max="25" value="5" step="1"><br><br>
@@ -752,7 +804,7 @@
         }
 
         function handleSwipeGesture(diffX, diffY) {
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
             if (!isMobile) return;
 
             const minSwipeDistance = 50;
@@ -771,7 +823,7 @@
 
         function setup() {
             // Detect mobile devices
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
 
             // Calculate canvas size based on device
             let canvasWidth, canvasHeight;
@@ -820,6 +872,40 @@
                 });
             }
 
+            // Sync mobile and desktop checkboxes
+            if (mobileShowDetails && showDetails) {
+                mobileShowDetails.changed(() => {
+                    if (showDetails) showDetails.checked(mobileShowDetails.checked());
+                });
+                showDetails.changed(() => {
+                    if (mobileShowDetails) mobileShowDetails.checked(showDetails.checked());
+                });
+            }
+            if (mobileShowPressure && showPressure) {
+                mobileShowPressure.changed(() => {
+                    if (showPressure) showPressure.checked(mobileShowPressure.checked());
+                });
+                showPressure.changed(() => {
+                    if (mobileShowPressure) mobileShowPressure.checked(showPressure.checked());
+                });
+            }
+            if (mobileShowFlows && showFlows) {
+                mobileShowFlows.changed(() => {
+                    if (showFlows) showFlows.checked(mobileShowFlows.checked());
+                });
+                showFlows.changed(() => {
+                    if (mobileShowFlows) mobileShowFlows.checked(showFlows.checked());
+                });
+            }
+            if (mobileShowForces && showForces) {
+                mobileShowForces.changed(() => {
+                    if (showForces) showForces.checked(mobileShowForces.checked());
+                });
+                showForces.changed(() => {
+                    if (mobileShowForces) mobileShowForces.checked(showForces.checked());
+                });
+            }
+
             updateAngle(); // Initialize
 
             displayChecklist();
@@ -837,7 +923,7 @@
 
         function initMobileUI() {
             // Ensure mobile elements are in correct initial state
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
 
             if (isMobile) {
                 const menuToggle = document.getElementById('mobile-menu-toggle');
@@ -881,7 +967,7 @@
 
         function windowResized() {
             // Detect mobile devices
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
 
             // Recalculate canvas size
             let canvasWidth, canvasHeight;
@@ -903,7 +989,7 @@
         }
 
         function updateMobileLayout() {
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
             const isLandscape = window.innerWidth > window.innerHeight;
 
             if (isMobile) {
@@ -1001,7 +1087,7 @@
         }
 
         function toggleMobileMenu() {
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
             const checklist = isMobile ? document.getElementById('mobile-checklist') : document.getElementById('checklist');
             const overlay = document.getElementById('mobile-overlay');
             const breadcrumb = document.getElementById('breadcrumb');
@@ -1016,7 +1102,7 @@
         }
 
         function openMobileMenu() {
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
             const checklist = isMobile ? document.getElementById('mobile-checklist') : document.getElementById('checklist');
             const overlay = document.getElementById('mobile-overlay');
             const breadcrumb = document.getElementById('breadcrumb');
@@ -1033,7 +1119,7 @@
         }
 
         function closeMobileMenu() {
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
             const checklist = isMobile ? document.getElementById('mobile-checklist') : document.getElementById('checklist');
             const overlay = document.getElementById('mobile-overlay');
             const breadcrumb = document.getElementById('breadcrumb');
@@ -1299,6 +1385,13 @@
         function draw() {
             clear();
 
+            // Determine which controls to use based on device
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 900;
+            const currentShowDetails = isMobile ? mobileShowDetails : showDetails;
+            const currentShowPressure = isMobile ? mobileShowPressure : showPressure;
+            const currentShowFlows = isMobile ? mobileShowFlows : showFlows;
+            const currentShowForces = isMobile ? mobileShowForces : showForces;
+
             // Background gradient
             for (let y = 0; y < height; y++) {
                 let inter = map(y, 0, height, 0, 1);
@@ -1364,7 +1457,7 @@
             pop();
 
             // Flow visualization
-            if (showFlows.checked()) {
+            if (currentShowFlows && currentShowFlows.checked()) {
                 flowOffset += 0.02;
 
                 // Upper flow (blue)
@@ -1397,7 +1490,7 @@
             }
 
             // Pressure visualization
-            if (showPressure.checked()) {
+            if (currentShowPressure && currentShowPressure.checked()) {
                 push();
                 translate(width / 2, height / 2);
                 scale(1.2);
@@ -1434,7 +1527,7 @@
             }
 
             // Forces
-            if (showForces.checked()) {
+            if (currentShowForces && currentShowForces.checked()) {
                 let leX = width / 2 - 180;
                 let leY = height / 2;
 
