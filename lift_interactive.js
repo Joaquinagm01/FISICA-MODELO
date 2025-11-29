@@ -1465,12 +1465,12 @@ function draw() {
   strokeWeight(1);
   text('NACA 2412', 0, 45);
 
-  // Etiqueta del borde de ataque con mejor diseño
+  // Etiqueta del borde de ataque con mejor diseño - movida más arriba
   fill(colors.text[0], colors.text[1], colors.text[2]);
   stroke(colors.text[0] * 0.6, colors.text[1] * 0.6, colors.text[2] * 0.6);
   strokeWeight(1);
   textSize(8 * canvasFontScale);
-  text('Borde de Ataque', leadingEdgeX - 20, leadingEdgeY - 15);
+  text('Borde de Ataque', leadingEdgeX - 30, leadingEdgeY - 35);
 
   // Indicador de dirección de vuelo
   stroke(colors.text[0], colors.text[1], colors.text[2], 150);
@@ -1945,15 +1945,26 @@ function draw() {
 
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY,
            leadingEdgeWorldX, leadingEdgeWorldY - liftLength, colors.liftForce, 6);
-  fill(colors.liftForce[0], colors.liftForce[1], colors.liftForce[2]);
-  textSize(16 * canvasFontScale);
-  text('Sustentación', leadingEdgeWorldX + 20, leadingEdgeWorldY - liftLength / 2);
+  
+  // Texto de Sustentación con mejor legibilidad - movido más arriba y a la derecha
+  fill(0, 0, 0); // Negro para mejor contraste
+  stroke(255, 255, 255); // Borde blanco
+  strokeWeight(3);
+  textSize(18 * canvasFontScale);
+  text('Sustentación', leadingEdgeWorldX + 40, leadingEdgeWorldY - liftLength - 20);
+  noStroke();
 
   // Flecha de Peso (rojo, emerge del borde de ataque hacia abajo)
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY,
            leadingEdgeWorldX, leadingEdgeWorldY + 80, colors.weightForce, 6);
-  fill(colors.weightForce[0], colors.weightForce[1], colors.weightForce[2]);
-  text('Peso', leadingEdgeWorldX + 20, leadingEdgeWorldY + 90);
+  
+  // Texto de Peso con mejor legibilidad - movido más abajo y a la derecha
+  fill(0, 0, 0); // Negro para mejor contraste
+  stroke(255, 255, 255); // Borde blanco
+  strokeWeight(3);
+  textSize(18 * canvasFontScale);
+  text('Peso', leadingEdgeWorldX + 40, leadingEdgeWorldY + 110);
+  noStroke();
 
   // Etiquetas de flujo
   textAlign(LEFT);
