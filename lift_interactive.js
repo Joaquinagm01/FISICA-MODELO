@@ -985,7 +985,6 @@ async function loadMaterialTextures() {
 }
 
 function draw() {
-  console.log('Draw called');
   clear(); // Clear for P2D
 
   // Apply zoom transformation if pinching
@@ -2193,7 +2192,10 @@ function draw() {
   // Close camera transformation
   pop();
 
-  // Close the initial camera transformation push()
+  // Close camera transformation
+  pop();
+
+  // Close the initial zoom/pinch transformation
   pop();
 
 }
@@ -3087,9 +3089,6 @@ function drawWeather() {
   
   drawEducationalLegends();
 
-  // Update CL vs α chart
-  drawCLAlphaChart();
-
 }
 
 // API Integration Functions
@@ -3385,144 +3384,6 @@ function drawEducationalLegends() {
   // Close zoom transformation if applied
   if (isPinching || currentScale !== 1.0) {
     pop();
-  }
-}
-
-function drawCLAlphaChart() {
-  try {
-    let canvas = document.getElementById('cl-alpha-chart');
-    if (!canvas) return;
-
-    let ctx = canvas.getContext('2d');
-    let width = canvas.width;
-    let height = canvas.height;
-
-  // Clear canvas
-  ctx.clearRect(0, 0, width, height);
-
-  // Set up coordinate system
-  let margin = 40;
-  let plotWidth = width - 2 * margin;
-  let plotHeight = height - 2 * margin;
-
-  // Draw axes
-  ctx.strokeStyle = '#34495e';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(margin, margin);
-  ctx.lineTo(margin, height - margin);
-  ctx.lineTo(width - margin, height - margin);
-  ctx.stroke();
-
-  // Draw grid
-  ctx.strokeStyle = '#ecf0f1';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([5, 5]);
-
-  // Vertical grid lines (α from -10° to 25°)
-  for (let alpha = -10; alpha <= 25; alpha += 5) {
-    let x = margin + ((alpha + 10) / 35) * plotWidth;
-    ctx.beginPath();
-    ctx.moveTo(x, margin);
-    ctx.lineTo(x, height - margin);
-    ctx.stroke();
-
-    // Labels
-    ctx.fillStyle = '#7f8c8d';
-    ctx.font = '10px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(alpha + '°', x, height - margin + 15);
-  }
-
-  // Horizontal grid lines (CL from -0.5 to 2.0)
-  for (let cl = -0.5; cl <= 2.0; cl += 0.5) {
-    let y = height - margin - ((cl + 0.5) / 2.5) * plotHeight;
-    ctx.beginPath();
-    ctx.moveTo(margin, y);
-    ctx.lineTo(width - margin, y);
-    ctx.stroke();
-
-    // Labels
-    ctx.fillStyle = '#7f8c8d';
-    ctx.textAlign = 'right';
-    ctx.fillText(cl.toFixed(1), margin - 5, y + 3);
-  }
-
-  ctx.setLineDash([]);
-
-  // Draw CL vs α curve (simplified approximation)
-  ctx.strokeStyle = '#3498db';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-
-  for (let alpha = -10; alpha <= 25; alpha += 1) {
-    // CL curve: CL = 2π sin(α) with stall effects
-    let alphaRad = alpha * Math.PI / 180;
-    let cl = 2 * Math.PI * Math.sin(alphaRad);
-    
-    // Simulate stall: reduction when α > 15°
-    if (alpha > 15) {
-      cl *= Math.max(0, 1 - (alpha - 15) / 10);
-    }
-
-    let x = margin + ((alpha + 10) / 35) * plotWidth;
-    let y = height - margin - ((cl + 0.5) / 2.5) * plotHeight;
-    points.push({x, y, alpha, cl});
-  }
-
-  // Draw curve
-  for (let i = 0; i < points.length; i++) {
-    if (i === 0) {
-      ctx.moveTo(points[i].x, points[i].y);
-    } else {
-      ctx.lineTo(points[i].x, points[i].y);
-    }
-  }
-  ctx.stroke();
-
-  // Draw current point
-  let currentAlpha = angleAttack * 180 / Math.PI;
-  
-  // Calculate current CL based on current angle (same formula as in interpolateParameters)
-  let currentAlphaRad = angleAttack;
-  let currentCL = 2 * Math.PI * Math.sin(currentAlphaRad);
-  let currentAlphaDeg = currentAlpha;
-  if (currentAlphaDeg > 15) {
-    currentCL *= Math.max(0, 1 - (currentAlphaDeg - 15) / 10);
-  }
-
-  // Clamp values to chart range
-  currentAlpha = Math.max(-10, Math.min(25, currentAlpha));
-  currentCL = Math.max(-0.5, Math.min(2.0, currentCL));
-
-  let currentX = margin + ((currentAlpha + 10) / 35) * plotWidth;
-  let currentY = height - margin - ((currentCL + 0.5) / 2.5) * plotHeight;
-
-  // Current point marker
-  ctx.fillStyle = '#e74c3c';
-  ctx.beginPath();
-  ctx.arc(currentX, currentY, 5, 0, 2 * PI);
-  ctx.fill();
-
-  // Current point label
-  ctx.fillStyle = '#e74c3c';
-  ctx.font = 'bold 11px Arial';
-  ctx.textAlign = 'left';
-  ctx.fillText(`α=${currentAlpha.toFixed(1)}°, CL=${currentCL.toFixed(2)}`, currentX + 8, currentY - 8);
-
-  // Axis labels
-  ctx.fillStyle = '#2c3e50';
-  ctx.font = 'bold 12px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('α (Ángulo de Ataque)', width / 2, height - 5);
-
-  ctx.save();
-  ctx.translate(15, height / 2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillText('CL (Coeficiente de Sustentación)', 0, 0);
-  ctx.restore();
-  } catch (error) {
-    console.error('Error drawing CL chart:', error);
   }
 }
 
