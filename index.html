@@ -16,7 +16,8 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            width: 300px;
+            width: min(300px, 25vw);
+            max-width: 320px;
             background: white;
             border: 2px solid rgba(0, 123, 255, 0.3);
             border-radius: 15px;
@@ -323,6 +324,29 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Media queries for responsive design */
+        @media (max-width: 768px) {
+            #data-panel {
+                width: min(280px, 90vw);
+                right: 10px;
+                top: 10px;
+                max-height: 80vh;
+                font-size: 0.9em;
+                padding: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #data-panel {
+                width: min(260px, 95vw);
+                right: 5px;
+                top: 5px;
+                max-height: 75vh;
+                font-size: 0.8em;
+                padding: 10px;
+            }
+        }
     </style>
 
 </head>
@@ -429,17 +453,6 @@
                         <span><strong>Número de Mach (M):</strong></span>
                         <span id="mach-value" style="color: #f39c12; font-weight: bold;">0.00</span>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Gráfico CL vs α -->
-        <div style="margin-bottom: 20px;">
-            <h4 style="font-size: 1.1em; color: #2c3e50; margin-bottom: 10px; text-align: center; font-weight: 600;">Curva de Sustentación CL vs α</h4>
-            <div style="background: white; padding: 15px; border-radius: 10px; border: 1px solid rgba(52, 152, 219, 0.2);">
-                <canvas id="cl-alpha-chart" width="280" height="180" style="display: block; margin: 0 auto;"></canvas>
-                <div style="margin-top: 8px; font-size: 0.8em; color: #7f8c8d; text-align: center;">
-                    Ángulo de Ataque (α) vs Coeficiente de Sustentación (CL)
                 </div>
             </div>
         </div>
