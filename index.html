@@ -3,605 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador Interactivo de Sustentación</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <title>Simulador de Vuelo Biomimético</title>
     <style>
         body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(to bottom, #87CEEB, #FFFFFF);
-            overflow: hidden;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        #data-panel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 300px;
-            background: white;
-            border: 2px solid rgba(0, 123, 255, 0.3);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8);
-            font-size: 1em;
-            max-height: 90vh;
-            overflow-y: auto;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        #data-panel.hidden {
-            transform: translateX(370px);
-            opacity: 0.7;
-        }
-        #data-panel.hidden #toggle-panel-btn {
-            transform: rotate(180deg);
-        }
-        body.panel-hidden #show-panel-btn {
-            display: block;
-        }
-        body:not(.panel-hidden) #show-panel-btn {
-            display: none;
-        }
-        #data-panel h3 {
-            margin: 0 0 15px 0;
-            color: #2c3e50;
-            font-size: 1.125em; /* 18px / 16px */
-            font-weight: 600;
+        .container {
+            max-width: 1000px;
+            padding: 40px 20px;
             text-align: center;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
-        #data-panel h4 {
-            margin: 0 0 12px 0;
-            color: #34495e;
-            font-size: 1em; /* 14px / 14px */
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 5px;
-            position: relative;
+        h1 {
+            color: white;
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        #data-panel h4::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 30px;
-            height: 2px;
-            background: linear-gradient(90deg, #3498db, 2980b9);
-            border-radius: 1px;
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2em;
+            margin-bottom: 50px;
+            font-weight: 300;
         }
-        #angle-slider {
-            width: 100%;
-            margin: 8px 0 15px 0;
-            height: 6px;
-            border-radius: 3px;
-            background: linear-gradient(90deg, #ecf0f1, #bdc3c7);
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
+        .simulations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
         }
-        #angle-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(145deg, #3498db, #2980b9);
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            transition: all 0.2s ease;
-        }
-        #angle-slider::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-        #angle-slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: linear-gradient(145deg, #3498db, #2980b9);
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            transition: all 0.2s ease;
-        }
-        canvas {
+        .simulation-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: inherit;
             display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            max-width: calc(100vw - 320px);
-            max-height: 100vh;
-            transition: max-width 0.3s ease;
         }
-        body.panel-hidden canvas {
-            max-width: 100vw;
-            max-height: 100vh;
+        .simulation-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
         }
-        .control-group {
+        .simulation-icon {
+            font-size: 4em;
             margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 10px;
-            border: 1px solid rgba(0, 123, 255, 0.2);
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
-        .control-label {
+        .simulation-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .simulation-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        .simulation-features {
+            text-align: left;
+            margin-top: 20px;
+        }
+        .feature-item {
             display: flex;
             align-items: center;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-            font-size: 0.8125rem; /* 13px / 16px */
+            margin-bottom: 10px;
+            color: #555;
         }
-        .control-icon {
-            width: 16px;
-            height: 16px;
-            margin-right: 8px;
-            opacity: 0.8;
+        .feature-icon {
+            margin-right: 10px;
+            color: #4CAF50;
         }
-        .value-display {
-            font-weight: bold;
-            color: #3498db;
-            font-size: 1em; /* 14px / 14px */
-            margin-left: auto;
-        }
-        .physics-info {
-            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(41, 128, 185, 0.1));
-            border: 1px solid rgba(52, 152, 219, 0.3);
-            border-radius: 8px;
-            padding: 12px;
-            margin: 8px 0;
-            font-size: 0.8571em; /* 12px / 14px */
-            line-height: 1.4;
-        }
-        .physics-info strong {
-            color: #2980b9;
-        }
-        @media (max-width: 480px) {
-            #data-panel {
-                width: 95%;
-                right: 2.5%;
-                left: 2.5%;
-                top: 5px;
-                font-size: 0.7143em; /* 10px / 14px */
-                padding: 8px;
-                max-height: 40vh;
-            }
-            #data-panel.hidden {
-                transform: translateY(-100%);
-                opacity: 0.7;
-            }
-            canvas {
-                max-width: 100vw;
-                max-height: calc(100vh - 50px);
-            }
-            body.panel-hidden canvas {
-                max-height: 100vh;
-            }
-            #data-panel h4 {
-                font-size: 0.7143em; /* 10px / 14px */
-            }
-            .airplane-btn, .weather-btn {
-                padding: 2px 4px;
-                font-size: 0.6429em; /* 9px / 14px */
-                margin: 1px;
-            }
-            #data-panel button {
-                font-size: 0.6429em; /* 9px / 14px */
-                padding: 3px 4px;
-                margin: 1px;
-            }
-        }
-
-        .airplane-btn {
-            background-color: #666;
+        .start-button {
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
             color: white;
             border: none;
-            padding: 4px 8px;
-            margin: 2px;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: 600;
             cursor: pointer;
-            border-radius: 3px;
-            font-size: 0.7857em; /* 11px / 14px */
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
         }
-        .airplane-btn.active {
-            background-color: #FF6B35;
+        .start-button:hover {
+            background: linear-gradient(45deg, #1976D2, #00BCD4);
+            transform: scale(1.05);
         }
-        .airplane-btn:hover {
-            background-color: #555;
+        .comparison-section {
+            margin-top: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
         }
-
-        /* Mobile touch-friendly controls */
+        .comparison-title {
+            color: white;
+            font-size: 2em;
+            margin-bottom: 30px;
+        }
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            text-align: left;
+        }
+        .comparison-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 4px solid #4CAF50;
+        }
+        .comparison-item h3 {
+            color: white;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .comparison-item p {
+            color: rgba(255,255,255,0.9);
+            line-height: 1.6;
+        }
         @media (max-width: 768px) {
-            #data-panel button {
-                min-height: 44px;
-                min-width: 44px;
-                padding: 12px 16px;
-                font-size: 1.1429em; /* 16px / 14px */
-                margin: 4px;
-                border-radius: 8px;
+            .simulations-grid {
+                grid-template-columns: 1fr;
             }
-            
-            #data-panel input[type="range"] {
-                height: 20px;
-                margin: 12px 0;
-                -webkit-appearance: none;
-                appearance: none;
-                background: #ddd;
-                border-radius: 10px;
+            .comparison-grid {
+                grid-template-columns: 1fr;
             }
-            
-            #data-panel input[type="range"]::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                background: #3498db;
-                cursor: pointer;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            h1 {
+                font-size: 2em;
             }
-            
-            #data-panel input[type="range"]::-moz-range-thumb {
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                background: #3498db;
-                cursor: pointer;
-                border: none;
-                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            }
-            
-            #data-panel input[type="checkbox"] {
-                width: 20px;
-                height: 20px;
-                margin-right: 12px;
-                transform: scale(1.2);
-            }
-            
-            .control-group {
-                padding: 16px;
-                margin-bottom: 16px;
-            }
-            
-            .control-label {
-                font-size: 1.1429em; /* 16px / 14px */
-                margin-bottom: 12px;
-            }
-            
-            .value-display {
-                font-size: 1.1429em; /* 16px / 14px */
-                margin-left: auto;
-            }
-            
-            /* Additional mobile typography optimizations */
-            #data-panel h3 {
-                font-size: 1.2857em; /* 18px / 14px */
-                margin-bottom: 16px;
-            }
-            
-            #data-panel h4 {
-                font-size: 1em; /* 14px / 14px */
-                margin: 12px 0 8px 0;
-            }
-            
-            .control-group h4 {
-                font-size: 16px;
-                margin-bottom: 12px;
-            }
-            
-            /* Improve readability on small screens */
-            #data-panel {
-                line-height: 1.4;
-            }
-            
-            /* Better spacing for touch targets */
-            .control-group {
-                margin-bottom: 20px;
-            }
-            
-            /* Ensure text doesn't get too small */
-            @media (max-width: 480px) {
-                #data-panel {
-                    font-size: 0.9286em; /* 13px / 14px */
-                }
-                
-                #data-panel h3 {
-                    font-size: 1.1429em; /* 16px / 14px */
-                }
-                
-                #data-panel button {
-                    font-size: 1em; /* 14px / 14px */
-                    padding: 10px 14px;
-                }
-            }
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
     </style>
-
 </head>
 <body>
-    <div id="data-panel">
-        <div style="margin-bottom: 10px;">
-            <h3 style="margin: 0;">Datos en Tiempo Real</h3>
-        </div>
-        
-        <div style="margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 15px;">
-            <h4>Parámetros de Vuelo</h4>
-            <div class="control-group">
-                <div class="control-label">
-                    <svg class="control-icon" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
-                    </svg>
-                    Ángulo de Ataque
-                    <span class="value-display" id="angle-value">5°</span>
-                </div>
-                <input type="range" id="angle-slider" min="-10" max="20" value="5" step="0.5" aria-label="Ángulo de ataque del ala en grados">
-            </div>
-            
-            <div class="control-group">
-                <div class="control-label">
-                    <svg class="control-icon" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
-                        <path d="M4 22H20V20H4V22Z"/>
-                    </svg>
-                    Velocidad del Viento
-                    <span class="value-display" id="wind-value">70 m/s</span>
-                </div>
-                <input type="range" id="wind-slider" min="10" max="100" value="70" aria-label="Velocidad del viento en metros por segundo">
-            </div>
-            
-            <div class="control-group">
-                <div class="control-label">
-                    <svg class="control-icon" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M7 14H5V12H7V14ZM12 14H10V12H12V14ZM19 14H17V12H19V14ZM7 19H5V17H7V19ZM12 19H10V17H12V19ZM19 19H17V17H19V19ZM7 9H5V7H7V9ZM12 9H10V7H12V9ZM19 9H17V7H19V9ZM3 3V21H21V3H3Z"/>
-                    </svg>
-                    Altitud
-                    <span class="value-display" id="altitude-value">0 m</span>
-                </div>
-                <input type="range" id="altitude-slider" min="0" max="10000" value="0" step="100" aria-label="Altitud en metros sobre el nivel del mar">
-            </div>
-            
-            <div class="control-group">
-                <div class="control-label">
-                    <svg class="control-icon" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                    </svg>
-                    Masa del Avión
-                    <span class="value-display" id="mass-value">80 kg</span>
-                </div>
-                <input type="range" id="mass-slider" min="50" max="150" value="80" aria-label="Masa del avión en kilogramos">
-            </div>
-        </div>
-        
-        <div style="margin-bottom: 20px; border-bottom: 1px solid #ccc; padding-bottom: 15px;">
-            <h4 style="font-size: 1.2em; color: #2c3e50; margin-bottom: 15px; text-align: center; font-weight: 700; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);">Física Aerodinámica</h4>
-            <div class="physics-info" style="background: white; padding: 15px; border-radius: 10px; border: 1px solid rgba(52, 152, 219, 0.2);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px; background: white; border-radius: 6px; border: 1px solid rgba(39, 174, 96, 0.3);">
-                    <span style="font-size: 1em; font-weight: 600; color: #27ae60;">↑ Sustentación:</span>
-                    <span id="lift-value" style="font-size: 1.1em; color: #27ae60; font-weight: bold;">75 N</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px; background: white; border-radius: 6px; border: 1px solid rgba(231, 76, 60, 0.3);">
-                    <span style="font-size: 1em; font-weight: 600; color: #e74c3c;">↓ Peso:</span>
-                    <span id="weight-value" style="font-size: 1.1em; color: #e74c3c; font-weight: bold;">784 N</span>
-                </div>
-                <div style="margin-top: 15px; padding-top: 12px; border-top: 2px solid rgba(52, 152, 219, 0.3);">
-                    <div style="font-size: 0.9em; color: #34495e; margin-bottom: 8px; font-weight: 600;">Principio de Bernoulli:</div>
-                    <div style="font-family: 'Courier New', monospace; font-size: 0.85em; background: white; padding: 8px; border-radius: 5px; margin-bottom: 10px; border: 1px solid rgba(52, 152, 219, 0.2); text-align: center; font-weight: bold;">
-                        P + ½ρv² = constante
+    <div class="container">
+        <h1>🦟 Simulador de Vuelo Biomimético</h1>
+        <p class="subtitle">Explora las diferencias entre el vuelo tradicional con alas fijas y el vuelo biomimético con alas batientes</p>
+
+        <div class="simulations-grid">
+            <a href="airplane.html" class="simulation-card">
+                <div class="simulation-icon">✈️</div>
+                <h2 class="simulation-title">Avión - Alas Fijas</h2>
+                <p class="simulation-description">
+                    Simulación del vuelo tradicional con alas fijas. Explora cómo el principio de Bernoulli genera sustentación mediante la forma aerodinámica del ala y el movimiento del avión.</p>
+                <div class="simulation-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">📐</span>
+                        <span>Principio de Bernoulli</span>
                     </div>
-                    <div style="font-size: 0.85em; margin-bottom: 10px;">
-                        <div style="color: #e74c3c; margin-bottom: 5px; padding: 5px; background: white; border-radius: 4px; border: 1px solid rgba(231, 76, 60, 0.2);">
-                            ▴ Arriba: P₁=<span id="p1" style="font-weight: bold;">101325</span> Pa, v₁=<span id="v1" style="font-weight: bold;">80</span> m/s
-                        </div>
-                        <div style="color: #27ae60; padding: 5px; background: white; border-radius: 4px; border: 1px solid rgba(39, 174, 96, 0.2);">
-                            ▾ Abajo: P₂=<span id="p2" style="font-weight: bold;">101325</span> Pa, v₂=<span id="v2" style="font-weight: bold;">60</span> m/s
-                        </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🎛️</span>
+                        <span>Controles de velocidad y ángulo de ataque</span>
                     </div>
-                    <div style="font-size: 0.85em; color: #34495e; border-top: 1px solid rgba(52, 152, 219, 0.2); padding-top: 8px; margin-top: 8px; font-weight: 600;">
-                        Fórmula de Sustentación: L = Cₗ × ½ρv² × A
-                        <div style="font-family: 'Courier New', monospace; font-size: 0.8em; background: white; padding: 6px; border-radius: 4px; margin-top: 4px; border: 1px solid rgba(52, 152, 219, 0.2);">
-                            L = <span id="cl-dynamic" style="color: #e74c3c; font-weight: bold;">1.23</span> × ½ × <span id="rho-dynamic" style="color: #3498db; font-weight: bold;">1.225</span> × <span id="v-dynamic" style="color: #27ae60; font-weight: bold;">70</span>² × <span id="area-dynamic" style="color: #9b59b6; font-weight: bold;">0.1</span>
-                        </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🌬️</span>
+                        <span>Visualización de flujo de aire</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">⚡</span>
+                        <span>Cálculos de sustentación y arrastre</span>
                     </div>
                 </div>
-                <div style="margin-top: 12px; font-size: 0.9em; padding: 8px; background: white; border-radius: 6px; border: 1px solid rgba(52, 152, 219, 0.2);">
-                    <strong>Densidad del Aire:</strong> <span id="rho-value" style="color: #3498db; font-weight: bold;">1.225 kg/m³</span>
-                    <span style="font-size: 0.8em; color: #7f8c8d;"> (varía con altitud)</span>
+                <button class="start-button">🚀 Iniciar Simulación de Avión</button>
+            </a>
+
+            <a href="drone.html" class="simulation-card">
+                <div class="simulation-icon">🦟</div>
+                <h2 class="simulation-title">Dron Biomimético - Alas Batientes</h2>
+                <p class="simulation-description">
+                    Simulación inspirada en insectos como libélulas y colibríes. Descubre cómo las alas batientes generan sustentación dinámica mediante movimientos activos.</p>
+                <div class="simulation-features">
+                    <div class="feature-item">
+                        <span class="feature-icon">🦾</span>
+                        <span>Alas batientes dinámicas</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">⚙️</span>
+                        <span>Control de frecuencia y amplitud</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🌪️</span>
+                        <span>Visualización de vórtices de aire</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🔋</span>
+                        <span>Cálculo de consumo energético</span>
+                    </div>
                 </div>
-            </div>
+                <button class="start-button">🦟 Iniciar Simulación de Dron</button>
+            </a>
         </div>
 
-        <!-- Gráfico CL vs α -->
-        <div style="margin-bottom: 20px;">
-            <div style="background: white; padding: 15px; border-radius: 10px; border: 1px solid rgba(52, 152, 219, 0.2);">
-                <canvas id="cl-alpha-chart" width="280" height="180" style="display: block; margin: 0 auto;"></canvas>
-            </div>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px;">
-                <button id="reset-btn" style="background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; border: none; padding: 10px 8px; border-radius: 8px; cursor: pointer; font-size: 0.75em; font-weight: 600; box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3); transition: all 0.2s ease;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
-                        <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H19V9Z"/>
-                    </svg>
-                    Reiniciar
-                </button>
-                <button id="tutorial-btn" style="background: linear-gradient(145deg, #f39c12, #e67e22); color: white; border: none; padding: 10px 8px; border-radius: 8px; cursor: pointer; font-size: 0.75em; font-weight: 600; box-shadow: 0 2px 8px rgba(243, 156, 18, 0.3); transition: all 0.2s ease;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
-                        <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H19V9Z"/>
-                    </svg>
-                    Tutorial
-                </button>
-                <button id="export-btn" style="background: linear-gradient(145deg, #27ae60, #229954); color: white; border: none; padding: 10px 8px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3); transition: all 0.2s ease;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
-                        <path d="M14 2H6C4.89 2 4 2.89 4 4V20C4 21.11 4.89 22 6 22H18C19.11 22 20 21.11 20 20V8L14 2M18 20H6V4H13V9H18V20Z"/>
-                    </svg>
-                    Exportar
-                </button>
-                <button id="save-btn" style="background: linear-gradient(145deg, #3498db, #2980b9); color: white; border: none; padding: 10px 8px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 8px rgba(52, 152, 219, 0.3); transition: all 0.2s ease;">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
-                        <path d="M15 9H5V5H15M12 19C10.34 19 9 17.66 9 16S10.34 13 12 13 15 14.34 15 16 13.66 19 12 19M17 3H5C3.89 3 3 3.89 3 5V19C3 20.11 3.89 21 5 21H19C20.11 21 21 20.11 21 19V7L17 3Z"/>
-                    </svg>
-                    Guardar
-                </button>
-            </div>
-            <button id="load-btn" style="width: 100%; background: linear-gradient(145deg, #9b59b6, #8e44ad); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3); transition: all 0.2s ease;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 4px;">
-                    <path d="M14 2H6C4.89 2 4 2.89 4 4V20C4 21.11 4.89 22 6 22H18C19.11 22 20 21.11 20 20V8L14 2M18 20H6V4H13V9H18V20Z"/>
-                </svg>
-                Cargar Configuración
-            </button>
-        </div>
-
-        <!-- Presets Educativos -->
-        <div style="margin-bottom: 20px;">
-            <h4 style="font-size: 1em; color: #2c3e50; margin-bottom: 10px; text-align: center; font-weight: 600;">💡 Presets Educativos</h4>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
-                <button id="preset-optimal" style="background: linear-gradient(145deg, #27ae60, #2ecc71); color: white; border: none; padding: 8px 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; box-shadow: 0 2px 6px rgba(39, 174, 96, 0.3); transition: all 0.2s ease;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 3px;">
-                        <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
-                    </svg>
-                    Óptimo CL
-                </button>
-                <button id="preset-stall" style="background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; border: none; padding: 8px 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3); transition: all 0.2s ease;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 3px;">
-                        <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H19V9Z"/>
-                    </svg>
-                    Stall
-                </button>
-                <button id="preset-altitude" style="background: linear-gradient(145deg, #3498db, #2980b9); color: white; border: none; padding: 8px 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3); transition: all 0.2s ease;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 3px;">
-                        <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
-                    </svg>
-                    Altitud
-                </button>
-                <button id="preset-supersonic" style="background: linear-gradient(145deg, #f39c12, #e67e22); color: white; border: none; padding: 8px 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; box-shadow: 0 2px 6px rgba(243, 156, 18, 0.3); transition: all 0.2s ease;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 3px;">
-                        <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
-                    </svg>
-                    Supersónico
-                </button>
-            </div>
-        </div>
-        
-        <div id="preset-explanation" style="margin-bottom: 15px; display: none; animation: fadeIn 0.5s ease-in;">
-            <h4 style="font-size: 0.9em; color: #2c3e50; margin-bottom: 8px;">💡 Explicación del Preset</h4>
-            <div class="physics-info" id="explanation-content" style="font-size: 0.85em; line-height: 1.4;">
-                Selecciona un preset para ver la explicación aquí.
-            </div>
-        </div>
-        
-        <div style="margin-bottom: 15px;">
-            <h4>Accesibilidad</h4>
-            
-            <div style="margin-bottom: 12px;">
-                <label style="font-size: 12px; color: #666; margin-bottom: 4px; display: block;">Tamaño de Fuente:</label>
-                <input type="range" id="font-scale" min="0.8" max="2.0" step="0.1" value="1.0" style="width: 100%;" aria-label="Escalar el tamaño de la fuente">
-                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #999; margin-top: 2px;">
-                    <span>Pequeño</span>
-                    <span id="font-scale-value">100%</span>
-                    <span>Grande</span>
+        <div class="comparison-section">
+            <h2 class="comparison-title">🔬 Comparación Científica</h2>
+            <div class="comparison-grid">
+                <div class="comparison-item">
+                    <h3>✈️ Alas Fijas (Avión)</h3>
+                    <p>La sustentación se genera mediante la forma aerodinámica del ala y el movimiento relativo del aire. El principio de Bernoulli explica cómo la presión diferencial crea la fuerza de sustentación.</p>
+                    <p><strong>Ventajas:</strong> Eficiencia energética, velocidad alta, estabilidad.</p>
+                    <p><strong>Limitaciones:</strong> Requiere velocidad mínima, difícil maniobrabilidad a baja velocidad.</p>
+                </div>
+                <div class="comparison-item">
+                    <h3>🦟 Alas Batientes (Dron)</h3>
+                    <p>La sustentación se genera mediante el movimiento activo de las alas, creando vórtices y fuerzas dinámicas. Inspirado en insectos que pueden volar a bajas velocidades.</p>
+                    <p><strong>Ventajas:</strong> Despegue vertical, maniobrabilidad extrema, vuelo estacionario.</p>
+                    <p><strong>Limitaciones:</strong> Alto consumo energético, complejidad mecánica.</p>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div id="tutorial-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content: center; align-items: center;">
-        <div style="background: linear-gradient(145deg, #ffffff, #f8f9fa); padding:30px; border-radius:20px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 2px solid rgba(52, 152, 219, 0.2);">
-            <div style="text-align: center; margin-bottom: 25px;">
-                <h2 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 24px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">🎓 Tutorial Interactivo</h2>
-                <h3 style="margin: 0; color: #3498db; font-size: 18px; font-weight: 500;">Principios de Sustentación</h3>
-                <div style="width: 60px; height: 3px; background: linear-gradient(90deg, #3498db, #2980b9); margin: 15px auto; border-radius: 2px;"></div>
-            </div>
-
-            <div style="margin-bottom: 25px;">
-                <div style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(41, 128, 185, 0.1)); border: 1px solid rgba(52, 152, 219, 0.2); border-radius: 12px; padding: 20px; margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 15px 0; color: #2980b9; font-size: 16px; display: flex; align-items: center;">
-                        <span style="font-size: 20px; margin-right: 10px;">✈️</span>
-                        Conceptos Fundamentales
-                    </h4>
-                    <div style="display: grid; gap: 12px;">
-                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #3498db;">
-                            <span style="font-size: 18px; margin-right: 12px; color: #e74c3c;">1️⃣</span>
-                            <div>
-                                <strong style="color: #2c3e50;">Ángulo de Ataque:</strong>
-                                <span style="color: #7f8c8d; font-size: 14px;"> Afecta la sustentación según Cl = 2π sin(α). Ángulos óptimos: 5-12°</span>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #e67e22;">
-                            <span style="font-size: 18px; margin-right: 12px; color: #e74c3c;">2️⃣</span>
-                            <div>
-                                <strong style="color: #2c3e50;">Velocidad del Viento:</strong>
-                                <span style="color: #7f8c8d; font-size: 14px;"> Mayor velocidad = mayor presión dinámica y sustentación</span>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #27ae60;">
-                            <span style="font-size: 18px; margin-right: 12px; color: #e74c3c;">3️⃣</span>
-                            <div>
-                                <strong style="color: #2c3e50;">Altitud:</strong>
-                                <span style="color: #7f8c8d; font-size: 14px;"> Aire menos denso reduce la sustentación</span>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #9b59b6;">
-                            <span style="font-size: 18px; margin-right: 12px; color: #e74c3c;">4️⃣</span>
-                            <div>
-                                <strong style="color: #2c3e50;">Masa del Avión:</strong>
-                                <span style="color: #7f8c8d; font-size: 14px;"> Peso que debe equilibrarse con la sustentación</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="background: linear-gradient(135deg, rgba(230, 126, 34, 0.1), rgba(211, 84, 0, 0.1)); border: 1px solid rgba(230, 126, 34, 0.2); border-radius: 12px; padding: 20px;">
-                    <h4 style="margin: 0 0 15px 0; color: #e67e22; font-size: 16px; display: flex; align-items: center;">
-                        <span style="font-size: 20px; margin-right: 10px;">⚠️</span>
-                        Fenómenos Críticos
-                    </h4>
-                    <div style="display: grid; gap: 12px;">
-                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #e74c3c;">
-                            <span style="font-size: 18px; margin-right: 12px;">🚨</span>
-                            <div>
-                                <strong style="color: #2c3e50;">Stall (Pérdida de Sustentación):</strong>
-                                <span style="color: #7f8c8d; font-size: 14px;"> Ocurre en ángulos >15°. La capa límite se separa del ala.</span>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #f39c12;">
-                            <span style="font-size: 18px; margin-right: 12px;">🌪️</span>
-                            <div>
-                                <strong style="color: #2c3e50;">Flujo Turbulento:</strong>
-                                <span style="color: #7f8c8d; font-size: 14px;"> Reduce la eficiencia aerodinámica</span>
-                            </div>
-                        </div>
-                        <div style="display: flex; align-items: flex-start; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 8px; border-left: 4px solid #8e44ad;">
-                            <span style="font-size: 18px; margin-right: 12px;">🎯</span>
-                            <div>
-                                <strong style="color: #2c3e50;">Óptimo de Diseño:</strong>
-                                <span style="color: #7f8c8d; font-size: 14px;"> Cada modelo de avión tiene ángulos y velocidades ideales</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div style="text-align: center; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.1);">
-                <p style="margin: 0 0 20px 0; color: #7f8c8d; font-size: 14px; font-style: italic;">
-                    💡 Experimenta con los controles para ver estos principios en acción
-                </p>
-                <button id="close-tutorial" style="background: linear-gradient(145deg, #27ae60, #2ecc71); color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); transition: all 0.3s ease;">
-                    🚀 Comenzar a Experimentar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script src="lift_interactive.js"></script>
 </body>
 </html>

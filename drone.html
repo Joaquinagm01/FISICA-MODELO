@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulación de Dron Biomimético - Alas Batientes</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .simulation-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .controls {
+            width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .canvas-container {
+            flex: 1;
+            margin-left: 20px;
+        }
+        .control-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        .value-display {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .info-panel {
+            margin-top: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .back-link:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simulación de Dron Biomimético - Alas Batientes</h1>
+        
+        <div class="simulation-container">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="flapFrequency">Frecuencia de Batida (Hz):</label>
+                    <input type="range" id="flapFrequency" min="0.5" max="15" step="0.1" value="5">
+                    <div class="value-display" id="flapFrequency-value">5 Hz</div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="flapAmplitude">Amplitud de Batida (°):</label>
+                    <input type="range" id="flapAmplitude" min="10" max="90" value="45">
+                    <div class="value-display" id="flapAmplitude-value">45°</div>
+                </div>
+                
+                <div class="control-group">
+                    <label for="wingSize">Tamaño de Alas (cm):</label>
+                    <input type="range" id="wingSize" min="5" max="20" value="10">
+                    <div class="value-display" id="wingSize-value">10 cm</div>
+                </div>
+            </div>
+            
+            <div class="canvas-container">
+                <div id="canvas-parent"></div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h3>Física del Vuelo Biomimético</h3>
+            <p><strong>Sustentación Dinámica (Lift):</strong> <span id="lift-display">0 N</span></p>
+            <p><strong>Potencia Requerida:</strong> <span id="power-display">0 W</span></p>
+            <p><strong>Frecuencia Actual:</strong> <span id="current-freq-display">0 Hz</span></p>
+            <p><strong>Ángulo de Batida:</strong> <span id="flap-angle-display">0°</span></p>
+            <p><em>Esta simulación muestra cómo las alas batientes generan sustentación dinámica mediante el movimiento activo, inspirado en insectos como libélulas y colibríes.</em></p>
+        </div>
+        
+        <a href="index.html" class="back-link">← Volver al Menú Principal</a>
+    </div>
+
+    <script src="drone.js"></script>
+</body>
+</html>

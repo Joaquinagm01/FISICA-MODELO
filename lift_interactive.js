@@ -49,6 +49,13 @@ let showPressureDiagram = false;
 let showVelocityDiagram = false;
 let showForceDiagram = false;
 
+// Simulation mode variables
+let isDroneMode = false; // false = airplane mode, true = drone mode
+
+// Drone flapping parameters
+let flappingFrequency = 2; // Hz (cycles per second)
+let flappingAmplitude = 30; // degrees (max angle deviation from center)
+
 // Animation and interpolation variables
 let targetAngleAttack = 0;
 let targetWindSpeed = 70;
@@ -326,12 +333,18 @@ function initializeDOMElements() {
   windSlider = select('#wind-slider');
   altitudeSlider = select('#altitude-slider');
   massSlider = select('#mass-slider');
+  
+  // Get drone control sliders
+  let frequencySlider = select('#frequency-slider');
+  let amplitudeSlider = select('#amplitude-slider');
 
   console.log('Sliders found:', {
     angleSlider: !!angleSlider,
     windSlider: !!windSlider,
     altitudeSlider: !!altitudeSlider,
-    massSlider: !!massSlider
+    massSlider: !!massSlider,
+    frequencySlider: !!frequencySlider,
+    amplitudeSlider: !!amplitudeSlider
   });
 
   // Get buttons
@@ -422,6 +435,22 @@ function initializeDOMElements() {
     massSlider.elt.addEventListener('touchend', throttledUpdateParameters, { passive: true });
   }
 
+  // Drone control sliders
+  if (frequencySlider) {
+    frequencySlider.input(updateFlappingFrequency);
+    frequencySlider.elt.addEventListener('touchstart', updateFlappingFrequency, { passive: true });
+    frequencySlider.elt.addEventListener('touchmove', updateFlappingFrequency, { passive: true });
+    frequencySlider.elt.addEventListener('touchend', updateFlappingFrequency, { passive: true });
+    console.log('Frequency slider initialized');
+  }
+  if (amplitudeSlider) {
+    amplitudeSlider.input(updateFlappingAmplitude);
+    amplitudeSlider.elt.addEventListener('touchstart', updateFlappingAmplitude, { passive: true });
+    amplitudeSlider.elt.addEventListener('touchmove', updateFlappingAmplitude, { passive: true });
+    amplitudeSlider.elt.addEventListener('touchend', updateFlappingAmplitude, { passive: true });
+    console.log('Amplitude slider initialized');
+  }
+
   // Button listeners
   if (resetBtn) resetBtn.mousePressed(resetSimulation);
   if (tutorialBtn) tutorialBtn.mousePressed(showTutorial);
@@ -489,6 +518,47 @@ function initializeDOMElements() {
     console.log('ERROR: Supersonic preset button not found');
   }
   
+  // Drone mode toggle button
+  let droneModeToggleBtn = select('#drone-mode-toggle');
+  if (droneModeToggleBtn) {
+    droneModeToggleBtn.mousePressed(() => {
+      console.log('Drone mode toggle button clicked');
+      toggleDroneMode();
+    });
+    console.log('Drone mode toggle event listener added');
+  } else {
+    console.log('ERROR: Drone mode toggle button not found');
+  }
+  
+  // Separate airplane and drone mode buttons
+  let airplaneModeBtn = select('#airplane-mode-btn');
+  let droneModeBtn = select('#drone-mode-btn');
+  
+  console.log('Mode buttons found:', {
+    airplaneModeBtn: !!airplaneModeBtn,
+    droneModeBtn: !!droneModeBtn
+  });
+  
+  if (airplaneModeBtn) {
+    airplaneModeBtn.mousePressed(() => {
+      console.log('Airplane mode button clicked');
+      setAirplaneMode();
+    });
+    console.log('Airplane mode button event listener added');
+  } else {
+    console.log('ERROR: Airplane mode button not found');
+  }
+  
+  if (droneModeBtn) {
+    droneModeBtn.mousePressed(() => {
+      console.log('Drone mode button clicked');
+      setDroneMode();
+    });
+    console.log('Drone mode button event listener added');
+  } else {
+    console.log('ERROR: Drone mode button not found');
+  }
+  
   if (togglePanelBtn) togglePanelBtn.mousePressed(togglePanel);
   if (showPanelBtn) showPanelBtn.mousePressed(togglePanel);
 
@@ -514,6 +584,9 @@ function initializeDOMElements() {
 
   // Add micro-interactions to UI elements
   addMicroInteractions();
+  
+  // Initialize mode buttons appearance
+  updateModeButtons();
 
   console.log('DOM elements initialized');
 }
@@ -539,6 +612,24 @@ function updateParameters() {
   select('#wind-value').html(targetWindSpeed + ' m/s');
   select('#altitude-value').html(targetAltitude + ' m');
   select('#mass-value').html(targetMass + ' kg');
+}
+
+function updateFlappingFrequency() {
+  let frequencySlider = select('#frequency-slider');
+  if (frequencySlider) {
+    flappingFrequency = frequencySlider.value();
+    select('#frequency-value').html(flappingFrequency + ' Hz');
+    console.log('Flapping frequency updated to:', flappingFrequency, 'Hz');
+  }
+}
+
+function updateFlappingAmplitude() {
+  let amplitudeSlider = select('#amplitude-slider');
+  if (amplitudeSlider) {
+    flappingAmplitude = amplitudeSlider.value();
+    select('#amplitude-value').html(flappingAmplitude + '°');
+    console.log('Flapping amplitude updated to:', flappingAmplitude, 'degrees');
+  }
 }
 
 // Smooth interpolation function for animations
@@ -597,11 +688,36 @@ function interpolateParameters() {
 
   // Lift magnitude using standard aerodynamic formula: L = cl * q * A
   let newLiftMagnitude = max(0, cl * q * wingArea);
+  
+  // Add dynamic lift component for flapping wings in drone mode
+  if (isDroneMode) {
+    // Calculate flapping angular velocity (rate of change of flapping angle)
+    let flappingAngle = sin(frameCount * flappingFrequency * 0.1) * (flappingAmplitude * Math.PI / 180);
+    let flappingAngularVelocity = cos(frameCount * flappingFrequency * 0.1) * flappingFrequency * 0.1 * (flappingAmplitude * Math.PI / 180);
+    
+    // Dynamic lift from flapping (simplified model)
+    // L_dynamic = 0.5 * rho * omega^2 * span^2 * cl_dynamic
+    // Using simplified approximation based on flapping frequency and amplitude
+    let dynamicLiftFactor = abs(flappingAngularVelocity) * flappingFrequency * 0.01;
+    let flappingLift = dynamicLiftFactor * q * wingArea * 0.3; // 30% additional lift from flapping
+    
+    newLiftMagnitude += flappingLift;
+    console.log('Drone mode: static lift =', (cl * q * wingArea).toFixed(1), 'N, dynamic lift =', flappingLift.toFixed(1), 'N, total =', newLiftMagnitude.toFixed(1), 'N');
+  }
 
   // Smooth lift changes for educational animation
   liftMagnitude = lerp(liftMagnitude, newLiftMagnitude, easing * 0.5); // Slower lift changes
 
   select('#lift-value').html(liftMagnitude.toFixed(0) + ' N');
+
+  // Calculate flapping power in drone mode
+  if (isDroneMode) {
+    // Simplified flapping power calculation
+    // P = (1/2) * I * ω², where I ≈ m * r² (moment of inertia), ω = angular velocity
+    // Using approximation: P ∝ frequency² * amplitude² * mass
+    let flappingPower = 0.001 * flappingFrequency * flappingFrequency * flappingAmplitude * flappingAmplitude * mass;
+    select('#flapping-power-value').html(flappingPower.toFixed(1) + ' W');
+  }
 
   // Calculate velocities above and below wing using potential flow theory
   // For a thin airfoil, the velocity above is higher than below
@@ -1228,7 +1344,16 @@ function draw() {
   push();
   translate(width / 2, height / 2); // Centrar el ala en el canvas
   scale(1.4); // Hacer el ala más grande para mejor visibilidad
-  rotate(angleAttack * 0.3); // Rotación sutil
+  
+  // Calcular rotación del ala (incluye aleteo en modo dron)
+  let wingRotation = angleAttack * 0.3;
+  if (isDroneMode) {
+    // Agregar movimiento de aleteo sinusoidal
+    let flappingAngle = sin(frameCount * flappingFrequency * 0.1) * (flappingAmplitude * Math.PI / 180);
+    wingRotation += flappingAngle;
+  }
+  
+  rotate(wingRotation); // Rotación sutil + aleteo si está activado
 
   // Dirección de la luz basada en el sol y ángulo de ataque
   let lightDirection = createVector(
@@ -2182,6 +2307,150 @@ function applyEducationalPreset(presetType) {
   showPresetExplanation(presetType);
   
   console.log('UI updated, preset applied successfully');
+}
+
+function toggleDroneMode() {
+  console.log('=== Toggling drone mode - BUTTON CLICKED ===');
+  
+  // Toggle the mode
+  isDroneMode = !isDroneMode;
+  
+  // Update button text and appearance
+  let droneModeToggleBtn = select('#drone-mode-toggle');
+  if (droneModeToggleBtn) {
+    if (isDroneMode) {
+      droneModeToggleBtn.html(`
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;">
+          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H19V9Z"/>
+        </svg>
+        Modo Dron
+      `);
+      droneModeToggleBtn.style('background', 'linear-gradient(145deg, #e74c3c, #c0392b)');
+      droneModeToggleBtn.style('box-shadow', '0 3px 8px rgba(231, 76, 60, 0.4)');
+      console.log('Switched to drone mode');
+    } else {
+      droneModeToggleBtn.html(`
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 6px;">
+          <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H19V9Z"/>
+        </svg>
+        Modo Avión
+      `);
+      droneModeToggleBtn.style('background', 'linear-gradient(145deg, #9b59b6, #8e44ad)');
+      droneModeToggleBtn.style('box-shadow', '0 3px 8px rgba(155, 89, 182, 0.4)');
+      console.log('Switched to airplane mode');
+    }
+  }
+  
+  // Show/hide drone controls
+  let droneControls = select('#drone-controls');
+  if (droneControls) {
+    if (isDroneMode) {
+      droneControls.style('display', 'block');
+    } else {
+      droneControls.style('display', 'none');
+    }
+  }
+  
+  // Show/hide drone power indicator
+  let dronePowerIndicator = select('#drone-power-indicator');
+  if (dronePowerIndicator) {
+    if (isDroneMode) {
+      dronePowerIndicator.style('display', 'block');
+    } else {
+      dronePowerIndicator.style('display', 'none');
+    }
+  }
+  
+  // Show notification
+  showModeNotification(isDroneMode ? 'drone' : 'airplane');
+  
+  // Update button appearances
+  updateModeButtons();
+  
+  console.log('Drone mode toggled to:', isDroneMode);
+}
+
+function showModeNotification(mode) {
+  if (mode === 'drone') {
+    alert('🚁 Modo Dron Activado\n\nAhora puedes controlar alas que se agitan como en insectos y pájaros.\nPróximamente: controles de frecuencia y amplitud de aleteo.');
+  } else {
+    alert('✈️ Modo Avión Activado\n\nSimulación aerodinámica tradicional de alas fijas.');
+  }
+}
+
+function setAirplaneMode() {
+  console.log('=== Setting airplane mode ===');
+  
+  if (isDroneMode) {
+    isDroneMode = false;
+    updateModeButtons();
+    
+    // Hide drone controls
+    let droneControls = select('#drone-controls');
+    if (droneControls) {
+      droneControls.style('display', 'none');
+    }
+    
+    let dronePowerIndicator = select('#drone-power-indicator');
+    if (dronePowerIndicator) {
+      dronePowerIndicator.style('display', 'none');
+    }
+    
+    showModeNotification('airplane');
+    console.log('Switched to airplane mode');
+  }
+}
+
+function setDroneMode() {
+  console.log('=== Setting drone mode ===');
+  
+  if (!isDroneMode) {
+    isDroneMode = true;
+    updateModeButtons();
+    
+    // Show drone controls
+    let droneControls = select('#drone-controls');
+    if (droneControls) {
+      droneControls.style('display', 'block');
+    }
+    
+    let dronePowerIndicator = select('#drone-power-indicator');
+    if (dronePowerIndicator) {
+      dronePowerIndicator.style('display', 'block');
+    }
+    
+    showModeNotification('drone');
+    console.log('Switched to drone mode');
+  }
+}
+
+function updateModeButtons() {
+  let airplaneModeBtn = select('#airplane-mode-btn');
+  let droneModeBtn = select('#drone-mode-btn');
+  
+  if (airplaneModeBtn) {
+    if (!isDroneMode) {
+      airplaneModeBtn.style('background', 'linear-gradient(145deg, #27ae60, #2ecc71)');
+      airplaneModeBtn.style('box-shadow', '0 3px 8px rgba(39, 174, 96, 0.4)');
+      airplaneModeBtn.style('transform', 'scale(1.05)');
+    } else {
+      airplaneModeBtn.style('background', 'linear-gradient(145deg, #3498db, #2980b9)');
+      airplaneModeBtn.style('box-shadow', '0 3px 8px rgba(52, 152, 219, 0.4)');
+      airplaneModeBtn.style('transform', 'scale(1)');
+    }
+  }
+  
+  if (droneModeBtn) {
+    if (isDroneMode) {
+      droneModeBtn.style('background', 'linear-gradient(145deg, #e74c3c, #c0392b)');
+      droneModeBtn.style('box-shadow', '0 3px 8px rgba(231, 76, 60, 0.4)');
+      droneModeBtn.style('transform', 'scale(1.05)');
+    } else {
+      droneModeBtn.style('background', 'linear-gradient(145deg, #95a5a6, #7f8c8d)');
+      droneModeBtn.style('box-shadow', '0 3px 8px rgba(149, 165, 166, 0.4)');
+      droneModeBtn.style('transform', 'scale(1)');
+    }
+  }
 }
 
 function showPresetExplanation(presetType) {
