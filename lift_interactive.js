@@ -2791,42 +2791,65 @@ function drawVortex(centerX, centerY, strength, direction) {
 function initializeFlowParticles() {
   flowParticles = [];
 
-  // Reduce particle count on low-end devices
-  const upperParticleCount = reducedQualityMode ? 8 : 15;
-  const lowerParticleCount = reducedQualityMode ? 5 : 10;
+  // Enhanced particle system with better distribution
+  const upperParticleCount = reducedQualityMode ? 12 : 25;
+  const lowerParticleCount = reducedQualityMode ? 8 : 18;
 
   // Create particles for upper surface (faster flow) - in local wing coordinates
   for (let i = 0; i < upperParticleCount; i++) {
-    // Start particles at random positions along the wing chord (local coordinates)
-    let chordPos = random(-160, 160); // Along chord length
-    let upperOffset = random(-60, -20); // Above wing surface
+    // Distribute particles more evenly along the chord
+    let chordPos = map(i, 0, upperParticleCount-1, -160, 160);
+    let upperOffset = random(-70, -15); // Above wing surface with more variation
 
     flowParticles.push({
       x: chordPos,
       y: upperOffset,
-      vx: 2 + random(1),
-      vy: 0,
+      vx: 2.5 + random(1.5), // Faster base velocity
+      vy: random(-0.2, 0.2), // Slight vertical component
       surface: 'upper',
       age: random(100),
-      maxAge: 200 + random(100),
-      trail: []
+      maxAge: 250 + random(150),
+      trail: [],
+      size: random(2, 4),
+      turbulence: random(0.5, 1.5), // Individual turbulence factor
+      color: [100, 255, 150] // Base green color for upper surface
     });
   }
 
   // Create particles for lower surface (slower flow) - in local wing coordinates
   for (let i = 0; i < lowerParticleCount; i++) {
-    let chordPos = random(-160, 160);
-    let lowerOffset = random(20, 60); // Below wing surface
+    let chordPos = map(i, 0, lowerParticleCount-1, -160, 160);
+    let lowerOffset = random(15, 70); // Below wing surface with more variation
 
     flowParticles.push({
       x: chordPos,
       y: lowerOffset,
-      vx: 1.5 + random(0.5),
-      vy: 0,
+      vx: 1.2 + random(0.8), // Slower base velocity
+      vy: random(-0.2, 0.2), // Slight vertical component
       surface: 'lower',
       age: random(100),
-      maxAge: 180 + random(80),
-      trail: []
+      maxAge: 220 + random(120),
+      trail: [],
+      size: random(2, 4),
+      turbulence: random(0.3, 1.2), // Individual turbulence factor
+      color: [255, 150, 100] // Base orange color for lower surface
+    });
+  }
+
+  // Add leading edge particles for better flow visualization
+  for (let i = 0; i < 6; i++) {
+    flowParticles.push({
+      x: -180 + random(-10, 10),
+      y: random(-40, 40),
+      vx: windSpeed * 0.02 + random(0.5),
+      vy: random(-0.5, 0.5),
+      surface: 'leading',
+      age: random(50),
+      maxAge: 150 + random(100),
+      trail: [],
+      size: random(1.5, 3),
+      turbulence: random(0.8, 1.8),
+      color: [150, 200, 255] // Blue for leading edge
     });
   }
 }
@@ -2835,26 +2858,62 @@ function updateFlowParticles() {
   for (let i = flowParticles.length - 1; i >= 0; i--) {
     let p = flowParticles[i];
 
-    // Update particle position
+    // Enhanced physics with angle of attack influence
+    let angleInfluence = sin(angleAttack) * 0.1;
+
+    // Update particle position with enhanced physics
     p.x += p.vx;
     p.y += p.vy;
 
-    // Add slight turbulence
-    p.vx += sin(frameCount * 0.02 + p.x * 0.01) * 0.05;
-    p.vy += cos(frameCount * 0.015 + p.y * 0.01) * 0.03;
+    // Add turbulence based on particle properties and flow conditions
+    let turbulenceX = sin(frameCount * 0.02 + p.x * 0.01 + p.age * 0.05) * 0.08 * p.turbulence;
+    let turbulenceY = cos(frameCount * 0.015 + p.y * 0.01 + p.age * 0.03) * 0.05 * p.turbulence;
+
+    // Add angle of attack influence to vertical movement
+    turbulenceY += angleInfluence * p.turbulence * 0.1;
+
+    p.vx += turbulenceX;
+    p.vy += turbulenceY;
+
+    // Limit velocity to prevent particles from going too fast
+    let speed = sqrt(p.vx * p.vx + p.vy * p.vy);
+    if (speed > 8) {
+      p.vx = (p.vx / speed) * 8;
+      p.vy = (p.vy / speed) * 8;
+    }
+
+    // Update trail (keep last 8 positions for smooth trails)
+    p.trail.push({x: p.x, y: p.y});
+    if (p.trail.length > 8) {
+      p.trail.shift();
+    }
 
     // Age particle
     p.age++;
 
     // Reset particle if it goes off screen or gets too old
     if (p.x > width + 100 || p.age > p.maxAge) {
+      // Reset with surface-specific positioning
       if (p.surface === 'upper') {
-        p.x = -50;
-        p.y = height/2 - 80 - random(40); // Start above wing
-      } else {
-        p.x = -50;
-        p.y = height/2 + 20 + random(40); // Start below wing
+        p.x = -60 - random(20);
+        p.y = height/2 - 90 - random(50);
+        p.vx = 2.5 + random(1.5);
+        p.vy = random(-0.3, 0.3);
+      } else if (p.surface === 'lower') {
+        p.x = -60 - random(20);
+        p.y = height/2 + 30 + random(50);
+        p.vx = 1.2 + random(0.8);
+        p.vy = random(-0.3, 0.3);
+      } else if (p.surface === 'leading') {
+        p.x = -200 - random(20);
+        p.y = height/2 + random(-50, 50);
+        p.vx = windSpeed * 0.02 + random(0.5);
+        p.vy = random(-0.8, 0.8);
       }
+
+      // Reset age and trail
+      p.age = 0;
+      p.trail = [];
     }
   }
 }
@@ -2863,35 +2922,59 @@ function drawFlowParticles() {
   noStroke();
 
   for (let p of flowParticles) {
-    // Calcular velocidad real de la partícula
+    // Calculate actual particle speed
     let particleSpeed = sqrt(p.vx * p.vx + p.vy * p.vy);
 
-    // Mapear velocidad a colores: azul=lento, rojo=rápido
-    let speedRatio = map(particleSpeed, 0, windSpeed * 1.5, 0, 1);
+    // Enhanced velocity-based color coding
+    let speedRatio = map(particleSpeed, 0, windSpeed * 1.8, 0, 1);
     speedRatio = constrain(speedRatio, 0, 1);
 
-    // Interpolar entre azul (velocidad baja) y rojo (velocidad alta)
-    let r = map(speedRatio, 0, 1, 0, 255);    // Rojo aumenta con velocidad
-    let g = map(speedRatio, 0, 1, 200, 0);    // Verde disminuye con velocidad
-    let b = map(speedRatio, 0, 1, 255, 0);    // Azul disminuye con velocidad
+    // Base colors by surface type, then modify by velocity
+    let baseR = p.color[0];
+    let baseG = p.color[1];
+    let baseB = p.color[2];
 
-    fill(r, g, b, 150);
+    // Velocity influence: faster = more intense, slower = more muted
+    let intensity = map(speedRatio, 0, 1, 0.6, 1.4);
+    intensity = constrain(intensity, 0.6, 1.4);
 
-    // Draw particle as small ellipse - REMOVED
-    // ellipse(p.x, p.y, 3, 3);
+    let r = constrain(baseR * intensity, 0, 255);
+    let g = constrain(baseG * intensity, 0, 255);
+    let b = constrain(baseB * intensity, 0, 255);
 
-    // Draw subtle trail with same color logic
-    if (p.age > 10) {
-      let trailLength = min(8, floor(p.age / 5));
-      for (let i = 1; i <= trailLength; i++) {
-        let trailX = p.x - p.vx * i * 0.5;
-        let trailY = p.y - p.vy * i * 0.5;
-        let alpha = map(i, 1, trailLength, 100, 20);
+    // Age-based fading
+    let ageAlpha = map(p.age, 0, p.maxAge, 180, 50);
 
-        fill(r, g, b, alpha);
-        // ellipse(trailX, trailY, 2, 2); - REMOVED
+    // Draw enhanced particle trail
+    if (p.trail.length > 1) {
+      for (let i = 0; i < p.trail.length - 1; i++) {
+        let t1 = p.trail[i];
+        let t2 = p.trail[i + 1];
+        let trailAlpha = map(i, 0, p.trail.length - 1, ageAlpha, 20);
+
+        stroke(r, g, b, trailAlpha);
+        strokeWeight(p.size * 0.8);
+        line(t1.x, t1.y, t2.x, t2.y);
       }
     }
+
+    // Draw main particle with glow effect
+    fill(r, g, b, ageAlpha);
+
+    // Outer glow
+    for (let glow = 3; glow > 0; glow--) {
+      let glowAlpha = ageAlpha * 0.3 / glow;
+      fill(r, g, b, glowAlpha);
+      ellipse(p.x, p.y, p.size * glow * 0.5, p.size * glow * 0.5);
+    }
+
+    // Main particle
+    fill(r, g, b, ageAlpha);
+    ellipse(p.x, p.y, p.size, p.size);
+
+    // Inner highlight for 3D effect
+    fill(255, 255, 255, ageAlpha * 0.6);
+    ellipse(p.x - p.size * 0.2, p.y - p.size * 0.2, p.size * 0.3, p.size * 0.3);
   }
 }
 
