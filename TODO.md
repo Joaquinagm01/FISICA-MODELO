@@ -1,182 +1,68 @@
-# 🚀 Simulación de Avión - Checklist de Mejoras y Testing
+# Checklist de Funcionalidades para Simulación de Sustentación de Avión
 
-## 📋 **TESTING CHECKLIST - Simulación de Avión**
+## ✅ **Conceptos Básicos de Vuelo**
+- [x] Sustentación (Lift) - Fuerza perpendicular al flujo que levanta el avión
+- [x] Contrarrestar el peso del avión
+- [x] Forma del ala (perfil aerodinámico)
 
-### **🔧 Funcionalidad Básica**
-- [ ] **Carga de página**: La simulación se carga sin errores en diferentes navegadores
-- [ ] **Controles deslizantes**: Todos los sliders (velocidad, ángulo, altitud, masa) responden correctamente
-- [ ] **Cálculos físicos**: Las fuerzas (lift, drag, weight) se calculan y muestran correctamente
-- [ ] **Visualización**: El avión se dibuja correctamente con todas las partes visibles
-- [ ] **Animación**: Las partículas de flujo de aire se mueven y animan correctamente
-- [ ] **Responsive**: La simulación funciona en diferentes tamaños de pantalla
+## ✅ **Principio de Bernoulli**
+- [x] Ecuación general: P + ½ρv² + ρgh = constante
+- [x] Visualización de zonas de presión (alta abajo, baja arriba)
+- [x] Diferencia de velocidades del aire (más rápido arriba, más lento abajo)
+- [x] Cálculo de diferencia de presiones: ΔP = P₂ - P₁ = ½ρ(v₁² - v₂²)
 
-### **🎨 Aspectos Visuales**
-- [ ] **Calidad de renderizado**: El avión se ve nítido y profesional
-- [ ] **Colores y contraste**: Buena legibilidad y accesibilidad visual
-- [ ] **Animaciones suaves**: Sin parpadeos o movimientos bruscos
-- [ ] **Partículas de flujo**: Apariencia realista y física correcta
-- [ ] **Texto legible**: Todos los valores y etiquetas son fáciles de leer
-- [ ] **Efectos de cámara**: Movimientos naturales y no mareantes
-- [ ] **Nubes y cielo**: Apariencia realista y no repetitiva
+## ✅ **Tercera Ley de Newton**
+- [ ] Visualización del aire desviado hacia abajo por el ala
+- [ ] Fuerza de reacción hacia arriba sobre el ala
+- [ ] Animación de flujo de aire mostrando deflexión
 
-### **⚡ Rendimiento**
-- [ ] **FPS estable**: Mantiene 60 FPS en condiciones normales
-- [ ] **Adaptación automática**: Reduce calidad cuando FPS baja
-- [ ] **Uso de CPU**: No consume recursos excesivos
-- [ ] **Memoria**: Sin fugas de memoria durante uso prolongado
-- [ ] **Carga inicial**: Se carga rápidamente sin delays largos
+## ✅ **Factores que Influyen en la Sustentación**
+- [x] Velocidad del avión (más rápido → más sustentación)
+- [x] Ángulo de ataque (ángulo entre ala y dirección del flujo)
+- [x] Densidad del aire (menor a mayor altitud)
+- [x] Superficie del ala (área del ala)
+- [ ] Forma del ala (perfiles más curvos → mayor diferencia de presiones)
 
-### **🔬 Precisión Física**
-- [ ] **Coeficientes aerodinámicos**: Valores realistas (Cl, Cd, L/D)
-- [ ] **Principio de Bernoulli**: Visualización correcta de presiones
-- [ ] **Densidad del aire**: Cambia correctamente con la altitud
-- [ ] **Ángulo crítico**: Stall angle se calcula correctamente
-- [ ] **Fuerzas vectoriales**: Magnitudes y direcciones precisas
+## 📊 **Visualizaciones Educativas**
+- [x] Vectores de fuerza (sustentación, resistencia, peso)
+- [x] Zonas de presión con colores (azul = baja presión, rojo = alta presión)
+- [x] Flujo de aire sobre y bajo el ala
+- [ ] Flechas mostrando deflexión del aire (Tercera Ley)
+- [ ] Perfil del ala con mediciones de curvatura
+- [ ] Gráfico de distribución de presiones a lo largo del ala
 
-## 👁️ **MEJORAS VISUALES PARA MEJOR VISTA**
+## 🧮 **Cálculos y Fórmulas**
+- [x] Cálculo de sustentación: L = ½ρv²SC_L
+- [x] Coeficiente de sustentación C_L
+- [x] Densidad del aire en función de la altitud
+- [ ] Cálculo detallado de diferencia de presiones
+- [ ] Energía cinética vs energía de presión
+- [ ] Comparación de velocidades arriba/abajo del ala
 
-### **✨ Aspectos Visuales Prioritarios**
-1. **Iluminación y Sombras**
-   - [x] Agregar iluminación direccional del sol
-   - [x] Implementar sombras suaves en el avión
-   - [x] Efectos de luz en las alas según ángulo solar
-   - [x] Brillo especular en superficies metálicas
+## 🎓 **Elementos Educativos**
+- [x] Panel de cálculos dinámicos con fórmulas
+- [x] Explicaciones contextuales según parámetros
+- [ ] Glosario de términos aerodinámicos
+- [ ] Ejemplos numéricos paso a paso
+- [ ] Preguntas interactivas sobre conceptos
+- [ ] Animaciones explicativas de Bernoulli
 
-2. **Detalles del Avión**
-   - [ ] Texturas más realistas (metal, vidrio, composite)
-   - [ ] Detalles de superficie (remaches, paneles, antenas)
-   - [ ] Luces de navegación (rojo/verde/azul)
-   - [ ] Efectos de motor (llamas, humo, calor)
+## 🎮 **Interactividad**
+- [x] Sliders para velocidad, ángulo de ataque, altitud, masa
+- [x] Actualización automática de cálculos
+- [ ] Modos de visualización (presión, velocidad, fuerzas)
+- [ ] Comparación de diferentes perfiles de ala
+- [ ] Escenarios de vuelo (despegue, crucero, aterrizaje)
 
-3. **Entorno Mejorado**
-   - [ ] Gradiente de cielo más realista (amanecer/atardecer)
-   - [ ] Nubes volumétricas con movimiento natural
-   - [ ] Terreno con textura y detalles
-   - [ ] Efectos atmosféricos (niebla, polvo)
+## 🔬 **Aspectos Científicos Avanzados**
+- [ ] Efecto de la viscosidad del aire
+- [ ] Separación del flujo (stall) a altos ángulos de ataque
+- [ ] Arrastre inducido vs arrastre de perfil
+- [ ] Número de Reynolds y su influencia
+- [ ] Efectos de compresibilidad a altas velocidades
 
-4. **Efectos de Partículas**
-   - [ ] Partículas de condensación en puntas de ala
-   - [ ] Efectos de turbulencia visual
-   - [ ] Rastros de vapor a alta velocidad
-   - [ ] Polvo/partículas del suelo
-
-5. **Interfaz Visual**
-   - [ ] Panel de instrumentos estilo cockpit
-   - [ ] HUD (Head-Up Display) con datos de vuelo
-   - [ ] Indicadores visuales de stall/warning
-   - [ ] Gráficos en tiempo real (altímetro, velocímetro)
-
-6. **Animaciones Avanzadas**
-   - [ ] Movimiento realista de controles (flaps, alerones)
-   - [ ] Vibraciones por turbulencia
-   - [ ] Efectos de G-force en la vista
-   - [ ] Transiciones suaves de cámara
-
-### **🎨 Paleta de Colores Optimizada**
-- **Tema Día**: Azul cielo gradiente, avión blanco/gris metálico
-- **Tema Noche**: Azul oscuro a negro, luces de navegación brillantes
-- **Tema Tormenta**: Grises oscuros, lluvia, relámpagos
-- **Contraste**: Alto contraste para texto, colores aerodinámicos intuitivos
-
-### **📱 Responsive Visual Design**
-- **Desktop**: Vista completa con todos los detalles
-- **Tablet**: Optimizado para touch, controles más grandes
-- **Móvil**: Vista simplificada, controles verticales, zoom automático
-
-## 🚀 **MEJORAS PROPUESTAS - Por Prioridad**
-
-### **🔥 PRIORIDAD ALTA**
-1. **Optimización de rendimiento**
-   - [ ] Implementar LOD (Level of Detail) para partículas
-   - [ ] Optimizar cálculos de física (cache de valores)
-   - [ ] Reducir complejidad de geometría cuando FPS < 30
-
-2. **Mejoras visuales críticas**
-   - [ ] Mejorar calidad de renderizado del avión (antialiasing)
-   - [ ] Optimizar colores para mejor contraste
-   - [ ] Suavizar animaciones de partículas
-
-3. **Corrección de bugs**
-   - [ ] Verificar cálculos de lift/drag en extremos
-   - [ ] Corregir posibles divisiones por cero
-   - [ ] Mejorar manejo de errores
-
-### **⚡ PRIORIDAD MEDIA**
-4. **Funcionalidades educativas**
-   - [ ] Agregar tooltips explicativos
-   - [ ] Implementar modo "slow motion" para análisis
-   - [ ] Agregar gráficos de Cl vs α
-
-5. **Interfaz de usuario**
-   - [ ] Mejorar responsive design para móviles
-   - [ ] Agregar presets de escenarios
-   - [ ] Implementar guardado/carga de configuraciones
-
-6. **Precisión física**
-   - [ ] Implementar Reynolds number
-   - [ ] Agregar compresibilidad (Mach number)
-   - [ ] Mejorar modelo de densidad atmosférica
-
-### **🎯 PRIORIDAD BAJA**
-7. **Características avanzadas**
-   - [ ] Modo comparación de alas
-   - [ ] Análisis de estabilidad longitudinal
-   - [ ] Simulación de flaps y slats
-
-8. **Visualizaciones adicionales**
-   - [ ] Vectores de velocidad locales
-   - [ ] Contornos de presión
-   - [ ] Trayectorias de flujo 3D
-
-## 📊 **MÉTRICAS DE CALIDAD**
-
-### **Rendimiento Objetivo**
-- **FPS mínimo**: 30 FPS en dispositivos de gama baja
-- **FPS objetivo**: 60 FPS en dispositivos modernos
-- **Tiempo de carga**: < 3 segundos
-- **Uso de CPU**: < 50% en condiciones normales
-
-### **Precisión Física**
-- **Error máximo en cálculos**: < 5%
-- **Consistencia visual**: Coherencia entre física y visualización
-- **Realismo**: Basado en principios aerodinámicos reales
-
-### **Experiencia de Usuario**
-- **Tiempo de aprendizaje**: < 2 minutos para usuarios nuevos
-- **Accesibilidad**: Funciona en diferentes dispositivos y navegadores
-- **Intuitividad**: Controles claros y feedback inmediato
-
-## 🧪 **PROTOCOLO DE TESTING**
-
-### **Testing Automatizado**
-- [ ] Verificar carga sin errores de JavaScript
-- [ ] Validar rangos de sliders
-- [ ] Comprobar cálculos matemáticos básicos
-
-### **Testing Manual**
-- [ ] Pruebas en diferentes navegadores (Chrome, Firefox, Safari, Edge)
-- [ ] Pruebas en diferentes dispositivos (desktop, tablet, móvil)
-- [ ] Pruebas de estrés (uso prolongado, cambios extremos)
-
-### **Testing de Regresión**
-- [ ] Verificar que optimizaciones no rompen funcionalidad
-- [ ] Comprobar que cambios visuales mantienen legibilidad
-- [ ] Asegurar que mejoras de rendimiento no afectan precisión
-
-## 📝 **REGISTRO DE CAMBIOS**
-
-### **Versión Actual: 2.1.0**
-- ✅ Optimización de partículas de flujo
-- ✅ Eliminación de toggles innecesarios
-- ✅ Mejora de interfaz de usuario
-- ✅ Corrección de errores de carga
-
-### **Próximas Versiones Planificadas**
-- **2.2.0**: Mejoras de rendimiento y visuales
-- **2.3.0**: Nuevas funcionalidades educativas
-- **3.0.0**: Motor de física completamente renovado
-
----
-
-*Última actualización: $(date)*
-*Responsable: AI Assistant*
+## 📱 **Mejoras de UI/UX**
+- [ ] Leyendas explicativas para cada visualización
+- [ ] Tooltips con definiciones de términos
+- [ ] Guía tutorial para principiantes
+- [ ] Modo experto con más parámetros técnicos

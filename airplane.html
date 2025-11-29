@@ -155,6 +155,12 @@
                     <div class="value-display" id="mass-value">1000 kg</div>
                 </div>
 
+                <div class="control-group">
+                    <label for="text-size">Tamaño del Texto:</label>
+                    <input type="range" id="text-size" min="0.5" max="3.0" step="0.1" value="1.0">
+                    <div class="value-display" id="text-size-value">1.0x</div>
+                </div>
+
 
             </div>
 
@@ -163,13 +169,48 @@
             </div>
         </div>
 
-        <div class="info-panel">
-            <h3>Física del Vuelo con Alas Fijas</h3>
-            <p><strong>Sustentación (Lift):</strong> <span id="lift-display">0 N</span></p>
-            <p><strong>Arrastre (Drag):</strong> <span id="drag-display">0 N</span></p>
-            <p><strong>Peso:</strong> <span id="weight-display">0 N</span></p>
-            <p><strong>Velocidad del Aire (Bernoulli):</strong> <span id="air-velocity-display">0 m/s</span></p>
-            <p><em>Esta simulación muestra cómo las alas fijas generan sustentación mediante el principio de Bernoulli y la deflexión del flujo de aire.</em></p>
+        <div class="formula-panel" id="calculations-panel">
+            <h3>🧮 Cálculos en Tiempo Real</h3>
+
+            <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #28a745;">
+                <h4 style="margin: 0 0 8px 0; color: #155724;">📈 Sustentación (Lift)</h4>
+                <div class="formula" id="lift-formula">L = ½ × 1.225 × 30² × 16.2 × 0.85 = 1,890 N</div>
+                <p id="lift-explanation" style="font-size: 12px; margin: 5px 0; color: #155724;">
+                    <strong>Explicación:</strong> Con velocidad de 30 m/s, densidad del aire de 1.225 kg/m³, área alar de 16.2 m² y coeficiente de sustentación de 0.85, se genera una fuerza de sustentación de 1,890 N.
+                </p>
+            </div>
+
+            <div style="background: #f8d7da; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #dc3545;">
+                <h4 style="margin: 0 0 8px 0; color: #721c24;">📉 Arrastre (Drag)</h4>
+                <div class="formula" id="drag-formula">D = ½ × 1.225 × 30² × 16.2 × 0.05 = 186 N</div>
+                <p id="drag-explanation" style="font-size: 12px; margin: 5px 0; color: #721c24;">
+                    <strong>Explicación:</strong> El arrastre es mucho menor que la sustentación (186 N vs 1,890 N), lo que permite el vuelo eficiente con una relación L/D de 10.2.
+                </p>
+            </div>
+
+            <div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                <h4 style="margin: 0 0 8px 0; color: #856404;">⚖️ Equilibrio de Fuerzas</h4>
+                <div class="formula" id="equilibrium-formula">L = W → 1,890 N = 9,810 N</div>
+                <p id="equilibrium-explanation" style="font-size: 12px; margin: 5px 0; color: #856404;">
+                    <strong>Estado:</strong> <span id="equilibrium-status">La sustentación es menor que el peso. Aumenta la velocidad o el ángulo de ataque para generar más sustentación.</span>
+                </p>
+            </div>
+
+            <div style="background: #d1ecf1; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #17a2b8;">
+                <h4 style="margin: 0 0 8px 0; color: #0c5460;">🌡️ Efectos de la Altitud</h4>
+                <div class="formula" id="altitude-formula">ρ = 1.225 × e^(-500/8435) = 1.167 kg/m³</div>
+                <p id="altitude-explanation" style="font-size: 12px; margin: 5px 0; color: #0c5460;">
+                    <strong>Impacto:</strong> A 500m de altitud, la densidad del aire es 1.167 kg/m³ (5% menos que al nivel del mar), reduciendo ligeramente la sustentación.
+                </p>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0; border: 2px solid #6c757d;">
+                <h4 style="margin: 0 0 8px 0; color: #495057;">🎯 Eficiencia Aerodinámica</h4>
+                <div class="formula" id="efficiency-formula">L/D = 1,890 / 186 = 10.2</div>
+                <p id="efficiency-explanation" style="font-size: 12px; margin: 5px 0; color: #495057;">
+                    <strong>Rendimiento:</strong> Excelente relación sustentación/arrastre. Los planeadores típicos tienen L/D entre 20-30, aviones comerciales alrededor de 15-20.
+                </p>
+            </div>
         </div>
 
         <div class="formula-panel" id="formulas-panel">
@@ -185,34 +226,6 @@
 
             <div class="formula">ρ = ρ₀ × e^(-h/H)</div>
             <p><small>Densidad del aire: Disminuye con la altitud (H = 8435m)</small></p>
-        </div>
-
-        <div class="info-panel" id="coefficients-panel">
-            <h3>📊 Coeficientes Aerodinámicos</h3>
-            <div class="coefficient-display">
-                <div class="coefficient-box">
-                    <div>Cl</div>
-                    <div id="cl-display">0.00</div>
-                </div>
-                <div class="coefficient-box">
-                    <div>Cd</div>
-                    <div id="cd-display">0.00</div>
-                </div>
-                <div class="coefficient-box">
-                    <div>L/D</div>
-                    <div id="ld-display">0.00</div>
-                </div>
-                <div class="coefficient-box">
-                    <div>α</div>
-                    <div id="alpha-display">0°</div>
-                </div>
-            </div>
-
-            <div style="margin-top: 15px;">
-                <p><strong>Ángulo de Ataque Crítico:</strong> <span id="critical-angle">15°</span></p>
-                <p><strong>Estado del Vuelo:</strong> <span id="flight-status">Normal</span></p>
-                <p><strong>Eficiencia Aerodinámica:</strong> <span id="efficiency">0%</span></p>
-            </div>
         </div>
 
         <div class="info-panel" id="bernoulli-panel">
