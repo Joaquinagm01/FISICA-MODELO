@@ -573,9 +573,9 @@ function interpolateParameters() {
   select('#rho-value').html(rho.toFixed(3) + ' kg/m³');
   
   // Update advanced aerodynamic parameters display
-  select('#cp-value').html(pressureCoefficient.toFixed(2));
-  select('#re-value').html(reynoldsNumber.toExponential(1));
-  select('#mach-value').html(machNumber.toFixed(3));
+  // select('#cp-value').html(pressureCoefficient.toFixed(2));
+  // select('#re-value').html(reynoldsNumber.toExponential(1));
+  // select('#mach-value').html(machNumber.toFixed(3));
 
   let alpha_deg = degrees(angleAttack);
   // More realistic lift coefficient (thin airfoil theory approximation)
