@@ -93,15 +93,21 @@ let cameraShake = 0;
 let cameraRoll = 0;
 let cameraPitch = 0;
 
-// Partículas de flujo de aire
+// Partículas de flujo de aire - Optimizadas para rendimiento
 let flowParticles = [];
-let maxParticles = 50; // Reduced for cleaner, more elegant flow visualization
+let maxParticles = 25; // Reduced from 50 for better performance
 let particleTrails = []; // Store particle trail history
-let maxTrailLength = 15; // Maximum trail length
+let maxTrailLength = 8; // Reduced from 15 for better performance
+let lastParticleUpdate = 0; // For frame rate limiting
+let particleUpdateInterval = 2; // Update particles every 2 frames
 
 function setup() {
     let canvas = createCanvas(1400, 900);
     canvas.parent('canvas-parent');
+
+    // Enable high-quality rendering
+    pixelDensity(2); // Retina display support
+    smooth(); // Antialiasing for smoother lines
     
     // Get DOM elements
     velocitySlider = select('#velocity');
@@ -122,24 +128,17 @@ function setup() {
     flightStatusDisplay = document.querySelector('#flight-status');
     efficiencyDisplay = document.querySelector('#efficiency');
     
-    showFormulasToggle = select('#show-formulas');
-    showCoefficientsToggle = select('#show-coefficients');
-    formulasPanel = select('#formulas-panel');
-    coefficientsPanel = select('#coefficients-panel');
-    
     // Initialize flow particles
     initializeFlowParticles();
-    
+
     // Set initial values
     updateValues();
-    
+
     // Add event listeners
     velocitySlider.input(updateValues);
     angleSlider.input(updateValues);
     altitudeSlider.input(updateValues);
     massSlider.input(updateValues);
-    showFormulasToggle.changed(toggleFormulas);
-    showCoefficientsToggle.changed(toggleCoefficients);
 }
 
 function updateValues() {
@@ -196,6 +195,61 @@ function toggleCoefficients() {
     }
 }
 
+function drawHUDDisplay() {
+    // Draw HUD-style information display
+    push();
+
+    // HUD background - semi-transparent dark overlay
+    fill(0, 0, 0, 120);
+    noStroke();
+    rect(10, 10, 250, 150, 5);
+
+    // HUD border
+    stroke(0, 255, 0, 200);
+    strokeWeight(2);
+    noFill();
+    rect(10, 10, 250, 150, 5);
+
+    // HUD title
+    fill(0, 255, 0);
+    textAlign(LEFT);
+    textSize(14);
+    text('FLIGHT DATA', 20, 30);
+
+    // Flight parameters
+    textSize(12);
+    fill(255, 255, 0);
+    text(`Velocity: ${(velocity / 3.6).toFixed(1)} m/s`, 20, 50);
+    text(`Angle: ${angleOfAttack}°`, 20, 70);
+    text(`Altitude: ${altitude} m`, 20, 90);
+
+    // Aerodynamic data
+    const lift = calculateLift(velocity, angleOfAttack, altitude);
+    const drag = calculateDrag(velocity, angleOfAttack, altitude);
+    const weight = calculateWeight();
+    const CL = calculateLiftCoefficient(angleOfAttack);
+    const CD = calculateDragCoefficient(angleOfAttack);
+    const efficiency = calculateEfficiency(lift, drag);
+
+    fill(0, 255, 0);
+    text(`Lift: ${lift.toFixed(0)} N`, 20, 110);
+    text(`Drag: ${drag.toFixed(0)} N`, 20, 130);
+    text(`L/D: ${efficiency.toFixed(2)}`, 20, 150);
+
+    // Status indicator
+    const criticalAngle = calculateCriticalAngle();
+    const flightStatus = getFlightStatus(lift, weight, angleOfAttack, criticalAngle);
+
+    if (flightStatus.includes("STALL")) {
+        fill(255, 0, 0);
+    } else {
+        fill(0, 255, 0);
+    }
+    text(`Status: ${flightStatus}`, 140, 30);
+
+    pop();
+}
+
 function draw() {
     // Variables para efectos visuales mejorados
     timeOfDay = (frameCount * 0.01) % (2 * PI); // Ciclo de día completo
@@ -213,23 +267,34 @@ function draw() {
     translate(-width/2, -height/2);
     translate(cameraShake, cameraPitch);
 
-    // Enhanced sky background - light blue with gradient
+    // Enhanced sky background with time-of-day lighting
+    let skyR = map(sunAngle, -PI/3, PI/3, 50, 135);
+    let skyG = map(sunAngle, -PI/3, PI/3, 100, 206);
+    let skyB = map(sunAngle, -PI/3, PI/3, 150, 235);
+
     for (let y = 0; y < height; y++) {
         let alpha = map(y, 0, height * 0.7, 255, 200);
-        stroke(135, 206, 235, alpha);
+        let brightness = map(sunAngle, -PI/3, PI/3, 0.6, 1.0);
+        stroke(skyR * brightness, skyG * brightness, skyB * brightness, alpha);
         line(0, y, width, y);
     }
 
-    // Draw diffuse clouds in upper part
-    drawClouds();
+    // Draw enhanced clouds with atmospheric effects
+    drawEnhancedClouds();
+
+    // Draw condensation trails if at high altitude and fast
+    if (altitude > 8000 && velocity > 80) {
+        drawCondensationTrails();
+    }
 
     // Draw ground - green strip at bottom
     fill(34, 139, 34);
     noStroke();
     rect(0, height - 80, width, 80);
 
-    // Update flow particles
+    // Update and draw flow particles - Optimizado para rendimiento
     updateFlowParticles();
+    drawFlowParticles();
 
     // Calculate physics
     let lift = calculateLift();
@@ -242,23 +307,26 @@ function draw() {
     weightDisplay.html(weight.toFixed(1) + ' N');
     airVelocityDisplay.html(velocity.toFixed(1) + ' m/s');
 
-    // Draw complete airplane
-    drawCompleteAirplane();
+    // Draw complete airplane with lighting effects
+    drawCompleteAirplaneWithLighting();
 
     // Draw Bernoulli pressure visualization (only wing air flows)
     drawBernoulliPressureZones();
 
     // Draw force vectors
-    drawForceVectors(lift, drag, weight);
+    drawEnhancedForceVectors(lift, drag, weight);
 
-    // Draw percentage indicators
+    // Draw enhanced percentage indicators with better styling
     drawPercentageIndicators(lift, drag, weight);
 
-    // Draw title label
+    // Draw title label with better styling
     drawTitleLabel();
 
-    // Draw reference point
+    // Draw reference point with glow
     drawReferencePoint();
+
+    // Draw HUD-style information display
+    drawHUDDisplay();
     
     pop(); // End camera transformation
 }
@@ -476,148 +544,301 @@ function drawArrow(x1, y1, x2, y2, arrowSize) {
     triangle(0, 0, -arrowSize * 0.55, -arrowSize * 0.25, -arrowSize * 0.55, arrowSize * 0.25);
 
     pop();
-}function drawForceVectors(lift, drag, weight) {
+}
+
+function drawEnhancedForceVectors(lift, drag, weight) {
     push();
     translate(width/2, height/2);
 
     let scale = 0.008;
+    let vectorAlpha = 220;
 
-    // Lift vector (green, upward)
-    stroke(0, 255, 0, 200);
-    strokeWeight(4);
-    fill(0, 255, 0, 200);
+    // Add glow effect background
+    drawingContext.shadowBlur = 10;
+    drawingContext.shadowColor = 'rgba(255, 255, 255, 0.3)';
+
+    // Lift vector (green, upward) with enhanced styling
+    drawingContext.shadowColor = 'rgba(0, 255, 0, 0.5)';
+    stroke(0, 255, 0, vectorAlpha);
+    strokeWeight(5);
+    fill(0, 255, 0, vectorAlpha);
     let liftLength = lift * scale;
     line(0, 0, 0, -liftLength);
-    // Arrow head
-    triangle(0, -liftLength, -3, -liftLength + 8, 3, -liftLength + 8);
-    // Label
+    // Enhanced arrow head with glow
+    triangle(0, -liftLength, -4, -liftLength + 10, 4, -liftLength + 10);
+    // Label with background
+    fill(0, 50, 0, 200);
+    noStroke();
+    rect(-25, -liftLength - 35, 50, 18, 5);
     fill(0, 255, 0);
     textAlign(CENTER);
     textSize(14);
-    text('Lift', 0, -liftLength - 15);
+    text('Lift', 0, -liftLength - 20);
 
-    // Drag vector (red, backward)
-    stroke(255, 0, 0, 200);
-    strokeWeight(4);
-    fill(255, 0, 0, 200);
+    // Drag vector (red, backward) with enhanced styling
+    drawingContext.shadowColor = 'rgba(255, 0, 0, 0.5)';
+    stroke(255, 0, 0, vectorAlpha);
+    strokeWeight(5);
+    fill(255, 0, 0, vectorAlpha);
     let dragLength = drag * scale;
     line(0, 0, -dragLength, 0);
-    triangle(-dragLength, 0, -dragLength + 8, -3, -dragLength + 8, 3);
+    triangle(-dragLength, 0, -dragLength + 10, -4, -dragLength + 10, 4);
+    // Label with background
+    fill(50, 0, 0, 200);
+    noStroke();
+    rect(-dragLength - 55, -12, 45, 18, 5);
     fill(255, 0, 0);
     textAlign(RIGHT);
     text('Drag', -dragLength - 10, 5);
 
-    // Weight vector (orange, downward)
-    stroke(255, 165, 0, 200);
-    strokeWeight(4);
-    fill(255, 165, 0, 200);
+    // Weight vector (orange, downward) with enhanced styling
+    drawingContext.shadowColor = 'rgba(255, 165, 0, 0.5)';
+    stroke(255, 165, 0, vectorAlpha);
+    strokeWeight(5);
+    fill(255, 165, 0, vectorAlpha);
     let weightLength = weight * scale;
     line(0, 0, 0, weightLength);
-    triangle(0, weightLength, -3, weightLength - 8, 3, weightLength - 8);
+    triangle(0, weightLength, -4, weightLength - 10, 4, weightLength - 10);
+    // Label with background
+    fill(50, 25, 0, 200);
+    noStroke();
+    rect(-25, weightLength + 5, 50, 18, 5);
     fill(255, 165, 0);
     textAlign(CENTER);
     text('Weight', 0, weightLength + 20);
 
+    // Reset shadow
+    drawingContext.shadowBlur = 0;
+
     pop();
 }
 
-// Draw complete airplane with fuselage, wings, tail, and other components
-function drawCompleteAirplane() {
+function drawTurbulenceEffects() {
+    push();
+    translate(width/2, height/2);
+    scale(2.5);
+
+    // Create turbulence particles around the wing
+    let turbulenceIntensity = map(abs(angleOfAttack), 12, 20, 0.5, 2.0);
+
+    for (let i = 0; i < 8; i++) {
+        let angle = (i / 8) * TWO_PI + frameCount * 0.1;
+        let radius = 30 + sin(frameCount * 0.2 + i) * 10;
+        let x = cos(angle) * radius;
+        let y = sin(angle) * radius;
+
+        // Turbulence particles
+        fill(150, 150, 255, 100 + sin(frameCount * 0.3 + i * 0.5) * 50);
+        noStroke();
+        ellipse(x, y, 3 + turbulenceIntensity, 3 + turbulenceIntensity);
+
+        // Small vortices
+        if (i % 2 === 0) {
+            stroke(100, 150, 255, 80);
+            strokeWeight(1);
+            noFill();
+            let vortexSize = 8 + turbulenceIntensity * 2;
+            ellipse(x, y, vortexSize, vortexSize);
+        }
+    }
+
+    pop();
+}
+
+// Draw complete airplane with advanced lighting effects
+function drawCompleteAirplaneWithLighting() {
     push();
     translate(width/2, height/2);
     scale(2.5); // Much bigger airplane
 
+    // ===== CALCULATE LIGHTING PARAMETERS =====
+    // Sun direction vector (from sun angle)
+    let sunDirectionX = cos(sunAngle);
+    let sunDirectionY = sin(sunAngle);
+
+    // Light intensity based on sun angle (higher when sun is overhead)
+    let lightIntensity = map(abs(sunAngle), 0, PI/3, 1.0, 0.4);
+
+    // Shadow offset based on sun direction
+    let shadowOffsetX = sunDirectionX * 15 * lightIntensity;
+    let shadowOffsetY = sunDirectionY * 8 * lightIntensity;
+
     // Calculate wing rotation based on angle of attack
     let wingRotation = angleOfAttack * PI / 180 * 0.3;
 
-    // ===== FUSELAJE (FUSELAGE) =====
-    fill(200, 200, 200);
-    stroke(100, 100, 100);
+    // ===== DRAW SHADOWS FIRST (behind everything) =====
+    push();
+    translate(shadowOffsetX, shadowOffsetY);
+
+    // Shadow color and transparency
+    fill(0, 0, 0, 80 * lightIntensity);
+    noStroke();
+
+    // Fuselage shadow
+    beginShape();
+    vertex(-50, -5);
+    bezierVertex(-30, -8, -10, -8, 20, -6);
+    bezierVertex(40, -4, 60, -2, 80, 0);
+    bezierVertex(100, 2, 120, 4, 140, 6);
+    bezierVertex(150, 8, 160, 10, 170, 12);
+    bezierVertex(160, 15, 150, 18, 140, 20);
+    bezierVertex(120, 18, 100, 16, 80, 14);
+    bezierVertex(60, 12, 40, 10, 20, 8);
+    bezierVertex(-10, 6, -30, 4, -50, 2);
+    endShape(CLOSE);
+
+    // Wing shadows
+    push();
+    translate(40, -10);
+    rotate(wingRotation);
+
+    // Right wing shadow
+    beginShape();
+    vertex(0, 0);
+    bezierVertex(15, -12, 50, -22, 110, -18);
+    bezierVertex(130, -13, 150, -8, 170, -3);
+    bezierVertex(150, 2, 130, 7, 110, 10);
+    bezierVertex(50, 14, 15, 10, 0, 4);
+    endShape(CLOSE);
+
+    // Left wing shadow
+    beginShape();
+    vertex(0, 0);
+    bezierVertex(15, 12, 50, 22, 110, 18);
+    bezierVertex(130, 13, 150, 8, 170, 3);
+    bezierVertex(150, -2, 130, -7, 110, -10);
+    bezierVertex(50, -14, 15, -10, 0, -4);
+    endShape(CLOSE);
+
+    pop(); // End wing shadow transformation
+
+    pop(); // End shadow transformation
+
+    // ===== FUSELAJE (FUSELAGE) WITH LIGHTING =====
+    // Calculate lighting for fuselage (simplified - assumes cylindrical shape)
+    let fuselageLight = 0.6 + 0.4 * abs(cos(sunAngle)); // More light when sun is high
+
+    fill(200 * fuselageLight, 200 * fuselageLight, 200 * fuselageLight);
+    stroke(100 * fuselageLight, 100 * fuselageLight, 100 * fuselageLight);
     strokeWeight(2);
 
     // Main fuselage body - cylindrical shape
     beginShape();
-    vertex(-50, -5); // Nose
-    bezierVertex(-30, -8, -10, -8, 20, -6); // Forward section
-    bezierVertex(40, -4, 60, -2, 80, 0); // Mid section
-    bezierVertex(100, 2, 120, 4, 140, 6); // Aft section
-    bezierVertex(150, 8, 160, 10, 170, 12); // Tail section
-    bezierVertex(160, 15, 150, 18, 140, 20); // Bottom of tail
-    bezierVertex(120, 18, 100, 16, 80, 14); // Back to mid section
-    bezierVertex(60, 12, 40, 10, 20, 8); // Back to forward section
-    bezierVertex(-10, 6, -30, 4, -50, 2); // Back to nose
+    vertex(-50, -5);
+    bezierVertex(-30, -8, -10, -8, 20, -6);
+    bezierVertex(40, -4, 60, -2, 80, 0);
+    bezierVertex(100, 2, 120, 4, 140, 6);
+    bezierVertex(150, 8, 160, 10, 170, 12);
+    bezierVertex(160, 15, 150, 18, 140, 20);
+    bezierVertex(120, 18, 100, 16, 80, 14);
+    bezierVertex(60, 12, 40, 10, 20, 8);
+    bezierVertex(-10, 6, -30, 4, -50, 2);
     endShape(CLOSE);
 
-    // Cockpit windows
-    fill(100, 150, 200, 150);
-    stroke(50, 100, 150);
+    // Cockpit windows with reflections
+    let windowLight = fuselageLight * 1.2; // Windows are more reflective
+    fill(100 * windowLight, 150 * windowLight, 200 * windowLight, 150);
+    stroke(50 * windowLight, 100 * windowLight, 150 * windowLight);
     strokeWeight(1);
     ellipse(-20, -6, 25, 8); // Main cockpit
     ellipse(0, -5, 20, 6); // Secondary window
 
-    // Landing gear (simplified)
-    stroke(80, 80, 80);
+    // Landing gear with lighting
+    stroke(80 * fuselageLight, 80 * fuselageLight, 80 * fuselageLight);
     strokeWeight(3);
-    // Nose gear
     line(-35, 8, -35, 15);
     line(-38, 15, -32, 15);
-    // Main gear
     line(30, 12, 30, 20);
     line(25, 20, 35, 20);
     line(70, 14, 70, 22);
     line(65, 22, 75, 22);
 
-    // ===== ALAS PRINCIPALES (MAIN WINGS) =====
+    // ===== ALAS PRINCIPALES (MAIN WINGS) WITH ADVANCED LIGHTING =====
     push();
-    translate(40, -10); // Position wings on fuselage
-    rotate(wingRotation); // Apply angle of attack rotation
+    translate(40, -10);
+    rotate(wingRotation);
 
-    // Right wing - more visible and aerodynamic
-    fill(255, 255, 255);
-    stroke(50, 50, 50);
+    // Calculate wing lighting based on sun angle and wing orientation
+    let wingNormalX = sin(wingRotation); // Wing surface normal
+    let wingNormalY = -cos(wingRotation);
+
+    // Dot product for lighting calculation
+    let wingLightDot = wingNormalX * sunDirectionX + wingNormalY * sunDirectionY;
+    let wingLight = constrain(0.3 + 0.7 * (wingLightDot + 1) * 0.5, 0.3, 1.0);
+
+    // Specular highlight for metallic surfaces
+    let specularIntensity = pow(max(0, wingLightDot), 8) * lightIntensity;
+    let specularColor = [255, 255, 255, specularIntensity * 200];
+
+    // Right wing with lighting
+    fill(255 * wingLight, 255 * wingLight, 255 * wingLight);
+    stroke(50 * wingLight, 50 * wingLight, 50 * wingLight);
     strokeWeight(3);
 
     beginShape();
-    vertex(0, 0); // Wing root
-    bezierVertex(15, -12, 50, -22, 110, -18); // Leading edge
-    bezierVertex(130, -13, 150, -8, 170, -3); // Tip
-    bezierVertex(150, 2, 130, 7, 110, 10); // Trailing edge
-    bezierVertex(50, 14, 15, 10, 0, 4); // Back to root
+    vertex(0, 0);
+    bezierVertex(15, -12, 50, -22, 110, -18);
+    bezierVertex(130, -13, 150, -8, 170, -3);
+    bezierVertex(150, 2, 130, 7, 110, 10);
+    bezierVertex(50, 14, 15, 10, 0, 4);
     endShape(CLOSE);
 
-    // Left wing (mirror of right) - more visible and aerodynamic
+    // Add specular highlight on right wing
+    if (specularIntensity > 0.1) {
+        fill(specularColor[0], specularColor[1], specularColor[2], specularColor[3]);
+        noStroke();
+        ellipse(80, -15, 30 * specularIntensity, 15 * specularIntensity);
+    }
+
+    // Left wing with lighting (mirror calculations)
+    let leftWingLightDot = -wingNormalX * sunDirectionX + wingNormalY * sunDirectionY; // Mirror normal
+    let leftWingLight = constrain(0.3 + 0.7 * (leftWingLightDot + 1) * 0.5, 0.3, 1.0);
+    let leftSpecularIntensity = pow(max(0, leftWingLightDot), 8) * lightIntensity;
+
+    fill(255 * leftWingLight, 255 * leftWingLight, 255 * leftWingLight);
+    stroke(50 * leftWingLight, 50 * leftWingLight, 50 * leftWingLight);
+    strokeWeight(3);
+
     beginShape();
-    vertex(0, 0); // Wing root
-    bezierVertex(15, 12, 50, 22, 110, 18); // Leading edge
-    bezierVertex(130, 13, 150, 8, 170, 3); // Tip
-    bezierVertex(150, -2, 130, -7, 110, -10); // Trailing edge
-    bezierVertex(50, -14, 15, -10, 0, -4); // Back to root
+    vertex(0, 0);
+    bezierVertex(15, 12, 50, 22, 110, 18);
+    bezierVertex(130, 13, 150, 8, 170, 3);
+    bezierVertex(150, -2, 130, -7, 110, -10);
+    bezierVertex(50, -14, 15, -10, 0, -4);
     endShape(CLOSE);
 
-    // Wing details
-    stroke(60, 60, 60);
+    // Add specular highlight on left wing
+    if (leftSpecularIntensity > 0.1) {
+        fill(255, 255, 255, leftSpecularIntensity * 200);
+        noStroke();
+        ellipse(80, 15, 30 * leftSpecularIntensity, 15 * leftSpecularIntensity);
+    }
+
+    // Wing details with lighting
+    stroke(60 * wingLight, 60 * wingLight, 60 * wingLight);
     strokeWeight(1);
-    // Main spars
     line(20, -8, 140, -5); // Right wing spar
     line(20, 8, 140, 5); // Left wing spar
 
-    // Flaps (control surfaces)
-    fill(150, 150, 150);
+    // Flaps with lighting
+    fill(150 * wingLight, 150 * wingLight, 150 * wingLight);
     noStroke();
     rect(130, -8, 25, 6, 2); // Right flap
     rect(130, 2, 25, 6, 2); // Left flap
 
-    // Ailerons
-    fill(120, 120, 120);
+    // Ailerons with lighting
+    fill(120 * wingLight, 120 * wingLight, 120 * wingLight);
     rect(155, -6, 20, 4, 1); // Right aileron
     rect(155, 2, 20, 4, 1); // Left aileron
 
     pop(); // End wing transformation
 
-    // ===== COLA (TAIL) =====
+    // ===== COLA (TAIL) WITH LIGHTING =====
+    let tailLight = fuselageLight * 0.9; // Tail gets slightly less light
+
     // Vertical stabilizer
-    fill(180, 180, 180);
-    stroke(100, 100, 100);
+    fill(180 * tailLight, 180 * tailLight, 180 * tailLight);
+    stroke(100 * tailLight, 100 * tailLight, 100 * tailLight);
     strokeWeight(2);
     beginShape();
     vertex(150, -20);
@@ -627,7 +848,7 @@ function drawCompleteAirplane() {
     endShape(CLOSE);
 
     // Rudder
-    fill(140, 140, 140);
+    fill(140 * tailLight, 140 * tailLight, 140 * tailLight);
     beginShape();
     vertex(160, -38);
     vertex(165, -55);
@@ -636,7 +857,7 @@ function drawCompleteAirplane() {
     endShape(CLOSE);
 
     // Horizontal stabilizer
-    fill(200, 200, 200);
+    fill(200 * tailLight, 200 * tailLight, 200 * tailLight);
     beginShape();
     vertex(130, -25);
     vertex(180, -23);
@@ -651,8 +872,8 @@ function drawCompleteAirplane() {
     vertex(135, -24);
     endShape(CLOSE);
 
-    // Elevator (control surface)
-    fill(120, 120, 120);
+    // Elevator
+    fill(120 * tailLight, 120 * tailLight, 120 * tailLight);
     beginShape();
     vertex(175, -25);
     vertex(190, -24);
@@ -660,21 +881,21 @@ function drawCompleteAirplane() {
     vertex(180, -20);
     endShape(CLOSE);
 
-    // ===== DETALLES ADICIONALES =====
-    // Engine nacelles (if jet)
-    fill(160, 160, 160);
-    stroke(80, 80, 80);
+    // ===== DETALLES ADICIONALES CON ILUMINACIÓN =====
+    // Engine nacelles with lighting
+    fill(160 * fuselageLight, 160 * fuselageLight, 160 * fuselageLight);
+    stroke(80 * fuselageLight, 80 * fuselageLight, 80 * fuselageLight);
     strokeWeight(1);
     ellipse(20, -12, 15, 8); // Right engine
     ellipse(20, 12, 15, 8); // Left engine
 
-    // Engine exhaust
-    fill(100, 100, 100);
+    // Engine exhaust with glow effect
+    fill(100 * fuselageLight, 100 * fuselageLight, 100 * fuselageLight);
     ellipse(35, -12, 8, 6);
     ellipse(35, 12, 8, 6);
 
-    // Winglets (modern touch)
-    stroke(120, 120, 120);
+    // Winglets with lighting
+    stroke(120 * wingLight, 120 * wingLight, 120 * wingLight);
     strokeWeight(2);
     noFill();
     beginShape();
@@ -691,11 +912,46 @@ function drawCompleteAirplane() {
     vertex(180, 2);
     endShape();
 
-    // Antennas and sensors
-    stroke(255, 0, 0);
+    // Antennas and sensors with lighting
+    stroke(255 * lightIntensity, 0, 0);
     strokeWeight(2);
     line(-45, -8, -50, -12); // VHF antenna
     line(170, -25, 175, -30); // Tail antenna
+
+    // ===== NAVIGATION LIGHTS =====
+    // Red navigation light (left wing tip) - always visible
+    fill(255, 0, 0);
+    noStroke();
+    ellipse(175, 8, 6, 6);
+    // Light glow
+    fill(255, 0, 0, 100);
+    ellipse(175, 8, 12, 12);
+
+    // Green navigation light (right wing tip) - always visible
+    fill(0, 255, 0);
+    noStroke();
+    ellipse(175, -8, 6, 6);
+    // Light glow
+    fill(0, 255, 0, 100);
+    ellipse(175, -8, 12, 12);
+
+    // White strobe light (tail) - pulsing effect
+    let strobeIntensity = sin(frameCount * 0.3) > 0.8 ? 255 : 100;
+    fill(strobeIntensity, strobeIntensity, strobeIntensity);
+    noStroke();
+    ellipse(175, -25, 4, 4);
+    // Light glow
+    fill(strobeIntensity, strobeIntensity, strobeIntensity, 150);
+    ellipse(175, -25, 10, 10);
+
+    // Anti-collision beacon (top of tail) - flashing red
+    let beaconIntensity = sin(frameCount * 0.5) > 0.9 ? 255 : 50;
+    fill(beaconIntensity, 0, 0);
+    noStroke();
+    ellipse(160, -42, 5, 5);
+    // Light glow
+    fill(beaconIntensity, 0, 0, 120);
+    ellipse(160, -42, 12, 12);
 
     pop();
 }
@@ -743,37 +999,82 @@ function initializeFlowParticles() {
     }
 }
 
-// Update flow particles
+// Update flow particles - Optimizado para rendimiento
 function updateFlowParticles() {
-    for (let i = flowParticles.length - 1; i >= 0; i--) {
+    // Frame rate limiting - only update particles every few frames
+    if (frameCount - lastParticleUpdate < particleUpdateInterval) {
+        return;
+    }
+    lastParticleUpdate = frameCount;
+
+    // Process only half the particles per update for better performance
+    let startIndex = frameCount % 2 === 0 ? 0 : Math.floor(flowParticles.length / 2);
+    let endIndex = frameCount % 2 === 0 ? Math.floor(flowParticles.length / 2) : flowParticles.length;
+
+    for (let i = startIndex; i < endIndex; i++) {
         let p = flowParticles[i];
+        if (!p) continue; // Safety check
 
-        // Update position
-        p.x += p.vx;
-        p.y += p.vy;
+        // Update position with reduced calculations
+        p.x += p.vx * 0.8; // Slightly slower for performance
+        p.y += p.vy * 0.8;
 
-        // Add to trail
-        p.trail.push({x: p.x, y: p.y});
-        if (p.trail.length > 10) {
-            p.trail.shift();
+        // Add to trail less frequently
+        if (frameCount % 3 === 0) {
+            p.trail.push({x: p.x, y: p.y});
+            if (p.trail.length > maxTrailLength) {
+                p.trail.shift();
+            }
         }
 
         // Age particle
         p.age++;
 
-        // Reset particle if it goes off screen or ages out - adjusted for wing dimensions
-        if (p.x > width/2 + 200 || p.age > p.maxAge) {
+        // Reset particle if it goes off screen or ages out - optimized bounds
+        if (p.x > width/2 + 150 || p.age > p.maxAge) {
             if (p.surface === 'upper') {
-                p.x = -220;
-                p.y = random(-50, -15);
+                p.x = -200;
+                p.y = random(-45, -20);
                 p.age = 0;
                 p.trail = [];
             } else {
-                p.x = -220;
-                p.y = random(15, 50);
+                p.x = -200;
+                p.y = random(20, 45);
                 p.age = 0;
                 p.trail = [];
             }
+        }
+    }
+}
+
+// Draw flow particles - Optimizado para rendimiento
+function drawFlowParticles() {
+    // Performance optimization: skip drawing if too many particles
+    if (flowParticles.length > maxParticles) return;
+
+    noStroke();
+
+    // Batch render particles for better performance
+    for (let i = 0; i < flowParticles.length; i++) {
+        let p = flowParticles[i];
+        if (!p) continue;
+
+        // Draw particle with optimized alpha
+        let alpha = map(p.age, 0, p.maxAge, 200, 50);
+        fill(p.color[0], p.color[1], p.color[2], alpha);
+        ellipse(p.x, p.y, p.size, p.size);
+
+        // Draw trail with reduced opacity for performance
+        if (p.trail && p.trail.length > 0) {
+            beginShape();
+            for (let j = 0; j < p.trail.length; j++) {
+                let trailPoint = p.trail[j];
+                let trailAlpha = map(j, 0, p.trail.length - 1, alpha * 0.8, 10);
+                stroke(p.color[0], p.color[1], p.color[2], trailAlpha);
+                strokeWeight(1);
+                vertex(trailPoint.x, trailPoint.y);
+            }
+            endShape();
         }
     }
 }
@@ -915,48 +1216,134 @@ function drawReferencePoint() {
     pop();
 }
 
-function drawClouds() {
+function drawEnhancedClouds() {
     let cloudOffset = frameCount * 0.02;
-    
-    // Cloud 1 - large, slow moving
+
+    // Enhanced volumetric clouds with better layering
+    // Cloud 1 - large, slow moving with volume
     push();
     translate(150 + sin(cloudOffset) * 20, 80);
-    fill(255, 255, 255, 220);
+    // Base layer
+    fill(255, 255, 255, 180);
     noStroke();
     ellipse(0, 0, 120, 70);
     ellipse(40, -10, 100, 60);
     ellipse(-30, 10, 90, 50);
     ellipse(20, 15, 80, 45);
+    // Highlight layer for volume
+    fill(255, 255, 255, 120);
+    ellipse(-10, -5, 80, 40);
+    ellipse(25, 5, 60, 30);
     pop();
-    
-    // Cloud 2 - medium, medium speed
+
+    // Cloud 2 - medium, medium speed with turbulence
     push();
     translate(350 + sin(cloudOffset * 0.8) * 15, 110);
-    fill(255, 255, 255, 200);
+    let turbulence = sin(cloudOffset * 2) * 3;
+    fill(255, 255, 255, 160);
     noStroke();
-    ellipse(0, 0, 90, 55);
-    ellipse(30, -5, 75, 45);
-    ellipse(-20, 8, 70, 40);
+    ellipse(0 + turbulence, 0, 90, 55);
+    ellipse(30 + turbulence * 0.5, -5, 75, 45);
+    ellipse(-20 - turbulence * 0.3, 8, 70, 40);
+    // Add some wispy edges
+    fill(255, 255, 255, 100);
+    ellipse(45, -15, 40, 20);
     pop();
-    
-    // Cloud 3 - small, fast moving
+
+    // Cloud 3 - small, fast moving with dynamic shape
     push();
     translate(550 + sin(cloudOffset * 1.2) * 25, 140);
-    fill(255, 255, 255, 180);
+    let shapeOffset = sin(cloudOffset * 3) * 5;
+    fill(255, 255, 255, 140);
     noStroke();
-    ellipse(0, 0, 70, 40);
-    ellipse(20, -3, 55, 35);
-    ellipse(-15, 5, 50, 30);
+    ellipse(0, 0, 70 + shapeOffset, 40);
+    ellipse(20 + shapeOffset * 0.5, -3, 55, 35);
+    ellipse(-15 - shapeOffset * 0.3, 5, 50, 30);
     pop();
-    
-    // Cloud 4 - wispy, high altitude
+
+    // Cloud 4 - wispy, high altitude with atmospheric perspective
     push();
     translate(200 + sin(cloudOffset * 0.5) * 10, 160);
-    fill(240, 248, 255, 150);
+    fill(240, 248, 255, 120);
     noStroke();
     ellipse(0, 0, 150, 30);
     ellipse(50, 5, 120, 25);
     ellipse(-40, -3, 100, 20);
+    // Add cirrus-like streaks
+    stroke(240, 248, 255, 80);
+    strokeWeight(2);
+    noFill();
+    beginShape();
+    vertex(-80, -5);
+    bezierVertex(-60, -10, -40, -8, -20, -5);
+    bezierVertex(0, -3, 20, -5, 40, -8);
+    endShape();
+    pop();
+
+    // Cloud 5 - distant, very high altitude
+    push();
+    translate(600 + sin(cloudOffset * 0.3) * 8, 180);
+    fill(245, 250, 255, 80);
+    noStroke();
+    ellipse(0, 0, 200, 20);
+    ellipse(60, 3, 150, 15);
+    ellipse(-50, -2, 130, 18);
+    pop();
+}
+
+function drawCondensationTrails() {
+    push();
+    translate(width/2, height/2);
+    scale(2.5);
+
+    // Create condensation trails behind wing tips
+    let trailLength = map(velocity, 80, 120, 50, 150);
+    let trailOpacity = map(altitude, 8000, 12000, 100, 200);
+
+    // Left wing condensation trail
+    stroke(255, 255, 255, trailOpacity);
+    strokeWeight(3);
+    noFill();
+    beginShape();
+    for (let i = 0; i < trailLength; i += 5) {
+        let x = 175 - i * 0.8;
+        let y = 8 + sin(i * 0.1 + frameCount * 0.1) * 2;
+        let spread = sin(i * 0.05) * 3;
+        vertex(x, y + spread);
+    }
+    endShape();
+
+    // Right wing condensation trail
+    beginShape();
+    for (let i = 0; i < trailLength; i += 5) {
+        let x = 175 - i * 0.8;
+        let y = -8 + sin(i * 0.1 + frameCount * 0.1) * 2;
+        let spread = sin(i * 0.05) * 3;
+        vertex(x, y + spread);
+    }
+    endShape();
+
+    // Engine condensation trails (if applicable)
+    if (velocity > 100) {
+        // Left engine trail
+        beginShape();
+        for (let i = 0; i < trailLength * 0.7; i += 5) {
+            let x = 35 - i * 0.6;
+            let y = 12 + sin(i * 0.08 + frameCount * 0.15) * 1.5;
+            vertex(x, y);
+        }
+        endShape();
+
+        // Right engine trail
+        beginShape();
+        for (let i = 0; i < trailLength * 0.7; i += 5) {
+            let x = 35 - i * 0.6;
+            let y = -12 + sin(i * 0.08 + frameCount * 0.15) * 1.5;
+            vertex(x, y);
+        }
+        endShape();
+    }
+
     pop();
 }
 
