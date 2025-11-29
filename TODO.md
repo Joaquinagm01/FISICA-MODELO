@@ -32,7 +32,7 @@
 - [ ] Implementar navegación por teclado en móviles con teclado físico
 - [ ] Agregar descripciones alternativas para elementos visuales
 - [ ] Optimizar para usuarios con discapacidades motoras (controles más grandes)
-- [x] Implementar modo de alto contraste para mejor legibilidad
+- [x] Eliminar modo de alto contraste (simplificación de interfaz)
 - [ ] Probar en múltiples dispositivos iOS y Android
 - [ ] Validar funcionamiento en diferentes navegadores móviles
 - [ ] Probar con conexiones lentas y offline
@@ -40,9 +40,9 @@
 - [ ] Realizar pruebas de usabilidad con usuarios reales
 
 ## ✅ Mejoras de Accesibilidad Implementadas
-- [x] Implementar modo de alto contraste para mejor legibilidad
 - [x] Implementar modo de movimiento reducido para usuarios con sensibilidad al movimiento
 - [x] Implementar escalado de fuente específico para texto del canvas (simulación), excluyendo paneles HTML
+- [x] Eliminar modo de alto contraste (simplificación de interfaz)
 
 ## ✅ Correcciones Físicas Aerodinámicas
 - [x] Corregir cálculo de densidad del aire según ISA (International Standard Atmosphere)

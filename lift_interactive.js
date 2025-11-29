@@ -15,53 +15,25 @@ let P2 = 101325; // Lower surface pressure
 let flowParticles = []; // Array of flow particles following aerodynamic paths
 
 // Accessibility variables
-let highContrastMode = false;
-let reducedMotionMode = false;
 let fontScale = 1.0;
 let canvasFontScale = 1.0; // Scale factor for canvas text only
 
-// High contrast color scheme
-let hcColors = {
-  background: [0, 0, 0], // Black background
-  skyGradient: [[0, 0, 0], [30, 30, 30]], // Dark gradient
-  wing: [255, 255, 255], // White wing
-  wingOutline: [255, 255, 0], // Yellow outline
-  liftForce: [0, 255, 0], // Bright green
-  weightForce: [255, 0, 0], // Bright red
-  flowFast: [0, 255, 255], // Cyan for fast flow
-  flowSlow: [255, 100, 255], // Magenta for slow flow
-  text: [255, 255, 255], // White text
-  textHighlight: [255, 255, 0], // Yellow highlights
-  pressureHigh: [255, 0, 0], // Red for high pressure
-  pressureLow: [0, 255, 0], // Green for low pressure
-  velocityHigh: [0, 255, 255], // Cyan for high velocity
-  velocityLow: [255, 100, 255], // Magenta for low velocity
-  stallWarning: [255, 0, 0], // Red flash
-  maxLiftSuccess: [0, 255, 0] // Green flash
-};
-
-// Normal color scheme (current colors)
-let normalColors = {
+// Color scheme
+let colors = {
   background: [135, 206, 250], // Sky blue
   skyGradient: [[135, 206, 250], [100, 180, 220]], // Blue gradient
   wing: [255, 255, 255], // White wing
   wingOutline: [100, 150, 200], // Blue outline
   liftForce: [0, 200, 0], // Green
   weightForce: [200, 0, 0], // Red
-  flowFast: [173, 216, 230], // Light blue
-  flowSlow: [255, 160, 122], // Light coral
-  text: [255, 255, 255], // White text
-  textHighlight: [255, 255, 0], // Yellow highlights
-  pressureHigh: [255, 100, 100], // Light red
-  pressureLow: [100, 255, 100], // Light green
-  velocityHigh: [100, 200, 255], // Light blue
-  velocityLow: [255, 150, 200], // Light pink
+  text: [0, 0, 0], // Black text
   stallWarning: [255, 0, 0], // Red flash
-  maxLiftSuccess: [0, 255, 0] // Green flash
+  maxLiftSuccess: [0, 255, 0], // Green flash
+  velocityHigh: [100, 150, 255], // Light blue for high velocity
+  velocityLow: [150, 200, 255], // Lighter blue for low velocity
+  flowFast: [173, 216, 230], // Light blue for fast flow
+  flowSlow: [255, 182, 193] // Light pink for slow flow
 };
-
-// Current color scheme (switches between normal and high contrast)
-let currentColors = normalColors;
 
 // Educational features variables
 let showEducationalLegends = false;
@@ -289,70 +261,6 @@ function hapticFeedback(intensity = 'light') {
   navigator.vibrate(pattern);
 }
 
-// Function to handle automatic dark mode based on system preference
-function initDarkMode() {
-  // Check if the browser supports the color scheme media query
-  if (window.matchMedia) {
-    const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    // Function to apply dark mode
-    function applyDarkMode(isDark) {
-      if (!document.body.classList.contains('dark-mode')) {
-        if (isDark) {
-          document.body.classList.add('system-dark-mode');
-          console.log('System dark mode applied');
-        } else {
-          document.body.classList.remove('system-dark-mode');
-          console.log('System light mode applied');
-        }
-      }
-    }
-    
-    // Apply initial preference
-    applyDarkMode(colorSchemeQuery.matches);
-    
-    // Listen for changes
-    colorSchemeQuery.addEventListener('change', (e) => {
-      applyDarkMode(e.matches);
-    });
-  }
-}
-
-// Function to update theme button icon
-function updateThemeIcon() {
-  const btn = document.getElementById('toggle-theme-btn');
-  if (btn) {
-    const svg = btn.querySelector('svg path');
-    if (svg) {
-      if (document.body.classList.contains('dark-mode')) {
-        svg.setAttribute('d', 'M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z');
-        console.log('Icon updated to moon');
-      } else {
-        svg.setAttribute('d', 'M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z');
-        console.log('Icon updated to sun');
-      }
-    } else {
-      console.log('SVG path not found');
-    }
-  } else {
-    console.log('Toggle theme button not found in updateThemeIcon');
-  }
-}
-
-// Function to toggle manual dark mode
-function toggleTheme() {
-  console.log('toggleTheme called');
-  if (document.body.classList.contains('dark-mode')) {
-    document.body.classList.remove('dark-mode');
-    document.body.classList.remove('system-dark-mode');
-  } else {
-    document.body.classList.add('dark-mode');
-    document.body.classList.remove('system-dark-mode');
-  }
-  updateThemeIcon();
-  console.log('Manual dark mode toggled');
-}
-
 function preload() {
   // No sounds to load
 }
@@ -364,7 +272,7 @@ function setup() {
   detectLowEndDevice();
 
   // Create canvas with responsive sizing and quality adjustment
-  let canvasWidth = min(1000, windowWidth - 320) * canvasScaleFactor; // Leave space for data panel
+  let canvasWidth = min(1000, windowWidth - 350) * canvasScaleFactor; // Leave space for data panel
   let canvasHeight = min(700, windowHeight - 20) * canvasScaleFactor;
   createCanvas(canvasWidth, canvasHeight);
   
@@ -390,9 +298,6 @@ function setup() {
 
   // Initialize flow particles
   initializeFlowParticles();
-
-  // Initialize automatic dark mode
-  initDarkMode();
 
   // Set default values immediately
   angleAttack = radians(window.defaultValues ? window.defaultValues.angleAttack : 5);
@@ -424,22 +329,18 @@ function initializeDOMElements() {
   // Get buttons
   let resetBtn = select('#reset-btn');
   let tutorialBtn = select('#tutorial-btn');
-  let tutorialModeBtn = document.getElementById('tutorial-mode');
+  let tutorialModeBtn = document.getElementById('tutorial-btn');
   let exportBtn = select('#export-btn');
   let closeTutorialBtn = select('#close-tutorial');
   let saveBtn = select('#save-btn');
   let loadBtn = select('#load-btn');
   let togglePanelBtn = select('#toggle-panel-btn');
   let showPanelBtn = select('#show-panel-btn');
-  let toggleThemeBtn = document.getElementById('toggle-theme-btn');
 
-  console.log('Toggle theme button found:', !!toggleThemeBtn);
   console.log('Tutorial mode button found:', !!tutorialModeBtn);
   console.log('Tutorial mode button element:', tutorialModeBtn);
 
   // Get accessibility checkboxes
-  let highContrastCheckbox = document.getElementById('high-contrast');
-  let reducedMotionCheckbox = document.getElementById('reduced-motion');
   let fontScaleInput = document.getElementById('font-scale');
 
   // Get educational feature checkboxes
@@ -449,20 +350,9 @@ function initializeDOMElements() {
   let forceDiagramCheckbox = document.getElementById('force-diagram');
 
   console.log('Accessibility checkboxes found:', {
-    highContrastCheckbox: !!highContrastCheckbox,
-    reducedMotionCheckbox: !!reducedMotionCheckbox
   });
 
   // Synchronize initial state of accessibility features with checkboxes
-  if (highContrastCheckbox) {
-    highContrastCheckbox.checked = highContrastMode;
-    if (highContrastMode) {
-      document.body.classList.add('high-contrast');
-    }
-  }
-  if (reducedMotionCheckbox) {
-    reducedMotionCheckbox.checked = reducedMotionMode;
-  }
   if (fontScaleInput) {
     fontScaleInput.value = fontScale;
     canvasFontScale = fontScale; // Initialize canvas font scale
@@ -473,8 +363,6 @@ function initializeDOMElements() {
   }
 
   console.log('Accessibility features initial state:', {
-    highContrastMode,
-    reducedMotionMode,
     fontScale
   });
 
@@ -541,15 +429,8 @@ function initializeDOMElements() {
   if (loadBtn) loadBtn.mousePressed(loadConfiguration);
   if (togglePanelBtn) togglePanelBtn.mousePressed(togglePanel);
   if (showPanelBtn) showPanelBtn.mousePressed(togglePanel);
-  if (toggleThemeBtn) {
-    toggleThemeBtn.addEventListener('click', toggleTheme);
-    console.log('Theme toggle event listener added');
-  }
-  updateThemeIcon();
 
   // Accessibility checkbox listeners
-  if (highContrastCheckbox) highContrastCheckbox.addEventListener('change', toggleHighContrast);
-  if (reducedMotionCheckbox) reducedMotionCheckbox.addEventListener('change', toggleReducedMotion);
   if (fontScaleInput) fontScaleInput.addEventListener('input', updateFontScale);
 
   // Educational feature checkbox listeners
@@ -576,6 +457,9 @@ function initializeDOMElements() {
 }
 
 function updateParameters() {
+  // Define easing for smooth transitions
+  let easing = animationSpeed;
+
   // Check if sliders are initialized before using them
   if (!angleSlider || !windSlider || !altitudeSlider || !massSlider) {
     console.log('Sliders not yet initialized, skipping updateParameters');
@@ -597,9 +481,10 @@ function updateParameters() {
 
 // Smooth interpolation function for animations
 function interpolateParameters() {
-  // Smooth interpolation using easing - faster when reduced motion is enabled
-  let easing = reducedMotionMode ? 0.3 : animationSpeed;
+  // Define easing for smooth transitions
+  let easing = animationSpeed;
 
+  // Normal interpolation
   currentAngleAttack = lerp(currentAngleAttack, targetAngleAttack, easing);
   currentWindSpeed = lerp(currentWindSpeed, targetWindSpeed, easing);
   currentAltitude = lerp(currentAltitude, targetAltitude, easing);
@@ -699,15 +584,11 @@ function checkCriticalValues(alpha_deg, currentLift) {
 
 // Visual impact effects for critical aerodynamic values
 function triggerStallWarning() {
-  if (reducedMotionMode) return; // Skip animations if reduced motion is enabled
-
   stallFlashIntensity = 1.0; // Full intensity red flash
   console.log('🚨 Stall warning triggered!');
 }
 
 function triggerMaxLiftEffect() {
-  if (reducedMotionMode) return; // Skip animations if reduced motion is enabled
-
   maxLiftFlashIntensity = 1.0; // Full intensity green flash
   console.log('✨ Maximum lift achieved!');
 }
@@ -718,32 +599,24 @@ function addMicroInteractions() {
   let buttons = document.querySelectorAll('#data-panel button');
   buttons.forEach(button => {
     button.addEventListener('mouseenter', () => {
-      if (!reducedMotionMode) {
-        button.style.transform = 'scale(1.05)';
-        button.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-      }
+      button.style.transform = 'scale(1.05)';
+      button.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
     });
 
     button.addEventListener('mouseleave', () => {
-      if (!reducedMotionMode) {
-        button.style.transform = 'scale(1)';
-        button.style.boxShadow = '';
-      }
+      button.style.transform = 'scale(1)';
+      button.style.boxShadow = '';
     });
 
     button.addEventListener('mousedown', () => {
-      if (!reducedMotionMode) {
-        button.style.transform = 'scale(0.95)';
-      }
+      button.style.transform = 'scale(0.95)';
     });
 
     button.addEventListener('mouseup', () => {
-      if (!reducedMotionMode) {
-        button.style.transform = 'scale(1.05)';
-        setTimeout(() => {
-          button.style.transform = 'scale(1)';
-        }, 150);
-      }
+      button.style.transform = 'scale(1.05)';
+      setTimeout(() => {
+        button.style.transform = 'scale(1)';
+      }, 150);
     });
   });
 
@@ -958,8 +831,8 @@ function draw() {
     image(bgImage, 0, 0, width, height);
   } else {
     // Gradiente de cielo usando esquema de colores actual
-    let topColor = color(currentColors.skyGradient[0][0], currentColors.skyGradient[0][1], currentColors.skyGradient[0][2]);
-    let bottomColor = color(currentColors.skyGradient[1][0], currentColors.skyGradient[1][1], currentColors.skyGradient[1][2]);
+    let topColor = color(colors.skyGradient[0][0], colors.skyGradient[0][1], colors.skyGradient[0][2]);
+    let bottomColor = color(colors.skyGradient[1][0], colors.skyGradient[1][1], colors.skyGradient[1][2]);
 
     // Dibujar gradiente de manera eficiente
     for (let y = 0; y < height; y += 3) { // Dibujar cada 3 píxeles para mejor rendimiento
@@ -972,7 +845,7 @@ function draw() {
     }
 
     // Horizonte simple
-    stroke(currentColors.wingOutline[0], currentColors.wingOutline[1], currentColors.wingOutline[2], 100);
+    stroke(colors.wingOutline[0], colors.wingOutline[1], colors.wingOutline[2], 100);
     strokeWeight(1);
     line(0, height * 0.7, width, height * 0.7);
   }
@@ -1247,14 +1120,14 @@ function draw() {
   textSize(28 * canvasFontScale);
   textAlign(CENTER);
   fill(255);
-  stroke(currentColors.text[0], currentColors.text[1], currentColors.text[2]);
+  stroke(colors.text[0], colors.text[1], colors.text[2]);
   strokeWeight(2);
   text('Simulador Interactivo de Sustentación', width / 2, 50);
 
   // Etiqueta del slider
   textSize(16 * canvasFontScale);
   textAlign(LEFT);
-  fill(currentColors.text[0], currentColors.text[1], currentColors.text[2]);
+  fill(colors.text[0], colors.text[1], colors.text[2]);
   noStroke();
   text('Ángulo de Ataque: ' + angleSlider.value() + ' grados', 20, 15);
 
@@ -1326,7 +1199,7 @@ function draw() {
   // ===== EFECTOS DE IMPACTO VISUAL =====
   // Stall warning flash (red)
   if (stallFlashIntensity > 0.01) {
-    fill(currentColors.stallWarning[0], currentColors.stallWarning[1], currentColors.stallWarning[2], stallFlashIntensity * 100); // Red flash
+    fill(colors.stallWarning[0], colors.stallWarning[1], colors.stallWarning[2], stallFlashIntensity * 100); // Red flash
     noStroke();
     beginShape();
     vertex(leadingEdgeX, leadingEdgeY);
@@ -1341,7 +1214,7 @@ function draw() {
 
   // Max lift success flash (green)
   if (maxLiftFlashIntensity > 0.01) {
-    fill(currentColors.maxLiftSuccess[0], currentColors.maxLiftSuccess[1], currentColors.maxLiftSuccess[2], maxLiftFlashIntensity * 100); // Green flash
+    fill(colors.maxLiftSuccess[0], colors.maxLiftSuccess[1], colors.maxLiftSuccess[2], maxLiftFlashIntensity * 100); // Green flash
     noStroke();
     beginShape();
     vertex(leadingEdgeX, leadingEdgeY);
@@ -1581,26 +1454,26 @@ function draw() {
 
   // Número de serie del ala - más visible con efecto 3D
   // Sombra del texto
-  fill(currentColors.text[0] * 0.4, currentColors.text[1] * 0.4, currentColors.text[2] * 0.4, 100);
+  fill(colors.text[0] * 0.4, colors.text[1] * 0.4, colors.text[2] * 0.4, 100);
   textSize(10 * canvasFontScale);
   textAlign(CENTER);
   text('NACA 2412', 1, 46);
 
   // Texto principal
-  fill(currentColors.text[0], currentColors.text[1], currentColors.text[2]);
-  stroke(currentColors.text[0] * 0.5, currentColors.text[1] * 0.5, currentColors.text[2] * 0.5);
+  fill(colors.text[0], colors.text[1], colors.text[2]);
+  stroke(colors.text[0] * 0.5, colors.text[1] * 0.5, colors.text[2] * 0.5);
   strokeWeight(1);
   text('NACA 2412', 0, 45);
 
   // Etiqueta del borde de ataque con mejor diseño
-  fill(currentColors.textHighlight[0], currentColors.textHighlight[1], currentColors.textHighlight[2]);
-  stroke(currentColors.textHighlight[0] * 0.6, currentColors.textHighlight[1] * 0.6, currentColors.textHighlight[2] * 0.6);
+  fill(colors.text[0], colors.text[1], colors.text[2]);
+  stroke(colors.text[0] * 0.6, colors.text[1] * 0.6, colors.text[2] * 0.6);
   strokeWeight(1);
   textSize(8 * canvasFontScale);
   text('Borde de Ataque', leadingEdgeX - 20, leadingEdgeY - 15);
 
   // Indicador de dirección de vuelo
-  stroke(currentColors.textHighlight[0], currentColors.textHighlight[1], currentColors.textHighlight[2], 150);
+  stroke(colors.text[0], colors.text[1], colors.text[2], 150);
   strokeWeight(2);
   let arrowLength = 15;
   line(leadingEdgeX - arrowLength, leadingEdgeY, leadingEdgeX - 5, leadingEdgeY);
@@ -1630,16 +1503,16 @@ function draw() {
 
   // Indicador de velocidad (vector de velocidad)
   let speedVectorLength = map(windSpeed, 0, 100, 20, 60);
-  stroke(currentColors.velocityHigh[0], currentColors.velocityHigh[1], currentColors.velocityHigh[2], 200);
+  stroke(colors.velocityHigh[0], colors.velocityHigh[1], colors.velocityHigh[2], 200);
   strokeWeight(3);
   line(0, 0, speedVectorLength, 0);
   // Punta de flecha
-  fill(currentColors.velocityHigh[0], currentColors.velocityHigh[1], currentColors.velocityHigh[2], 200);
+  fill(colors.velocityHigh[0], colors.velocityHigh[1], colors.velocityHigh[2], 200);
   noStroke();
   triangle(speedVectorLength, 0, speedVectorLength - 8, -3, speedVectorLength - 8, 3);
 
   // Indicador de altitud (escala vertical)
-  stroke(currentColors.velocityLow[0], currentColors.velocityLow[1], currentColors.velocityLow[2], 150);
+  stroke(colors.velocityLow[0], colors.velocityLow[1], colors.velocityLow[2], 150);
   strokeWeight(2);
   line(-60, -30, -60, 30);
   // Marcas de altitud
@@ -1648,22 +1521,22 @@ function draw() {
   }
   // Indicador actual
   let altIndicatorY = map(altitude, 0, 10000, 20, -20);
-  fill(currentColors.velocityLow[0], currentColors.velocityLow[1], currentColors.velocityLow[2], 200);
+  fill(colors.velocityLow[0], colors.velocityLow[1], colors.velocityLow[2], 200);
   noStroke();
   ellipse(-60, altIndicatorY, 6, 6);
 
   // Indicador de sustentación (barra lateral)
   let liftBarHeight = map(liftMagnitude, 0, 200, 0, 40);
-  stroke(currentColors.liftForce[0], currentColors.liftForce[1], currentColors.liftForce[2], 180);
+  stroke(colors.liftForce[0], colors.liftForce[1], colors.liftForce[2], 180);
   strokeWeight(4);
   line(70, 20, 70, 20 - liftBarHeight);
   // Base de la barra
-  fill(currentColors.liftForce[0], currentColors.liftForce[1], currentColors.liftForce[2], 100);
+  fill(colors.liftForce[0], colors.liftForce[1], colors.liftForce[2], 100);
   noStroke();
   rect(65, 15, 10, 10);
 
   // Texto HUD
-  fill(currentColors.textHighlight[0], currentColors.textHighlight[1], currentColors.textHighlight[2], 220);
+  fill(colors.text[0], colors.text[1], colors.text[2], 220);
   textAlign(CENTER);
   textSize(8 * canvasFontScale);
   text(Math.round(windSpeed) + ' m/s', 40, -25);
@@ -2071,23 +1944,23 @@ function draw() {
   let leadingEdgeWorldY = height / 2; // Centro vertical
 
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY,
-           leadingEdgeWorldX, leadingEdgeWorldY - liftLength, currentColors.liftForce, 6);
-  fill(currentColors.liftForce[0], currentColors.liftForce[1], currentColors.liftForce[2]);
+           leadingEdgeWorldX, leadingEdgeWorldY - liftLength, colors.liftForce, 6);
+  fill(colors.liftForce[0], colors.liftForce[1], colors.liftForce[2]);
   textSize(16 * canvasFontScale);
   text('Sustentación', leadingEdgeWorldX + 20, leadingEdgeWorldY - liftLength / 2);
 
   // Flecha de Peso (rojo, emerge del borde de ataque hacia abajo)
   drawArrow(leadingEdgeWorldX, leadingEdgeWorldY,
-           leadingEdgeWorldX, leadingEdgeWorldY + 80, currentColors.weightForce, 6);
-  fill(currentColors.weightForce[0], currentColors.weightForce[1], currentColors.weightForce[2]);
+           leadingEdgeWorldX, leadingEdgeWorldY + 80, colors.weightForce, 6);
+  fill(colors.weightForce[0], colors.weightForce[1], colors.weightForce[2]);
   text('Peso', leadingEdgeWorldX + 20, leadingEdgeWorldY + 90);
 
   // Etiquetas de flujo
   textAlign(LEFT);
-  fill(currentColors.flowFast[0], currentColors.flowFast[1], currentColors.flowFast[2]);
+  fill(colors.flowFast[0], colors.flowFast[1], colors.flowFast[2]);
   textSize(14 * canvasFontScale);
   text('Aire Rápido (Baja P)', 50, height / 2 - 80);
-  fill(currentColors.flowSlow[0], currentColors.flowSlow[1], currentColors.flowSlow[2]);
+  fill(colors.flowSlow[0], colors.flowSlow[1], colors.flowSlow[2]);
   text('Aire Lento (Alta P)', 50, height / 2 + 100);
 
 
@@ -2641,31 +2514,6 @@ async function fetchRandomAirplaneImage() {
 }
 
 // Accessibility functions
-function toggleHighContrast() {
-  highContrastMode = !highContrastMode;
-  let body = document.body;
-
-  if (highContrastMode) {
-    body.classList.add('high-contrast');
-    currentColors = hcColors; // Switch to high contrast colors
-    console.log('Modo Alto Contraste activado');
-  } else {
-    body.classList.remove('high-contrast');
-    currentColors = normalColors; // Switch back to normal colors
-    console.log('Modo Alto Contraste desactivado');
-  }
-}
-
-function toggleReducedMotion() {
-  reducedMotionMode = !reducedMotionMode;
-
-  if (reducedMotionMode) {
-    console.log('Movimiento reducido - animaciones más rápidas (menos suaves)');
-  } else {
-    console.log('Movimiento restaurado - animaciones normales');
-  }
-}
-
 function updateFontScale() {
   let fontScaleInput = document.getElementById('font-scale');
   let fontScaleValue = document.getElementById('font-scale-value');
@@ -2937,3 +2785,5 @@ function drawEducationalLegends() {
 function windowResized() {
   resizeCanvasForPanel();
 }
+
+// Test function for reduced motion mode (call from browser console)
