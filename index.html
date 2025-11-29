@@ -318,6 +318,11 @@
                 }
             }
         }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 
 </head>
@@ -402,15 +407,43 @@
                     </div>
                     <div style="font-size: 0.85em; color: #34495e; border-top: 1px solid rgba(52, 152, 219, 0.2); padding-top: 8px; margin-top: 8px; font-weight: 600;">
                         Fórmula de Sustentación: L = Cₗ × ½ρv² × A
+                        <div style="font-family: 'Courier New', monospace; font-size: 0.8em; background: white; padding: 6px; border-radius: 4px; margin-top: 4px; border: 1px solid rgba(52, 152, 219, 0.2);">
+                            L = <span id="cl-dynamic" style="color: #e74c3c; font-weight: bold;">1.23</span> × ½ × <span id="rho-dynamic" style="color: #3498db; font-weight: bold;">1.225</span> × <span id="v-dynamic" style="color: #27ae60; font-weight: bold;">70</span>² × <span id="area-dynamic" style="color: #9b59b6; font-weight: bold;">0.1</span>
+                        </div>
                     </div>
                 </div>
                 <div style="margin-top: 12px; font-size: 0.9em; padding: 8px; background: white; border-radius: 6px; border: 1px solid rgba(52, 152, 219, 0.2);">
                     <strong>Densidad del Aire:</strong> <span id="rho-value" style="color: #3498db; font-weight: bold;">1.225 kg/m³</span>
                     <span style="font-size: 0.8em; color: #7f8c8d;"> (varía con altitud)</span>
                 </div>
+                <div style="margin-top: 8px; font-size: 0.85em; padding: 6px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 4px; border: 1px solid rgba(108, 117, 125, 0.2);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span><strong>Coeficiente de Presión (Cp):</strong></span>
+                        <span id="cp-value" style="color: #e74c3c; font-weight: bold;">0.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span><strong>Número de Reynolds (Re):</strong></span>
+                        <span id="re-value" style="color: #27ae60; font-weight: bold;">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span><strong>Número de Mach (M):</strong></span>
+                        <span id="mach-value" style="color: #f39c12; font-weight: bold;">0.00</span>
+                    </div>
+                </div>
             </div>
         </div>
-        
+
+        <!-- Gráfico CL vs α -->
+        <div style="margin-bottom: 20px;">
+            <h4 style="font-size: 1.1em; color: #2c3e50; margin-bottom: 10px; text-align: center; font-weight: 600;">Curva de Sustentación CL vs α</h4>
+            <div style="background: white; padding: 15px; border-radius: 10px; border: 1px solid rgba(52, 152, 219, 0.2);">
+                <canvas id="cl-alpha-chart" width="280" height="180" style="display: block; margin: 0 auto;"></canvas>
+                <div style="margin-top: 8px; font-size: 0.8em; color: #7f8c8d; text-align: center;">
+                    Ángulo de Ataque (α) vs Coeficiente de Sustentación (CL)
+                </div>
+            </div>
+        </div>
+
         <div style="margin-bottom: 20px;">
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 15px;">
                 <button id="reset-btn" style="background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; border: none; padding: 10px 8px; border-radius: 8px; cursor: pointer; font-size: 0.75em; font-weight: 600; box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3); transition: all 0.2s ease;">
@@ -444,6 +477,44 @@
                 </svg>
                 Cargar Configuración
             </button>
+        </div>
+
+        <!-- Presets Educativos -->
+        <div style="margin-bottom: 20px;">
+            <h4 style="font-size: 1em; color: #2c3e50; margin-bottom: 10px; text-align: center; font-weight: 600;">💡 Presets Educativos</h4>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+                <button id="preset-optimal" style="background: linear-gradient(145deg, #27ae60, #2ecc71); color: white; border: none; padding: 8px 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; box-shadow: 0 2px 6px rgba(39, 174, 96, 0.3); transition: all 0.2s ease;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 3px;">
+                        <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
+                    </svg>
+                    Óptimo CL
+                </button>
+                <button id="preset-stall" style="background: linear-gradient(145deg, #e74c3c, #c0392b); color: white; border: none; padding: 8px 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3); transition: all 0.2s ease;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 3px;">
+                        <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H19V9Z"/>
+                    </svg>
+                    Stall
+                </button>
+                <button id="preset-altitude" style="background: linear-gradient(145deg, #3498db, #2980b9); color: white; border: none; padding: 8px 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3); transition: all 0.2s ease;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 3px;">
+                        <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
+                    </svg>
+                    Altitud
+                </button>
+                <button id="preset-supersonic" style="background: linear-gradient(145deg, #f39c12, #e67e22); color: white; border: none; padding: 8px 6px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; box-shadow: 0 2px 6px rgba(243, 156, 18, 0.3); transition: all 0.2s ease;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 3px;">
+                        <path d="M12 2L13.09 8.26L19 9L13.09 9.74L12 16L10.91 9.74L5 9L10.91 8.26L12 2Z"/>
+                    </svg>
+                    Supersónico
+                </button>
+            </div>
+        </div>
+        
+        <div id="preset-explanation" style="margin-bottom: 15px; display: none; animation: fadeIn 0.5s ease-in;">
+            <h4 style="font-size: 0.9em; color: #2c3e50; margin-bottom: 8px;">💡 Explicación del Preset</h4>
+            <div class="physics-info" id="explanation-content" style="font-size: 0.85em; line-height: 1.4;">
+                Selecciona un preset para ver la explicación aquí.
+            </div>
         </div>
         
         <div style="margin-bottom: 15px;">

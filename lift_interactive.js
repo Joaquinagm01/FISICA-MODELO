@@ -1,6 +1,7 @@
 let angleSlider, windSlider, altitudeSlider, massSlider;
 let angleAttack = 0;
 let liftMagnitude = 0;
+let liftCoefficient = 0; // Current CL value for charts
 let flowOffset = 0;
 let windSpeed = 70; // m/s
 let altitude = 0; // m
@@ -12,6 +13,13 @@ let weight = mass * 9.81; // N
 let bgImage;
 let P1 = 101325; // Upper surface pressure
 let P2 = 101325; // Lower surface pressure
+
+// Advanced aerodynamic parameters
+let pressureCoefficient = 0; // Cp
+let reynoldsNumber = 0; // Re
+let machNumber = 0; // M
+let dynamicViscosity = 1.81e-5; // μ (kg/m·s) at standard conditions
+let speedOfSound = 343; // a (m/s) at sea level
 let flowParticles = []; // Array of flow particles following aerodynamic paths
 
 // Accessibility variables
@@ -88,9 +96,9 @@ let lodDistanceThreshold = 200; // Distance from center where LOD kicks in
 let bloomSlider, dofSlider, motionBlurSlider, lodSlider;
 
 // Mobile optimization variables
-let isLowEndDevice = false;
-let canvasScaleFactor = 1.0;
-let reducedQualityMode = false;
+var isLowEndDevice = false;
+var canvasScaleFactor = 1.0;
+var reducedQualityMode = false;
 
 // Pinch-to-zoom variables
 let initialDistance = 0;
@@ -300,7 +308,7 @@ function setup() {
   initializeFlowParticles();
 
   // Set default values immediately
-  angleAttack = radians(window.defaultValues ? window.defaultValues.angleAttack : 5);
+  angleAttack = (window.defaultValues ? window.defaultValues.angleAttack : 5) * Math.PI / 180;
   windSpeed = window.defaultValues ? window.defaultValues.windSpeed : 70;
   altitude = window.defaultValues ? window.defaultValues.altitude : 0;
   mass = window.defaultValues ? window.defaultValues.mass : 80;
@@ -427,6 +435,60 @@ function initializeDOMElements() {
   if (closeTutorialBtn) closeTutorialBtn.mousePressed(hideTutorial);
   if (saveBtn) saveBtn.mousePressed(saveConfiguration);
   if (loadBtn) loadBtn.mousePressed(loadConfiguration);
+  
+  // Educational preset buttons
+  let presetOptimalBtn = select('#preset-optimal');
+  let presetStallBtn = select('#preset-stall');
+  let presetAltitudeBtn = select('#preset-altitude');
+  let presetSupersonicBtn = select('#preset-supersonic');
+  
+  console.log('Preset buttons found:', {
+    presetOptimalBtn: !!presetOptimalBtn,
+    presetStallBtn: !!presetStallBtn,
+    presetAltitudeBtn: !!presetAltitudeBtn,
+    presetSupersonicBtn: !!presetSupersonicBtn
+  });
+  
+  if (presetOptimalBtn) {
+    presetOptimalBtn.mousePressed(() => {
+      console.log('Optimal preset button clicked');
+      applyEducationalPreset('optimal');
+    });
+    console.log('Optimal preset event listener added');
+  } else {
+    console.log('ERROR: Optimal preset button not found');
+  }
+  
+  if (presetStallBtn) {
+    presetStallBtn.mousePressed(() => {
+      console.log('Stall preset button clicked');
+      applyEducationalPreset('stall');
+    });
+    console.log('Stall preset event listener added');
+  } else {
+    console.log('ERROR: Stall preset button not found');
+  }
+  
+  if (presetAltitudeBtn) {
+    presetAltitudeBtn.mousePressed(() => {
+      console.log('Altitude preset button clicked');
+      applyEducationalPreset('altitude');
+    });
+    console.log('Altitude preset event listener added');
+  } else {
+    console.log('ERROR: Altitude preset button not found');
+  }
+  
+  if (presetSupersonicBtn) {
+    presetSupersonicBtn.mousePressed(() => {
+      console.log('Supersonic preset button clicked');
+      applyEducationalPreset('supersonic');
+    });
+    console.log('Supersonic preset event listener added');
+  } else {
+    console.log('ERROR: Supersonic preset button not found');
+  }
+  
   if (togglePanelBtn) togglePanelBtn.mousePressed(togglePanel);
   if (showPanelBtn) showPanelBtn.mousePressed(togglePanel);
 
@@ -467,7 +529,7 @@ function updateParameters() {
   }
 
   // Update target values from sliders (smooth transitions will happen in draw())
-  targetAngleAttack = radians(angleSlider.value());
+  targetAngleAttack = angleSlider.value() * Math.PI / 180;
   targetWindSpeed = windSlider.value();
   targetAltitude = altitudeSlider.value();
   targetMass = massSlider.value();
@@ -509,6 +571,11 @@ function interpolateParameters() {
   // Update physics UI values
   select('#weight-value').html(weight.toFixed(0) + ' N');
   select('#rho-value').html(rho.toFixed(3) + ' kg/m³');
+  
+  // Update advanced aerodynamic parameters display
+  select('#cp-value').html(pressureCoefficient.toFixed(2));
+  select('#re-value').html(reynoldsNumber.toExponential(1));
+  select('#mach-value').html(machNumber.toFixed(3));
 
   let alpha_deg = degrees(angleAttack);
   // More realistic lift coefficient (thin airfoil theory approximation)
@@ -518,6 +585,9 @@ function interpolateParameters() {
   if (alpha_deg > 15) {
     cl *= max(0, 1 - (alpha_deg - 15) / 10);
   }
+  
+  // Store current CL for chart display
+  liftCoefficient = cl;
 
   // Wing area (assuming a small model airplane wing)
   let wingArea = 0.1; // m²
@@ -553,6 +623,25 @@ function interpolateParameters() {
   select('#p2').html(P2.toFixed(0));
   select('#v1').html(v1.toFixed(1));
   select('#v2').html(v2.toFixed(1));
+
+  // Update dynamic lift formula
+  select('#cl-dynamic').html(cl.toFixed(2));
+  select('#rho-dynamic').html(rho.toFixed(3));
+  select('#v-dynamic').html(windSpeed.toFixed(0));
+  select('#area-dynamic').html(wingArea.toFixed(1));
+
+  // Calculate advanced aerodynamic parameters
+  let dynamicPressure = 0.5 * rho * windSpeed * windSpeed; // Dynamic pressure
+  
+  // Pressure coefficient (Cp) - using upper surface as example
+  pressureCoefficient = (P1 - P_atm) / dynamicPressure;
+  
+  // Reynolds number - using wing chord length approximation (0.3m)
+  let chordLength = 0.3; // meters
+  reynoldsNumber = (rho * windSpeed * chordLength) / dynamicViscosity;
+  
+  // Mach number
+  machNumber = windSpeed / speedOfSound;
 
   // Check for critical values and trigger impact effects
   checkCriticalValues(alpha_deg, liftMagnitude);
@@ -852,9 +941,9 @@ function draw() {
 
   // Initialize with default values
   if (!angleSlider) {
-    angleAttack = radians(5);
+    angleAttack = 5 * Math.PI / 180;
   } else {
-    angleAttack = radians(angleSlider.value());
+    angleAttack = angleSlider.value() * Math.PI / 180;
   }
 
   if (!windSlider) {
@@ -1322,7 +1411,7 @@ function draw() {
 
   // ===== EFECTOS DE DESGASTE (OPCIONALES) =====
   // Manchas de uso en áreas de alto estrés
-  if (angleAttack > radians(10)) { // Solo mostrar en ángulos altos
+  if (angleAttack > 10 * Math.PI / 180) { // Solo mostrar en ángulos altos
     // Mancha de desgaste en borde de ataque
     fill(45, 45, 55, 80);
     noStroke();
@@ -1379,7 +1468,7 @@ function draw() {
 
   // Detalles del ala con mejoras visuales
   // Flaps cuando ángulo > 15° - más prominentes y realistas
-  if (angleAttack > radians(15)) {
+  if (angleAttack > 15 * Math.PI / 180) {
     // Flaps superiores con textura metálica
     fill(90, 140, 220);
     stroke(70, 120, 200);
@@ -1418,7 +1507,7 @@ function draw() {
     line(155, 20, 155, 32);
 
     // Efectos de movimiento en flaps
-    if (angleAttack > radians(20)) {
+    if (angleAttack > 20 * Math.PI / 180) {
       // Vibración sutil en flaps desplegados
       let flapVibration = sin(frameCount * 0.5) * 0.5;
       stroke(255, 255, 255, 100);
@@ -1993,6 +2082,166 @@ function resetSimulation() {
   updateParameters();
 }
 
+function applyEducationalPreset(presetType) {
+  console.log('=== Applying preset:', presetType, '===');
+  
+  // Store old values for comparison
+  let oldAngle = degrees(angleAttack);
+  let oldWind = windSpeed;
+  let oldAlt = altitude;
+  let oldMass = mass;
+  
+  switch(presetType) {
+    case 'optimal':
+      angleAttack = radians(10);
+      windSpeed = 80;
+      altitude = 0;
+      mass = 80;
+      console.log('Set to optimal: angle=10°, wind=80, alt=0, mass=80');
+      break;
+      
+    case 'stall':
+      angleAttack = radians(18);
+      windSpeed = 60;
+      altitude = 0;
+      mass = 100;
+      console.log('Set to stall: angle=18°, wind=60, alt=0, mass=100');
+      break;
+      
+    case 'altitude':
+      angleAttack = radians(8);
+      windSpeed = 90;
+      altitude = 3000;
+      mass = 80;
+      console.log('Set to altitude: angle=8°, wind=90, alt=3000, mass=80');
+      break;
+      
+    case 'supersonic':
+      angleAttack = radians(5);
+      windSpeed = 320;
+      altitude = 11000;
+      mass = 60;
+      console.log('Set to supersonic: angle=5°, wind=320, alt=11000, mass=60');
+      break;
+  }
+  
+  console.log('Values changed from:', {oldAngle, oldWind, oldAlt, oldMass}, 'to:', {angle: degrees(angleAttack), wind: windSpeed, alt: altitude, mass: mass});
+  
+  // Update sliders - use the DOM element's value property
+  if (angleSlider) {
+    let sliderElement = angleSlider.elt; // Get the actual DOM element
+    sliderElement.value = degrees(angleAttack);
+    console.log('Updated angle slider to:', degrees(angleAttack));
+  } else {
+    console.log('ERROR: angleSlider not found');
+  }
+  
+  if (windSlider) {
+    let sliderElement = windSlider.elt;
+    sliderElement.value = windSpeed;
+    console.log('Updated wind slider to:', windSpeed);
+  } else {
+    console.log('ERROR: windSlider not found');
+  }
+  
+  if (altitudeSlider) {
+    let sliderElement = altitudeSlider.elt;
+    sliderElement.value = altitude;
+    console.log('Updated altitude slider to:', altitude);
+  } else {
+    console.log('ERROR: altitudeSlider not found');
+  }
+  
+  if (massSlider) {
+    let sliderElement = massSlider.elt;
+    sliderElement.value = mass;
+    console.log('Updated mass slider to:', mass);
+  } else {
+    console.log('ERROR: massSlider not found');
+  }
+  
+  // Update target values for smooth interpolation
+  targetAngleAttack = angleAttack;
+  targetWindSpeed = windSpeed;
+  targetAltitude = altitude;
+  targetMass = mass;
+  
+  // Update current values immediately (no smooth transition for presets)
+  currentAngleAttack = angleAttack;
+  currentWindSpeed = windSpeed;
+  currentAltitude = altitude;
+  currentMass = mass;
+  
+  // Force immediate UI update
+  select('#angle-value').html(degrees(angleAttack).toFixed(1) + '°');
+  select('#wind-value').html(windSpeed + ' m/s');
+  select('#altitude-value').html(altitude + ' m');
+  select('#mass-value').html(mass + ' kg');
+  
+  // Show explanation
+  showPresetExplanation(presetType);
+  
+  console.log('UI updated, preset applied successfully');
+}
+
+function showPresetExplanation(presetType) {
+  let explanationDiv = select('#preset-explanation');
+  let contentDiv = select('#explanation-content');
+  
+  if (!explanationDiv || !contentDiv) {
+    console.error('Explanation divs not found');
+    return;
+  }
+  
+  let title, explanation;
+  
+  switch(presetType) {
+    case 'optimal':
+      title = 'Óptimo CL - Configuración Óptima';
+      explanation = 'Esta configuración demuestra las condiciones ideales para maximizar el coeficiente de sustentación (CL). ' +
+                   'Con un ángulo de ataque de 10° y velocidad de 80 m/s, se obtiene el mejor equilibrio entre sustentación y resistencia. ' +
+                   'Observa cómo la sustentación es máxima sin riesgo de stall.';
+      break;
+      
+    case 'stall':
+      title = 'Stall - Pérdida de Sustentación';
+      explanation = 'El stall ocurre cuando el ángulo de ataque es demasiado alto (18° aquí). ' +
+                   'La capa límite se separa del ala, causando una brusca pérdida de sustentación. ' +
+                   'Nota cómo la sustentación disminuye drásticamente y aparecen turbulencias.';
+      break;
+      
+    case 'altitude':
+      title = 'Altitud - Efectos de la Altitud';
+      explanation = 'A mayor altitud (3000m), la densidad del aire disminuye, reduciendo la sustentación. ' +
+                   'Para compensar, se necesita mayor velocidad (90 m/s) y un ángulo de ataque ligeramente menor. ' +
+                   'Esto demuestra por qué los aviones necesitan más pista para despegar en aeropuertos de alta montaña.';
+      break;
+      
+    case 'supersonic':
+      title = 'Supersónico - Vuelo Supersónico';
+      explanation = 'En régimen supersónico (320 m/s ≈ Mach 1.0), la aerodinámica cambia completamente. ' +
+                   'Se forma una onda de choque que aumenta la resistencia. ' +
+                   'Los aviones supersónicos necesitan alas delgadas y formas aerodinámicas especiales para manejar estas condiciones extremas.';
+      break;
+      
+    default:
+      title = 'Preset Desconocido';
+      explanation = 'No hay explicación disponible para este preset.';
+  }
+  
+  contentDiv.html(`<strong>${title}</strong><br><br>${explanation}<br><br><button onclick="hidePresetExplanation()" style="background: linear-gradient(145deg, #95a5a6, #7f8c8d); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.2); transition: all 0.2s ease;">✕ Cerrar</button>`);
+  explanationDiv.style('display', 'block');
+  
+  // No auto-hide - let user close manually
+}
+
+function hidePresetExplanation() {
+  let explanationDiv = select('#preset-explanation');
+  if (explanationDiv) {
+    explanationDiv.style('display', 'none');
+  }
+}
+
 function showTutorial() {
   try {
     hapticFeedback('light');
@@ -2050,20 +2299,91 @@ function resizeCanvasForPanel() {
 }
 
 function exportData() {
+  // Create comprehensive data object
   let data = {
-    angle: angleSlider.value(),
-    windSpeed: windSlider.value(),
-    altitude: altitudeSlider.value(),
-    mass: massSlider.value(),
-    lift: liftMagnitude,
-    weight: weight,
-    rho: rho,
-    v1: windSpeed + 10 * sin(angleAttack),
-    v2: windSpeed - 10 * sin(angleAttack),
-    P1: 101325 - 0.5 * rho * ((windSpeed + 10 * sin(angleAttack))**2 - windSpeed**2),
-    P2: 101325 - 0.5 * rho * ((windSpeed - 10 * sin(angleAttack))**2 - windSpeed**2)
+    timestamp: new Date().toISOString(),
+    parameters: {
+      angleAttack: degrees(angleAttack),
+      windSpeed: windSpeed,
+      altitude: altitude,
+      mass: mass,
+      wingArea: wingArea
+    },
+    results: {
+      liftCoefficient: liftCoefficient,
+      liftForce: liftMagnitude,
+      weight: weight,
+      pressureUpper: P1,
+      pressureLower: P2,
+      velocityUpper: windSpeed * (1 + 0.1 * sin(angleAttack)),
+      velocityLower: windSpeed * (1 - 0.1 * sin(angleAttack)),
+      airDensity: rho,
+      dynamicPressure: 0.5 * rho * windSpeed * windSpeed
+    },
+    advanced: {
+      pressureCoefficient: pressureCoefficient,
+      reynoldsNumber: reynoldsNumber,
+      machNumber: machNumber,
+      speedOfSound: speedOfSound,
+      dynamicViscosity: dynamicViscosity
+    }
   };
+
+  // Export as JSON
   saveJSON(data, 'aerodynamics_data.json');
+
+  // Also create CSV version
+  let csvContent = createCSVFromData(data);
+  downloadCSV(csvContent, 'aerodynamics_data.csv');
+}
+
+function createCSVFromData(data) {
+  let csv = [];
+  
+  // Header
+  csv.push('Parameter,Value,Unit');
+  
+  // Parameters section
+  csv.push('=== PARAMETERS ===,,');
+  csv.push(`Angle of Attack,${data.parameters.angleAttack},degrees`);
+  csv.push(`Wind Speed,${data.parameters.windSpeed},m/s`);
+  csv.push(`Altitude,${data.parameters.altitude},m`);
+  csv.push(`Mass,${data.parameters.mass},kg`);
+  csv.push(`Wing Area,${data.parameters.wingArea},m²`);
+  
+  // Results section
+  csv.push('=== RESULTS ===,,');
+  csv.push(`Lift Coefficient,${data.results.liftCoefficient},-`);
+  csv.push(`Lift Force,${data.results.liftForce},N`);
+  csv.push(`Weight,${data.results.weight},N`);
+  csv.push(`Upper Surface Pressure,${data.results.pressureUpper},Pa`);
+  csv.push(`Lower Surface Pressure,${data.results.pressureLower},Pa`);
+  csv.push(`Upper Surface Velocity,${data.results.velocityUpper},m/s`);
+  csv.push(`Lower Surface Velocity,${data.results.velocityLower},m/s`);
+  csv.push(`Air Density,${data.results.airDensity},kg/m³`);
+  csv.push(`Dynamic Pressure,${data.results.dynamicPressure},Pa`);
+  
+  // Advanced section
+  csv.push('=== ADVANCED ===,,');
+  csv.push(`Pressure Coefficient,${data.advanced.pressureCoefficient},-`);
+  csv.push(`Reynolds Number,${data.advanced.reynoldsNumber},-`);
+  csv.push(`Mach Number,${data.advanced.machNumber},-`);
+  csv.push(`Speed of Sound,${data.advanced.speedOfSound},m/s`);
+  csv.push(`Dynamic Viscosity,${data.advanced.dynamicViscosity},Pa·s`);
+  
+  return csv.join('\n');
+}
+
+function downloadCSV(content, filename) {
+  let blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  let link = document.createElement('a');
+  let url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function saveConfiguration() {
@@ -2272,17 +2592,24 @@ function drawFlowParticles() {
   noStroke();
 
   for (let p of flowParticles) {
-    // Draw main particle
-    if (p.surface === 'upper') {
-      fill(0, 200, 255, 150); // Blue for upper surface (faster flow)
-    } else {
-      fill(255, 200, 0, 130); // Orange for lower surface (slower flow)
-    }
+    // Calcular velocidad real de la partícula
+    let particleSpeed = sqrt(p.vx * p.vx + p.vy * p.vy);
+
+    // Mapear velocidad a colores: azul=lento, rojo=rápido
+    let speedRatio = map(particleSpeed, 0, windSpeed * 1.5, 0, 1);
+    speedRatio = constrain(speedRatio, 0, 1);
+
+    // Interpolar entre azul (velocidad baja) y rojo (velocidad alta)
+    let r = map(speedRatio, 0, 1, 0, 255);    // Rojo aumenta con velocidad
+    let g = map(speedRatio, 0, 1, 200, 0);    // Verde disminuye con velocidad
+    let b = map(speedRatio, 0, 1, 255, 0);    // Azul disminuye con velocidad
+
+    fill(r, g, b, 150);
 
     // Draw particle as small ellipse - REMOVED
     // ellipse(p.x, p.y, 3, 3);
 
-    // Draw subtle trail
+    // Draw subtle trail with same color logic
     if (p.age > 10) {
       let trailLength = min(8, floor(p.age / 5));
       for (let i = 1; i <= trailLength; i++) {
@@ -2290,12 +2617,7 @@ function drawFlowParticles() {
         let trailY = p.y - p.vy * i * 0.5;
         let alpha = map(i, 1, trailLength, 100, 20);
 
-        if (p.surface === 'upper') {
-          fill(0, 150, 255, alpha);
-        } else {
-          fill(255, 150, 0, alpha);
-        }
-
+        fill(r, g, b, alpha);
         // ellipse(trailX, trailY, 2, 2); - REMOVED
       }
     }
@@ -2493,7 +2815,11 @@ function drawWeather() {
   drawPressureDiagram();
   drawVelocityDiagram();
   drawForceDiagram();
+  
   drawEducationalLegends();
+
+  // Update CL vs α chart
+  drawCLAlphaChart();
 
 }
 
@@ -2790,6 +3116,144 @@ function drawEducationalLegends() {
   // Close zoom transformation if applied
   if (isPinching || currentScale !== 1.0) {
     pop();
+  }
+}
+
+function drawCLAlphaChart() {
+  try {
+    let canvas = document.getElementById('cl-alpha-chart');
+    if (!canvas) return;
+
+    let ctx = canvas.getContext('2d');
+    let width = canvas.width;
+    let height = canvas.height;
+
+  // Clear canvas
+  ctx.clearRect(0, 0, width, height);
+
+  // Set up coordinate system
+  let margin = 40;
+  let plotWidth = width - 2 * margin;
+  let plotHeight = height - 2 * margin;
+
+  // Draw axes
+  ctx.strokeStyle = '#34495e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(margin, margin);
+  ctx.lineTo(margin, height - margin);
+  ctx.lineTo(width - margin, height - margin);
+  ctx.stroke();
+
+  // Draw grid
+  ctx.strokeStyle = '#ecf0f1';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 5]);
+
+  // Vertical grid lines (α from -10° to 25°)
+  for (let alpha = -10; alpha <= 25; alpha += 5) {
+    let x = margin + ((alpha + 10) / 35) * plotWidth;
+    ctx.beginPath();
+    ctx.moveTo(x, margin);
+    ctx.lineTo(x, height - margin);
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = '#7f8c8d';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(alpha + '°', x, height - margin + 15);
+  }
+
+  // Horizontal grid lines (CL from -0.5 to 2.0)
+  for (let cl = -0.5; cl <= 2.0; cl += 0.5) {
+    let y = height - margin - ((cl + 0.5) / 2.5) * plotHeight;
+    ctx.beginPath();
+    ctx.moveTo(margin, y);
+    ctx.lineTo(width - margin, y);
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = '#7f8c8d';
+    ctx.textAlign = 'right';
+    ctx.fillText(cl.toFixed(1), margin - 5, y + 3);
+  }
+
+  ctx.setLineDash([]);
+
+  // Draw CL vs α curve (simplified approximation)
+  ctx.strokeStyle = '#3498db';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+
+  for (let alpha = -10; alpha <= 25; alpha += 1) {
+    // CL curve: CL = 2π sin(α) with stall effects
+    let alphaRad = alpha * Math.PI / 180;
+    let cl = 2 * Math.PI * Math.sin(alphaRad);
+    
+    // Simulate stall: reduction when α > 15°
+    if (alpha > 15) {
+      cl *= Math.max(0, 1 - (alpha - 15) / 10);
+    }
+
+    let x = margin + ((alpha + 10) / 35) * plotWidth;
+    let y = height - margin - ((cl + 0.5) / 2.5) * plotHeight;
+    points.push({x, y, alpha, cl});
+  }
+
+  // Draw curve
+  for (let i = 0; i < points.length; i++) {
+    if (i === 0) {
+      ctx.moveTo(points[i].x, points[i].y);
+    } else {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+  }
+  ctx.stroke();
+
+  // Draw current point
+  let currentAlpha = angleAttack * 180 / Math.PI;
+  
+  // Calculate current CL based on current angle (same formula as in interpolateParameters)
+  let currentAlphaRad = angleAttack;
+  let currentCL = 2 * Math.PI * Math.sin(currentAlphaRad);
+  let currentAlphaDeg = currentAlpha;
+  if (currentAlphaDeg > 15) {
+    currentCL *= Math.max(0, 1 - (currentAlphaDeg - 15) / 10);
+  }
+
+  // Clamp values to chart range
+  currentAlpha = Math.max(-10, Math.min(25, currentAlpha));
+  currentCL = Math.max(-0.5, Math.min(2.0, currentCL));
+
+  let currentX = margin + ((currentAlpha + 10) / 35) * plotWidth;
+  let currentY = height - margin - ((currentCL + 0.5) / 2.5) * plotHeight;
+
+  // Current point marker
+  ctx.fillStyle = '#e74c3c';
+  ctx.beginPath();
+  ctx.arc(currentX, currentY, 5, 0, 2 * PI);
+  ctx.fill();
+
+  // Current point label
+  ctx.fillStyle = '#e74c3c';
+  ctx.font = 'bold 11px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText(`α=${currentAlpha.toFixed(1)}°, CL=${currentCL.toFixed(2)}`, currentX + 8, currentY - 8);
+
+  // Axis labels
+  ctx.fillStyle = '#2c3e50';
+  ctx.font = 'bold 12px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('α (Ángulo de Ataque)', width / 2, height - 5);
+
+  ctx.save();
+  ctx.translate(15, height / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('CL (Coeficiente de Sustentación)', 0, 0);
+  ctx.restore();
+  } catch (error) {
+    console.error('Error drawing CL chart:', error);
   }
 }
 
