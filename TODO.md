@@ -70,10 +70,10 @@
 - [ ] **Tutoriales interactivos**: Guías paso a paso para entender los conceptos
 - [ ] **Explicaciones contextuales**: Información detallada sobre principios físicos
 - [ ] **Experimentos virtuales**: Permitir modificar parámetros y ver resultados
-- [ ] **Comparaciones históricas**: Mostrar evolución de diseños de aviones
+
 
 ### Visualización Científica
 - [ ] **Vectores de fuerza**: Mejorar la representación de fuerzas aerodinámicas
 - [ ] **Flujos de aire**: Visualizar patrones de flujo con más detalle
 - [ ] **Análisis de datos**: Herramientas para estudiar el comportamiento del avión
-- [ ] **Comparación de diseños**: Permitir cargar diferentes configuraciones de ala
+
