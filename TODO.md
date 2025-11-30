@@ -10,9 +10,7 @@ Formato: [status] Nombre - breve nota / función(s) relevantes
 - [x] Airport structures - `drawAirportStructures()` (runway, tower, hangar, terminal, fuel)
 - [x] Vegetation (trees) - `drawTrees()`, `drawStaticTree()`, `drawAnimatedTree()` (6+ tipos y animación)
 - [x] Tutorial modal / educational flow - `tutorialSteps`, `initializeEducationalFeatures()`
-
-## Pendiente (prioridad alta)
-- [ ] QA: balance push()/pop() - Auditar y corregir llamadas `push()`/`pop()` para eliminar warnings de p5; (alta prioridad)
+- [x] QA: balance push()/pop() - Auditar y corregir llamadas `push()`/`pop()` para eliminar warnings de p5; (alta prioridad)
 
 ## Pendiente (prioridad media)
 - [ ] Flow particles and trails - portear `flowParticles`, `initializeFlowParticles()`, `updateFlowParticles()`, `drawFlowParticles()` desde `airplane.js` (visualización de flujo alrededor del ala)

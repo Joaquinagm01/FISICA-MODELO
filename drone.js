@@ -2,13 +2,25 @@
 let flapFrequency = 5;
 let flapAmplitude = 45;
 let wingSize = 10; // cm
+let sunAngle = 0;
 let time = 0;
 let wingFlapAngle = 0;
 let airDensity = 1.225;
 let gravity = 9.81;
 let mass = 0.1; // kg (muy ligero como insectos)
 
+// Apply user-requested defaults (will be set again from UI in setup())
+const DEFAULTS = {
+    flapFrequency: 9.8,
+    flapAmplitude: 22,
+    wingSize: 10,
+    angleOfAttack: 3.7,
+    altitude: 6792,
+    mass: 10094.1
+};
+
 let flapFrequencySlider, flapAmplitudeSlider, wingSizeSlider;
+let angleOfAttackInput, altitudeInput, planeMassInput;
 let liftDisplay, powerDisplay, currentFreqDisplay, flapAngleDisplay;
 let showCloudsCheckbox, showTerrainCheckbox, timeOfDaySlider, timeOfDayValueDisplay;
 // Tree defaults (use JS defaults; UI controls removed)
@@ -17,340 +29,279 @@ let treeDensity = 58; // percent default requested by user
 let lowPerformance = false; // default requested by user
 let showClouds = true;
 let showTerrain = true;
-let timeOfDay = 12.0; // noon
-let sunAngle = 0;
-// Debugging: push/pop balance detector (set true to enable runtime checks)
-let DEBUG_BALANCE = true;
 
-// Internal tracking (attached to window when enabled)
-function enablePushPopDebug(){
-    try {
-        if (typeof window === 'undefined') return;
-        if (window.__push_pop_debug_enabled) return;
-        window.__push_pop_debug_enabled = true;
-        window.__pp_depth = 0;
-        window.__orig_push = window.push;
-        window.__orig_pop = window.pop;
-        window.push = function(){
-            try { window.__orig_push.apply(this, arguments); } catch(e){ /* ignore */ }
-            window.__pp_depth++;
-            // small trace in debug mode (comment out next line to reduce noise)
-            // console.debug('[PP] push -> depth=', window.__pp_depth);
-        };
-        window.pop = function(){
-            window.__pp_depth--;
-            if (window.__pp_depth < 0) {
-                console.warn('[PP-DEBUG] pop() called without matching push(); depth', window.__pp_depth);
-                // capture a light stack trace
-                try { throw new Error('pop without push'); } catch (e) { console.warn(e.stack.split('\n').slice(2,6).join('\n')); }
-                window.__pp_depth = 0;
-            }
-            try { window.__orig_pop.apply(this, arguments); } catch(e){ /* ignore */ }
-        };
-    } catch(e){ console.warn('enablePushPopDebug failed', e); }
-}
-// Bernoulli defaults for educational readout
-let rhoBern = 1.155; // kg/m^3 (user provided)
-let vTop = 24.3; // m/s
-let vBottom = 8.3; // m/s
-
-let deltaP = 0;
-let bernoulliForce = 0;
-// Flow particles (lightweight implementation)
-let flowParticles = [];
-let flowDensity = 60; // 0-100, percent
-let flowSpeedFactor = 1.0;
-let flowEnabled = true;
-// (lightweight flow particles kept simple for drone)
-
-// Non-invasive physics helpers namespaced under `drone`.
-// These are additive utilities and do not replace existing simulation logic.
-const drone = {
-    // Calculate quasi-steady lift using simple lifting-line approximation
-    calculateLift: function(options = {}) {
-        // options: { velocity: m/s, alpha: degrees, area: m^2 }
-        const vel = (typeof options.velocity !== 'undefined') ? options.velocity : 0;
-        const alpha = (typeof options.alpha !== 'undefined') ? options.alpha : 0;
-        const A = (typeof options.area !== 'undefined') ? options.area : ((wingSize/100)*(wingSize/100)*0.7);
-        const Cl = this.calculateLiftCoefficient(alpha);
-        return 0.5 * airDensity * vel * vel * A * Cl;
-    },
-
-    // Simple drag estimate using Cd0 + k*Cl^2
-    calculateDrag: function(options = {}) {
-        const vel = (typeof options.velocity !== 'undefined') ? options.velocity : 0;
-        const alpha = (typeof options.alpha !== 'undefined') ? options.alpha : 0;
-        const A = (typeof options.area !== 'undefined') ? options.area : ((wingSize/100)*(wingSize/100)*0.7);
-        const Cl = this.calculateLiftCoefficient(alpha);
-        const Cd0 = 0.05;
-        const k = 0.1;
-        const Cd = Cd0 + k * Cl * Cl;
-        return 0.5 * airDensity * vel * vel * A * Cd;
-    },
-
-    calculateWeight: function(m = mass) {
-        return m * gravity;
-    },
-
-    // Thin-airfoil approximation (small angles) with clamped range
-    calculateLiftCoefficient: function(alphaDeg) {
-        const alphaRad = alphaDeg * Math.PI / 180;
-        // 2π for thin airfoil, but clamp to realistic range
-        const cl = Math.max(Math.min(2 * Math.PI * Math.sin(alphaRad), 3.5), -1.0);
-        return cl;
-    },
-
-    // Bernoulli delta pressure between bottom and top velocities
-    calculateBernoulliDP: function(vTop, vBottom) {
-        return 0.5 * airDensity * (vBottom * vBottom - vTop * vTop);
-    }
+// Cache y throttling para panel Bernoulli (evitar updates DOM por frame)
+let _bernoulliCache = {
+    lastUpdate: 0,
+    rhoEl: null,
+    vTopEl: null,
+    vBottomEl: null,
+    dpEl: null,
+    fEl: null,
+    velEl: null,
+    pressureEl: null,
+    newtonEl: null,
+    bar: null,
+    calcPanel: null
 };
+const BERN_THROTTLE_MS = 200; // actualizar DOM máximo cada 200 ms
+// último resultado de Bernoulli expuesto globalmente
+let bernoulliResult = { rho: 1.225, vAbove: 0, vBelow: 0, deltaP: 0, force: 0 };
+
+// Estado visual de vectores (suavizado)
+let _visForces = {
+    lift: 0,
+    weight: 0,
+    drag: 0
+};
+
+// Cuando true, forzamos visualmente que la sustentación mostrada sea al menos igual al peso
+// Esto no cambia cálculos físicos, solo la representación para que el dron 'parezca volar'
+const VISUAL_FORCE_OVERRIDE = true;
+
+// Helper lerp suave
+function smoothLerp(current, target, factor){
+    return current + (target - current) * Math.max(0.05, Math.min(0.25, factor));
+}
+
+// Flow visualization defaults (educational overlay)
+let flowEnabled = false; // toggle para partículas de flujo
+let flowDensity = 40; // porcentaje visual, puede ajustarse con setFlowDensity
+let flowSpeedFactor = 1.0; // factor multiplicador de velocidad de partículas
+
+// Minimal stubs: si el proyecto ya define funciones más complejas, estas serán sobrescritas.
+function initializeFlowParticles(){
+    // lazy init: create a minimal particles array if not present
+    if (typeof _flowParticles === 'undefined') window._flowParticles = [];
+    // populate a small number proportional to flowDensity
+    const target = Math.max(6, Math.floor((flowDensity/100) * 60));
+    while (window._flowParticles.length < target) window._flowParticles.push({x: Math.random()*window.innerWidth, y: Math.random()*window.innerHeight, vx: 0, vy: 0});
+}
+function updateFlowParticles(){
+    if (!window._flowParticles) return;
+    for (let p of window._flowParticles){
+        p.vx += (Math.random()-0.5) * 0.2 * flowSpeedFactor;
+        p.vy += (Math.random()-0.5) * 0.2 * flowSpeedFactor;
+        p.x = (p.x + p.vx + (window.innerWidth)) % (window.innerWidth);
+        p.y = (p.y + p.vy + (window.innerHeight)) % (window.innerHeight);
+    }
+}
+function drawFlowParticles(){
+    if (!window._flowParticles) return;
+    push(); noStroke(); fill(255,255,255,120);
+    for (let p of window._flowParticles){ ellipse(p.x % width, p.y % height, 2 + Math.random()*2, 2 + Math.random()*2); }
+    pop();
+}
+
+// Declaración limpia del tutorial: pasos y textos en español (detallados)
+const tutorialSteps = [
+    {
+        title: 'Bienvenido al Dron Batiente',
+        content: `
+            <h4>🔰 Introducción</h4>
+            <p>Este tutorial explica por qué un dron con <strong>alas batientes</strong> puede generar sustentación: vamos desde los conceptos físicos hasta experimentos prácticos.</p>
+            <p>Usa los controles (frecuencia, amplitud, tamaño) y observa el panel de Bernoulli y los vectores en la vista.</p>
+        `,
+        action: 'intro',
+        media: ''
+    },
+    {
+        title: 'Bernoulli y Presión',
+        content: `
+            <h4>📐 Bernoulli y Presión — El secreto de la sustentación</h4>
+            <p>Primero, con <strong>Bernoulli</strong>: imagina que el dron tiene alas que se mueven y que al hacerlo, el aire que pasa por encima de esas alas va más rápido que el aire que pasa por debajo. Cuando el aire va más rápido encima, la presión ahí es más baja, y eso empuja al dron hacia arriba. Es como si el ala “jalara” el aire y, al hacerlo, el dron se eleva.</p>
+            <h5>Detalle paso a paso (Bernoulli)</h5>
+            <ol>
+                <li>Seleccionamos dos puntos: uno sobre la superficie superior del ala y otro bajo la superficie inferior.</li>
+                <li>Aplicamos la versión simplificada de Bernoulli (vuelo nivelado): P + ½·ρ·v² = constante.</li>
+                <li>Si v encima &gt; v abajo, entonces ½·ρ·v₁² &gt; ½·ρ·v₂² y por conservación P₁ &lt; P₂.</li>
+                <li>La diferencia ΔP = P₂ − P₁ = ½·ρ·(v₁² − v₂²) produce una fuerza neta hacia arriba sobre el ala.</li>
+            </ol>
+            <h5>Ejemplo ilustrativo</h5>
+            <p>Con números: ρ = 1.225 kg/m³, v₁ = 80 m/s (sobre), v₂ = 60 m/s (bajo):</p>
+            <pre style="background:#222;color:#fff;padding:8px;border-radius:6px;">ΔP = ½·1.225·(60² − 80²) ≈ −1715 Pa</pre>
+            <p>El signo indica que la presión es mayor debajo del ala, por tanto hay una fuerza neta hacia arriba.</p>
+            <h5>Diagramas rápidos</h5>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <div style="flex:1 1 300px;max-width:320px;background:#fff;padding:8px;border-radius:8px;">
+                    <div style="font-weight:700;margin-bottom:6px;font-size:13px;">Velocidades y presión (Bernoulli)</div>
+                    <svg viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg" width="100%" style="background:#f6f8fa;border-radius:6px;">
+                        <defs><marker id="arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#0b6efd"/></marker></defs>
+                        <path d="M10,80 C80,30 240,30 310,80 L310,100 L10,100 Z" fill="#dbeafe" stroke="#9fb7ff"/>
+                        <line x1="30" y1="50" x2="120" y2="20" stroke="#bf360c" stroke-width="3" marker-end="url(#arrow)" />
+                        <line x1="60" y1="52" x2="150" y2="22" stroke="#bf360c" stroke-width="3" marker-end="url(#arrow)" />
+                        <text x="140" y="14" fill="#bf360c" font-size="11">v₁ (rápido)</text>
+                        <line x1="30" y1="90" x2="90" y2="96" stroke="#1b5e20" stroke-width="2" marker-end="url(#arrow)" />
+                        <line x1="60" y1="92" x2="120" y2="98" stroke="#1b5e20" stroke-width="2" marker-end="url(#arrow)" />
+                        <text x="130" y="102" fill="#1b5e20" font-size="11">v₂ (lento)</text>
+                    </svg>
+                </div>
+            </div>
+        `,
+        action: 'bernoulli',
+        media: ''
+    },
+    {
+        title: 'Acción — Reacción (Newton)',
+        content: `
+            <h4>🔁 Acción — Reacción (Newton)</h4>
+            <p>Piensa que al mover las alas hacia abajo en cada batida, el dron está empujando el aire hacia abajo. Según la Tercera Ley, cuando el dron empuja el aire hacia abajo, el aire empuja al dron hacia arriba. Es un mecanismo complementario a Bernoulli y es especialmente importante en alas batientes o hélices.</p>
+            <h5>Detalle paso a paso (Newton)</h5>
+            <ol>
+                <li>Durante la batida, las alas aceleran una porción de aire hacia abajo (cambian su cantidad de movimiento).</li>
+                <li>La tasa de cambio de cantidad de movimiento del aire (masa × velocidad hacia abajo por segundo) requiere una fuerza aplicada por el ala sobre el aire.</li>
+                <li>Por reacción, el aire ejerce sobre el ala una fuerza igual y opuesta hacia arriba (F = ṁ · Δv), contribuyendo a la sustentación instantánea.</li>
+                <li>En resumen: empujar aire hacia abajo → recibir empuje hacia arriba.</li>
+            </ol>
+            <h5>Cómo se complementan Bernoulli y Newton</h5>
+            <p>No son explicaciones contradictorias: Bernoulli describe cómo la distribución de velocidades y presiones alrededor del ala genera una diferencia de presión promedio; Newton describe cómo la aceleración del aire (cambio de momentum) produce fuerzas instantáneas. En alas batientes ambos efectos son relevantes: la geometría y el flujo producen ΔP, mientras que la batida activa desvía aire y genera reacción directa.</p>
+            <h5>Detalle técnico adicional</h5>
+            <ul>
+                <li>En vuelos subsónicos y con perfil adecuado Bernoulli es una buena aproximación macroscópica.</li>
+                <li>En regímenes con separaciones de flujo o batido intenso, la aceleración de masas de aire (Newton) puede dominar las fuerzas instantáneas.</li>
+                <li>La sustentación total en un instante es la suma de contribuciones de presión integradas sobre toda el área del ala y de las fuerzas por intercambio de momentum del flujo.</li>
+            </ul>
+            <p>En la simulación, al variar frecuencia, amplitud y tamaño puedes ver cómo cambian las velocidades estimadas, ΔP y la fuerza aproximada; prueba los presets y observa ambos efectos.</p>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <div style="flex:1 1 300px;max-width:320px;background:#fff;padding:8px;border-radius:8px;">
+                    <div style="font-weight:700;margin-bottom:6px;font-size:13px;">Acción — Reacción (Newton)</div>
+                    <svg viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg" width="100%" style="background:#f6f8fa;border-radius:6px;">
+                        <defs><marker id="arrow2" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#e65100"/></marker></defs>
+                        <rect x="110" y="40" width="100" height="12" rx="3" fill="#c7f9d9" stroke="#2e7d32"/>
+                        <text x="120" y="36" font-size="11" fill="#2e7d32">Ala</text>
+                        <line x1="160" y1="60" x2="160" y2="96" stroke="#0b6efd" stroke-width="3" marker-end="url(#arrow2)" />
+                        <text x="168" y="84" font-size="11" fill="#0b6efd">Aire↓</text>
+                        <line x1="80" y1="96" x2="80" y2="66" stroke="#e65100" stroke-width="3" marker-end="url(#arrow2)" transform="translate(80,-20) scale(1,-1)" />
+                        <text x="86" y="48" font-size="11" fill="#e65100">F↑ sobre ala</text>
+                    </svg>
+                </div>
+            </div>
+        `,
+        action: 'newton',
+        media: ''
+    },
+    {
+        title: 'Anatomía y Movimiento',
+        content: `
+            <h4>🦋 Anatomía del movimiento</h4>
+            <p>Las alas batientes combinan movimiento vertical y rotacional. Tres parámetros clave:</p>
+            <ul>
+                <li><strong>Frecuencia (Hz):</strong> más ciclos por segundo → más energía transferida.</li>
+                <li><strong>Amplitud (°):</strong> mayor amplitud → mayor desplazamiento y velocidad local en los extremos.</li>
+                <li><strong>Área (A):</strong> más área → mayor volumen de aire afectado por batida.</li>
+            </ul>
+            <p>La simulación usa una velocidad efectiva proporcional a frecuencia × amplitud × tamaño para estimar fuerzas.</p>
+        `,
+        action: 'wing_profile',
+        media: ''
+    },
+    {
+        title: 'Fuerzas que actúan',
+        content: `
+            <h4>⚖️ Balance de fuerzas</h4>
+            <p>En vuelo consideramos principalmente:</p>
+            <ul>
+                <li><strong>Sustentación (L):</strong> fuerza hacia arriba generada por ΔP y aceleración del flujo.</li>
+                <li><strong>Peso (W):</strong> masa × gravedad, hacia abajo.</li>
+                <li><strong>Arrastre (D):</strong> fuerza que se opone al movimiento relativo.</li>
+            </ul>
+            <p>Para mantenerse en hover, L debe aproximarse a W. Observa los vectores en la simulación para ver este equilibrio.</p>
+        `,
+        action: 'forces',
+        media: ''
+    },
+    // 'Parámetros de batida' y la 'Ley práctica' fueron eliminados por petición del usuario.
+    {
+        title: 'Experimentos rápidos',
+        content: `
+            <h4>🧪 Presets</h4>
+            <p>Prueba los presets incluidos (Hover, Vuelo rápido, Bajo consumo). Observa ΔP, L y los vectores para comparar comportamientos.</p>
+        `,
+        action: 'experiments',
+        media: ''
+    }
+];
+
+// current step index for tutorial
+let currentTutorialStep = 0;
 
 function setup() {
     let canvas = createCanvas(800, 600);
     canvas.parent('canvas-parent');
-    
-    // Get DOM elements
+
     flapFrequencySlider = select('#flapFrequency');
     flapAmplitudeSlider = select('#flapAmplitude');
     wingSizeSlider = select('#wingSize');
-    liftDisplay = select('#lift-display');
-    powerDisplay = select('#power-display');
-    currentFreqDisplay = select('#current-freq-display');
-    flapAngleDisplay = select('#flap-angle-display');
-    
-    // Set initial values
-    updateValues();
-    
-    // Add event listeners
+    angleOfAttackInput = document.getElementById('angleOfAttack');
+    altitudeInput = document.getElementById('altitude');
+    planeMassInput = document.getElementById('planeMass');
+    timeOfDaySlider = select('#timeOfDay');
+
     flapFrequencySlider.input(updateValues);
     flapAmplitudeSlider.input(updateValues);
     wingSizeSlider.input(updateValues);
+    // set initial slider values to requested defaults if UI exists
+    if (flapFrequencySlider) flapFrequencySlider.value(DEFAULTS.flapFrequency);
+    if (flapAmplitudeSlider) flapAmplitudeSlider.value(DEFAULTS.flapAmplitude);
+    if (wingSizeSlider) wingSizeSlider.value(DEFAULTS.wingSize);
+    if (angleOfAttackInput) angleOfAttackInput.value = DEFAULTS.angleOfAttack;
+    if (altitudeInput) altitudeInput.value = DEFAULTS.altitude;
+    if (planeMassInput) planeMassInput.value = DEFAULTS.mass;
+    if (angleOfAttackInput) angleOfAttackInput.addEventListener('input', updateValues);
+    if (altitudeInput) altitudeInput.addEventListener('input', updateValues);
+    if (planeMassInput) planeMassInput.addEventListener('input', updateValues);
+    timeOfDaySlider.input(updateValues);
 
-    // New UI bindings
-    showCloudsCheckbox = select('#show-clouds');
-    showTerrainCheckbox = select('#show-terrain');
-    timeOfDaySlider = select('#timeOfDay');
-    timeOfDayValueDisplay = select('#timeOfDay-value');
-
-    if (showCloudsCheckbox) showCloudsCheckbox.changed(() => { showClouds = showCloudsCheckbox.elt.checked; });
-    if (showTerrainCheckbox) showTerrainCheckbox.changed(() => { showTerrain = showTerrainCheckbox.elt.checked; });
-    if (timeOfDaySlider) timeOfDaySlider.input(() => { timeOfDay = Number(timeOfDaySlider.value()); if (timeOfDayValueDisplay) timeOfDayValueDisplay.html(timeOfDay.toFixed(1)); });
-
-    // Recompute derived values when timeOfDay changes
-    if (timeOfDaySlider) timeOfDaySlider.input(() => { updateValues(); });
-
-    // Initialize educational features (tutorial + experiments)
+    updateValues();
     initializeEducationalFeatures();
-    if (DEBUG_BALANCE) enablePushPopDebug();
-    // Initialize flow particles if enabled
-    if (flowEnabled) initializeFlowParticles();
-
-    // Presentation modal bindings
-    const presModal = select('#presentationModal');
-    const presContent = select('#presentationContent');
-    const presClose = select('#presentationClose');
-    const presCopy = select('#presentationCopy');
-    const presPrint = select('#presentationPrint');
-
-    function renderPresentation(){
-        if (!presContent) return;
-    // Build presentation content using the exact block requested by the user and current computed values
-    let html = '';
-    html += '<p><strong>Frecuencia de Batida (Hz):</strong><br><strong>' + Number(flapFrequency).toFixed(0) + ' Hz</strong></p>';
-    html += '<p><strong>Amplitud de Batida (°):</strong><br><strong>' + Number(flapAmplitude).toFixed(0) + '°</strong></p>';
-    html += '<p><strong>Tamaño de Alas (cm):</strong><br><strong>' + Number(wingSize).toFixed(0) + ' cm</strong></p>';
-    html += '<p><strong>Hora del Día (0-24):</strong><br><strong>' + Number(timeOfDay).toFixed(1) + '</strong></p>';
-    html += '<hr>';
-    html += '<h4>Bernoulli / Presión</h4>';
-    html += '<p><strong>ρ (densidad)</strong><br>' + rhoBern.toFixed(3) + ' kg/m³</p>';
-    html += '<p><strong>v₁ (sobre ala)</strong><br><strong>' + vTop.toFixed(1) + ' m/s</strong></p>';
-    html += '<p><strong>v₂ (bajo ala)</strong><br><strong>' + vBottom.toFixed(1) + ' m/s</strong></p>';
-    html += '<p><strong>ΔP (P₂ - P₁)</strong><br><strong>' + deltaP.toFixed(1) + ' Pa</strong></p>';
-    html += '<p><strong>Fuerza estimada</strong><br><strong>' + bernoulliForce.toFixed(2) + ' N</strong></p>';
-    html += '<hr>';
-    html += '<p><strong>Velocidades:</strong> v₁ = ' + vTop.toFixed(1) + ' m/s (sobre el ala), v₂ = ' + vBottom.toFixed(1) + ' m/s (bajo el ala)</p>';
-    html += '<p><strong>ΔP =</strong> ½ × ' + rhoBern.toFixed(3) + ' × (v₁² − v₂²) = ' + deltaP.toFixed(1) + ' Pa</p>';
-    html += '<p><strong>F↑ =</strong> ' + bernoulliForce.toFixed(2) + ' N (estimada)</p>';
-    html += '<hr>';
-    html += '<p><em>Esta simulación muestra cómo las alas batientes generan sustentación dinámica mediante el movimiento activo, inspirado en insectos como libélulas y colibríes.</em></p>';
-    presContent.html(html);
-    }
-
-    // openPres button removed; modal can be shown via console.openPresentation() if needed
-    if (presClose) presClose.mousePressed(()=>{ if (presModal) presModal.hide(); });
-    if (presPrint) presPrint.mousePressed(()=>{ window.print(); });
-    if (presCopy) presCopy.mousePressed(()=>{
-        if (!presContent) return;
-        // ensure content is up to date
-        renderPresentation();
-        const text = presContent.elt.innerText || presContent.html();
-        navigator.clipboard && navigator.clipboard.writeText(text);
-    });
-
-    // Expose a console-accessible opener that renders up-to-date content
-    window.openPresentation = function(){ if (presModal) { renderPresentation(); presModal.show(); } };
-}
-
-function initializeFlowParticles(){
-    flowParticles = [];
-    const count = Math.max(10, Math.floor(map(flowDensity, 0, 100, 10, 200)));
-    for (let i = 0; i < count; i++){
-        flowParticles.push({
-            x: random(width), y: random(height*0.6), vx: random(-1,1), vy: random(-0.2,0.2), life: random(60,240)
-        });
-    }
-}
-
-function updateFlowParticles(){
-    for (let p of flowParticles){
-        // simple advection to the right with noise influenced by wing flapping
-        p.x += (1.5 + sin(time * 0.5) * 0.5) * flowSpeedFactor;
-        p.y += sin(p.x * 0.01 + time * 0.2) * 0.3;
-        p.life -= 1;
-        if (p.x > width + 20 || p.life <= 0){
-            p.x = -20; p.y = random(height*0.6); p.life = random(60,240);
-        }
-    }
-}
-
-function drawFlowParticles(){
-    push();
-    noStroke();
-    fill(200,230,255,160);
-    for (let p of flowParticles){
-        ellipse(p.x, p.y, 3, 2);
-    }
-    pop();
-}
-
-// Phase E: tutorial steps and experiments panel
-const tutorialSteps = [
-    { title: 'Introducción', body: 'Esta simulación muestra un dron con alas batientes; usa los sliders para cambiar la frecuencia y amplitud.' },
-    { title: 'Sustentación', body: 'La sustentación se calcula dinámicamente en función del movimiento de las alas.' },
-    { title: 'Escenario', body: 'Observa el terreno, el río y las estructuras del aeropuerto; los árboles son decorativos.' }
-];
-
-
-function initializeEducationalFeatures(){
-    // Experiments panel removed — tutorial bindings continue below
-
-    // Tutorial modal bindings
-    const tPrev = select('#tutorialPrev');
-    const tNext = select('#tutorialNext');
-    const tClose = select('#tutorialClose');
-    const tModal = select('#tutorialModal');
-    const tContent = select('#tutorialContent');
-    const tTitle = select('#tutorialTitle');
-    const tIndicator = select('#tutorialIndicator');
-
-    let currentStep = 0;
-
-    function renderStep(){
-        if (!tModal) return;
-        tTitle.html(tutorialSteps[currentStep].title);
-        tContent.html('<p>' + tutorialSteps[currentStep].body + '</p>');
-        tIndicator.html((currentStep+1) + ' / ' + tutorialSteps.length);
-    }
-
-    if (tPrev) tPrev.mousePressed(() => { currentStep = max(0, currentStep-1); renderStep(); });
-    if (tNext) tNext.mousePressed(() => { currentStep = min(tutorialSteps.length-1, currentStep+1); renderStep(); });
-    if (tClose) tClose.mousePressed(() => { if (tModal) tModal.hide(); });
-
-    // Expose simple API to open tutorial (can be used by UI later)
-    window.openTutorial = function(){ if (tModal) { tModal.show(); currentStep = 0; renderStep(); } };
-}
-
-function applyExperimentPreset(name){
-    // experiments removed; stub left for compatibility
-    return;
 }
 
 function updateValues() {
     flapFrequency = flapFrequencySlider.value();
     flapAmplitude = flapAmplitudeSlider.value();
     wingSize = wingSizeSlider.value();
-    
-    // Update display values
+    // Read new controls
+    const aoa = angleOfAttackInput ? Number(angleOfAttackInput.value) : 5;
+    const alt = altitudeInput ? Number(altitudeInput.value) : 500;
+    const planeMass = planeMassInput ? Number(planeMassInput.value) : mass;
+    // Apply mass if user provided
+    if (!isNaN(planeMass) && planeMass > 0) mass = planeMass;
+    // update displays for new controls if exist
+    const aoaEl = document.getElementById('angleOfAttack-value'); if (aoaEl) aoaEl.innerText = aoa.toFixed(1) + '°';
+    const altEl = document.getElementById('altitude-value'); if (altEl) altEl.innerText = alt + ' m';
+    const massEl = document.getElementById('planeMass-value'); if (massEl) massEl.innerText = mass.toFixed(1) + ' kg';
+    // wingAreaInput removed — area se calcula automáticamente desde wingSize
+    let timeOfDay = timeOfDaySlider.value();
+
     select('#flapFrequency-value').html(flapFrequency + ' Hz');
     select('#flapAmplitude-value').html(flapAmplitude + '°');
     select('#wingSize-value').html(wingSize + ' cm');
-    
-        // Relacionar sliders a velocidades estimadas usadas en la lectura de Bernoulli
-        // Estimamos una velocidad 'bajo el ala' (vBottom) proporcional a la componente vertical/horizontal
-        // generada por la batida. Esta es una heurística educativa, no afecta la dinámica real del dron.
-        try {
-            // flappingVelocity ~ flapFrequency * flapAmplitude * wingSize (normalized)
-            let flappingVel = Number(flapFrequency) * Number(flapAmplitude) * (Number(wingSize) / 100) * 0.1; // m/s scale
-            // Add a baseline forward speed depending on timeOfDay (just for visualization: calmer at night)
-            let baseline = map(Number(timeOfDay), 0, 24, 0.5, 3.0);
-            vBottom = Math.max(0, flappingVel + baseline);
-            // Estimate vTop assuming some acceleration over the wing (common in cambered profiles)
-            // Use Bernoulli rearrangement: vTop = sqrt(vBottom^2 - 2*ΔP/ρ). We'll keep previous vTop if invalid.
-            let guessedDelta = deltaP; // may be zero initially
-            let candidate = vBottom * vBottom - 2 * (guessedDelta) / rhoBern;
-            if (candidate > 0) {
-                vTop = Math.sqrt(candidate);
-            } else {
-                // if candidate invalid, assume vTop is higher than vBottom by a factor depending on amplitude
-                vTop = vBottom + Math.abs(Number(flapAmplitude)) * 0.02 + Number(flapFrequency) * 0.05;
-            }
-        } catch (e) {
-            // fallback to defaults
-            vBottom = vBottom || 8.3;
-            vTop = vTop || 24.3;
-        }
+    if (document.getElementById('timeOfDay-value')) {
+        select('#timeOfDay-value').html(nf(timeOfDay, 2, 1));
+    }
+
+    // Map time of day (0-24) to sun angle (0 to 2*PI for a full cycle)
+    sunAngle = map(timeOfDay, 0, 24, 0, TWO_PI);
 }
 
-function draw() {
-    // Update time of day and sun angle
-    sunAngle = map(timeOfDay % 24, 0, 24, -PI/2, PI/2); // -90deg (sunrise) to 90deg (sunset)
+// p5.js draw loop (principal)
+function draw(){
+    time += 0.05;
+    wingFlapAngle = sin(time * flapFrequency) * flapAmplitude;
 
-    // Sky gradient: two-tone vertical gradient influenced by sunAngle
+    // Dynamic sky color based on sunAngle (0 to 2*PI)
+    // This is 1 at PI (noon), 0 at 0/2PI (midnight)
+    let noonFactor = (cos(sunAngle - PI) + 1) / 2;
+    let skyR = lerp(10, 135, noonFactor);
+    let skyG = lerp(20, 206, noonFactor);
+    let skyB = lerp(40, 250, noonFactor);
+    background(skyR, skyG, skyB);
+
     push();
-    noFill();
-    for (let y = 0; y <= height; y++){
-        let p = y / height;
-        // shift color by sun position (warmer near horizon when sun is low)
-        const warm = map(abs(sunAngle), 0, PI/2, 0, 80);
-        const r = lerp(20 + warm, 135, 1 - p);
-        const g = lerp(50 + warm*0.6, 206, 1 - p);
-        const b = lerp(80 + warm*0.3, 235, 1 - p);
-        stroke(r, g, b);
-        line(0, y, width, y);
-    }
-    pop();
-    
-    // Update time
-    time += deltaTime / 1000; // Convert to seconds
-    
-    // Calculate flapping
-    wingFlapAngle = sin(time * flapFrequency * TWO_PI) * flapAmplitude;
-    
-    // Calculate physics
-    let lift = calculateDynamicLift();
-    let power = calculatePowerConsumption();
-    
-    // Update displays (null-safe: DOM elements may have been removed)
-    if (liftDisplay) liftDisplay.html(lift.toFixed(3) + ' N');
-    if (powerDisplay) powerDisplay.html(power.toFixed(3) + ' W');
-    if (currentFreqDisplay) currentFreqDisplay.html(flapFrequency.toFixed(1) + ' Hz');
-    if (flapAngleDisplay) flapAngleDisplay.html(wingFlapAngle.toFixed(1) + '°');
-    // Bernoulli calculations (adaptadas al dron)
-    deltaP = 0.5 * rhoBern * (vTop * vTop - vBottom * vBottom);
-    // Estimate force: deltaP * wing area (approx)
-    let wingArea = (wingSize / 100) * (wingSize / 100) * 0.7; // m^2 approx
-    bernoulliForce = deltaP * wingArea;
-    // Update Bernoulli displays if present
-    let rhoDisp = select('#rho-display'); if (rhoDisp) rhoDisp.html(rhoBern + ' kg/m³');
-    let vTopDisp = select('#vtop-display'); if (vTopDisp) vTopDisp.html(vTop + ' m/s');
-    let vBottomDisp = select('#vbottom-display'); if (vBottomDisp) vBottomDisp.html(vBottom + ' m/s');
-    let deltaPDisp = select('#deltaP-display'); if (deltaPDisp) deltaPDisp.html(deltaP.toFixed(1) + ' Pa');
-    let bernForceDisp = select('#bernForce-display'); if (bernForceDisp) bernForceDisp.html(bernoulliForce.toFixed(1) + ' N');
-
     // Update dynamic Bernoulli calculations panel
     updateBernoulliCalculations();
-    
+    let lift = calculateDynamicLift();
+
     // Draw ground
     if (showTerrain) {
         drawTerrainAndLandscape();
@@ -383,40 +334,95 @@ function draw() {
     drawSunWithGlow();
     if (showClouds) drawEnhancedClouds();
 
-    // Draw Bernoulli annotation near drone
-    drawBernoulliAnnotation();
+    // Draw Bernoulli annotation near drone (desactivado por solicitud)
+    // drawBernoulliAnnotation();
+    pop();
 }
 
 function updateBernoulliCalculations(){
-    // Estimate velocities like airplane.js: assume vBottom is freestream and vTop computed from ΔP
-    const vBelow = vBottom; // m/s
-    // Avoid negative/NaN
-    let vAbove = vTop;
-    try {
-        vAbove = Math.sqrt(Math.max(0, vBelow * vBelow + 2 * ( - deltaP) / rhoBern));
-        if (!isFinite(vAbove)) vAbove = vTop;
-    } catch(e){ vAbove = vTop; }
+    // Compute Bernoulli-related diagnostics from current controls.
+    // Use altitude to derive air density (simple barometric approximation) and current flapping parameters to derive representative velocities.
+    // Read altitude and angle of attack from controls if available
+    const alt = (typeof altitudeInput !== 'undefined' && altitudeInput) ? Number(altitudeInput.value) : 500;
+    // simple exponential atmosphere model (scale height ~8000 m)
+    const rho0 = 1.225;
+    const rho = rho0 * Math.exp(-alt / 8000);
+    const aoa = (typeof angleOfAttackInput !== 'undefined' && angleOfAttackInput) ? Number(angleOfAttackInput.value) : 5;
 
-    const velEl = document.getElementById('velocity-formula');
-    if (velEl) velEl.innerHTML = `<strong>Velocidades:</strong> v₁ = <span style="color:#bf360c">${vAbove.toFixed(1)} m/s</span> (sobre el ala), v₂ = <span style="color:#1b5e20">${vBelow.toFixed(1)} m/s</span> (bajo el ala)`;
+    // instantaneous/flapping-based velocity heuristic
+    const flappingAngular = flapFrequency * flapAmplitude * Math.PI / 180; // rad/s approx
+    const flappingVelocity = Math.abs(Math.cos(time * flapFrequency * TWO_PI)) * flappingAngular * (wingSize / 100);
+    let effectiveVelocity = Math.sqrt((flappingVelocity * flappingVelocity) + 1); // baseline > 1
+    // include small effect of angle of attack on effective velocity (visual coupling)
+    effectiveVelocity *= (1 + Math.max(-0.2, Math.min(0.2, aoa * 0.01)));
 
-    const pressureEl = document.getElementById('pressure-formula');
-    if (pressureEl) pressureEl.innerHTML = `<strong>ΔP =</strong> ½ × <em>${rhoBern.toFixed(3)}</em> × (v₁² − v₂²) = <span style="color:#4a148c">${deltaP.toFixed(1)} Pa</span>`;
+    // scale to m/s for visualization: scale increases with wingSize, frequency and amplitude
+    const scaleFactor = 12 * (wingSize / 10) * (flapFrequency / 5) * (flapAmplitude / 45);
+    const baseSpeed = effectiveVelocity * Math.max(0.1, scaleFactor);
 
-    const newtonEl = document.getElementById('newton-formula');
-    if (newtonEl) newtonEl.innerHTML = `<strong>F↑ =</strong> <span style="color:#e65100">${bernoulliForce.toFixed(2)} N</span> (estimada)`;
+    // Calibración para que valores por defecto den magnitudes conocidas
+    const ref = { f: 5, a: 45, w: 10, vAbove: 24.3, vBelow: 8.3 };
+    const angularRef = ref.f * ref.a * Math.PI / 180;
+    const flVref = 1 * angularRef * (ref.w / 100);
+    const effRef = Math.sqrt(flVref * flVref + 1);
+    const scaleRef = 12 * (ref.w / 10) * (ref.f / 5) * (ref.a / 45);
+    const baseRef = effRef * Math.max(0.1, scaleRef);
+    const aFactor = (baseRef > 0) ? (ref.vAbove / baseRef) : 1.3;
+    const bFactor = (baseRef > 0) ? (ref.vBelow / baseRef) : 0.7;
 
-    // Update pressure bar (map ΔP to 0-100%) — choose reasonable bounds
-    const bar = document.getElementById('pressure-bar');
-    if (bar) {
-        // clamp and map: assume 0-2000 Pa range for visualization
-        const p = constrain(Math.abs(deltaP), 0, 2000);
-        const pct = Math.round((p / 2000) * 100);
-        bar.style.width = pct + '%';
+    // modify factors slightly with angle of attack: larger aoa tends to increase effective top speed difference
+    const aoaFactor = 1 + (aoa * 0.01);
+    const vAbove = baseSpeed * aFactor * aoaFactor; // velocidad sobre el ala (calibrada)
+    const vBelow = baseSpeed * bFactor * Math.max(0.6, 1 - aoa * 0.005); // velocidad bajo el ala (calibrada)
+
+    // ΔP = ½ ρ (v_bajo² − v_sobre²) (P2 - P1)
+    const deltaPcalc = 0.5 * rho * (vBelow * vBelow - vAbove * vAbove);
+
+    // approximate wing area (m²) using same heuristic as lift function
+    let wingArea = (wingSize / 100) * (wingSize / 100) * 0.7;
+    const bernForceCalc = deltaPcalc * wingArea; // N
+
+    // expose result for other systems (vectors)
+    bernoulliResult = { rho, vAbove, vBelow, deltaP: deltaPcalc, force: bernForceCalc };
+
+    // Lazy cache DOM elements
+    if (!_bernoulliCache.rhoEl) {
+        _bernoulliCache.rhoEl = document.getElementById('rho-display');
+        _bernoulliCache.vTopEl = document.getElementById('vtop-display');
+        _bernoulliCache.vBottomEl = document.getElementById('vbottom-display');
+        _bernoulliCache.dpEl = document.getElementById('deltaP-display');
+        _bernoulliCache.fEl = document.getElementById('bernForce-display');
+        _bernoulliCache.velEl = document.getElementById('velocity-formula');
+        _bernoulliCache.pressureEl = document.getElementById('pressure-formula');
+        _bernoulliCache.newtonEl = document.getElementById('newton-formula');
+        _bernoulliCache.bar = document.getElementById('pressure-bar');
+        _bernoulliCache.calcPanel = (typeof select === 'function') ? select('#bernoulli-calculations') : null;
     }
 
-    // Show panel if exists
-    const calcPanel = select('#bernoulli-calculations'); if (calcPanel) calcPanel.show();
+    const now = Date.now();
+    if (now - _bernoulliCache.lastUpdate < BERN_THROTTLE_MS) {
+        // only update cache values (fast) but avoid DOM writes
+        _bernoulliCache._lastValues = { rho, vAbove, vBelow, deltaPcalc, bernForceCalc };
+        return;
+    }
+
+    // Write DOM once per throttle interval
+    if (_bernoulliCache.rhoEl) _bernoulliCache.rhoEl.innerText = rho.toFixed(3) + ' kg/m³';
+    if (_bernoulliCache.vTopEl) _bernoulliCache.vTopEl.innerText = vAbove.toFixed(1) + ' m/s';
+    if (_bernoulliCache.vBottomEl) _bernoulliCache.vBottomEl.innerText = vBelow.toFixed(1) + ' m/s';
+    if (_bernoulliCache.dpEl) _bernoulliCache.dpEl.innerText = deltaPcalc.toFixed(1) + ' Pa';
+    if (_bernoulliCache.fEl) _bernoulliCache.fEl.innerText = bernForceCalc.toFixed(2) + ' N';
+    if (_bernoulliCache.velEl) _bernoulliCache.velEl.innerHTML = `<strong>Velocidades:</strong> v₁ = <span style="color:#bf360c">${vAbove.toFixed(1)} m/s</span> (sobre el ala), v₂ = <span style="color:#1b5e20">${vBelow.toFixed(1)} m/s</span> (bajo el ala)`;
+    if (_bernoulliCache.pressureEl) _bernoulliCache.pressureEl.innerHTML = `<strong>ΔP =</strong> ½ × <em>${rho.toFixed(3)}</em> × (v₂² − v₁²) = <span style="color:#4a148c">${deltaPcalc.toFixed(1)} Pa</span>`;
+    if (_bernoulliCache.newtonEl) _bernoulliCache.newtonEl.innerHTML = `<strong>F↑ =</strong> <span style="color:#e65100">${bernForceCalc.toFixed(2)} N</span> (estimada)`;
+    if (_bernoulliCache.bar) {
+        const p = constrain(Math.abs(deltaPcalc), 0, 5000);
+        const pct = Math.round((p / 5000) * 100);
+        _bernoulliCache.bar.style.width = pct + '%';
+    }
+    if (_bernoulliCache.calcPanel && _bernoulliCache.calcPanel.show) { try { _bernoulliCache.calcPanel.show(); } catch(e){} }
+
+    _bernoulliCache.lastUpdate = now;
 }
 
 // Expose simple setters for flow controls (can be wired to UI later)
@@ -433,8 +439,10 @@ function drawBernoulliAnnotation(){
     fill(0);
     textSize(12);
     textAlign(LEFT, TOP);
-    text('ΔP: ' + deltaP.toFixed(1) + ' Pa', -85, -55);
-    text('F: ' + bernoulliForce.toFixed(1) + ' N', -85, -35);
+    const dpStr = (typeof deltaP === 'number') ? deltaP.toFixed(1) + ' Pa' : '—';
+    const fStr = (typeof bernoulliForce === 'number') ? bernoulliForce.toFixed(1) + ' N' : '—';
+    text('ΔP: ' + dpStr, -85, -55);
+    text('F: ' + fStr, -85, -35);
     pop();
 }
 
@@ -813,24 +821,121 @@ function drawFlappingWings() {
 function drawDroneForceVectors(lift) {
     push();
     translate(width/2, height/2 - 50);
-    
-    // Scale forces for visualization
-    let scale = 100;
-    
-    // Lift vector (up)
-    stroke(0, 255, 0);
+
+    // Objetivos físicos (recalcular cada frame)
+    const targetLift = lift; // N (ya calculado por calculateDynamicLift)
+    const targetWeight = mass * gravity; // N
+    const wingArea = (wingSize / 100) * (wingSize / 100) * 0.7;
+    const flappingVelocity = flapFrequency * flapAmplitude * PI / 180 * wingSize / 100;
+    const Cd = 0.3;
+    const targetDrag = 0.5 * airDensity * flappingVelocity * flappingVelocity * wingArea * Cd;
+
+    // Combine dynamic lift with Bernoulli-estimated force to show total effective lift
+    const bernForce = (bernoulliResult && bernoulliResult.force) ? bernoulliResult.force : 0;
+    const combinedLift = targetLift + bernForce; // N
+
+    // Suavizar valores visuales
+    _visForces.lift = smoothLerp(_visForces.lift, combinedLift, 0.12);
+    // Visual clamp: evitar que la representación gráfica de la sustentación apunte hacia abajo
+    const visualLift = Math.max(0, _visForces.lift);
+    _visForces.weight = smoothLerp(_visForces.weight, targetWeight, 0.12);
+    _visForces.drag = smoothLerp(_visForces.drag, targetDrag, 0.12);
+
+    // Visual scaling: map forces to screen pixels relative to the largest magnitude so none disappear
+    // si activado, forzamos visualmente que la sustentación sea al menos el peso
+    const targetWeightVal = _visForces.weight;
+    let visualLiftVal = visualLift;
+    if (VISUAL_FORCE_OVERRIDE) {
+        visualLiftVal = Math.max(visualLift, targetWeightVal);
+    }
+    const absLift = Math.abs(visualLiftVal);
+    const absWeight = Math.abs(_visForces.weight);
+    const absDrag = Math.abs(_visForces.drag);
+    const maxForce = Math.max(absLift, absWeight, absDrag, 1.0);
+    // pixels per Newton chosen so the largest force uses up to ~100px (clamped)
+    const pixelsPerN = Math.min(200, Math.max(6, 100 / maxForce));
+
+    const liftPixels = -visualLiftVal * pixelsPerN; // negative => up on canvas; visualLiftVal may be overridden
+    const weightPixels = _visForces.weight * pixelsPerN; // positive => down
+    const dragPixels = _visForces.drag * pixelsPerN; // positive => right
+
+    // ensure small non-zero vectors remain visible
+    function ensureVisible(p){ if (p === 0) return 0; return (Math.abs(p) < 6) ? (p < 0 ? -6 : 6) : p; }
+    const liftP = ensureVisible(liftPixels);
+    const weightP = ensureVisible(weightPixels);
+    const dragP = ensureVisible(dragPixels);
+
+    // Draw lift arrow (up) - fixed visual length for clarity
+    const FIXED_LIFT_PIXELS = -80; // always 80px upward
+    stroke(0, 200, 0);
     strokeWeight(3);
-    line(0, 0, 0, -lift * scale);
-    fill(0, 255, 0);
-    text('Lift', 5, -lift * scale - 10);
-    
-    // Weight vector (down)
-    let weight = mass * gravity;
-    stroke(0, 0, 255);
-    line(0, 0, 0, weight * scale);
-    fill(0, 0, 255);
-    text('Weight', 5, weight * scale + 15);
-    
+    line(0, 0, 0, FIXED_LIFT_PIXELS);
+    // arrowhead
+    noStroke();
+    fill(0,200,0);
+    push();
+    translate(0, liftP);
+    triangle(-6, 8, 6, 8, 0, -6);
+    pop();
+    // numeric label above arrow (avoid overlap) with background for legibilidad
+    const labelPad = 6;
+    // Improve lift label visibility: larger bold text, shadow and stronger background
+    let liftLabel = 'SUSTENTACIÓN (L): ' + _visForces.lift.toFixed(2) + ' N';
+    textSize(14);
+    textStyle(BOLD);
+    const liftLabelW = Math.max(110, textWidth(liftLabel) + labelPad * 2);
+    const liftLabelH = 22;
+    // background box (larger and more opaque)
+    noStroke();
+    fill(0, 0, 0, 200);
+    rect(6, FIXED_LIFT_PIXELS - 8 - liftLabelH, liftLabelW, liftLabelH, 6);
+    // drop shadow for text
+    fill(0, 0, 0, 160);
+    textAlign(LEFT, TOP);
+    text(liftLabel, 9, FIXED_LIFT_PIXELS - 8 - liftLabelH + 3);
+    // main text (bright green)
+    fill(140, 255, 160);
+    text(liftLabel, 8, FIXED_LIFT_PIXELS - 8 - liftLabelH + 2);
+    // reset style
+    textStyle(NORMAL);
+
+    // Draw weight arrow (down) - fixed visual length for clarity
+    const FIXED_WEIGHT_PIXELS = 80; // always 80px downward
+    stroke(0, 0, 200);
+    strokeWeight(3);
+    line(0, 0, 0, FIXED_WEIGHT_PIXELS);
+    noStroke();
+    fill(0,0,200);
+    push();
+    translate(0, weightP);
+    triangle(-6, -8, 6, -8, 0, 6);
+    pop();
+    // Peso label with background
+    const weightLabel = 'Peso (W): ' + _visForces.weight.toFixed(2) + ' N';
+    textSize(12);
+    const weightLabelW = Math.max(60, textWidth(weightLabel) + labelPad * 2);
+    const weightLabelH = 18;
+    noStroke();
+    fill(0,0,0,150);
+    rect(8, FIXED_WEIGHT_PIXELS + 8, weightLabelW, weightLabelH, 6);
+    fill(160, 200, 255);
+    textAlign(LEFT, TOP);
+    text(weightLabel, 10, FIXED_WEIGHT_PIXELS + 8 + 2);
+
+    // Draw drag arrow (right)
+    stroke(200, 80, 0);
+    strokeWeight(3);
+    line(0, 0, dragP, 0);
+    noStroke();
+    fill(200,80,0);
+    push();
+    translate(dragP, 0);
+    triangle(-8, -6, -8, 6, 8, 0);
+    pop();
+    fill(200,80,0);
+    textAlign(LEFT, CENTER);
+    text('Arrastre (D): ' + _visForces.drag.toFixed(2) + ' N', dragP + 8, 0);
+
     pop();
 }
 
@@ -869,4 +974,160 @@ function drawPressureWaves() {
     }
     
     pop();
+}
+
+// ===== Tutorial helpers appended =====
+function initializeEducationalFeatures(){
+    // New modal control using modern UI (class toggles) and keyboard accessibility
+    const tPrev = document.getElementById('tutorialPrev');
+    const tNext = document.getElementById('tutorialNext');
+    const tClose = document.getElementById('tutorialClose');
+    const tModal = document.getElementById('tutorialModal');
+    const tContent = document.getElementById('tutorialContent');
+    const tTitle = document.getElementById('tutorialTitle');
+    const tIndicator = document.getElementById('tutorialIndicator');
+    const tProgressBar = document.getElementById('tutorialProgressBar');
+
+    // Track state
+    window.__tutorial_open = false;
+
+    function renderTutorialStep(index){
+        const step = tutorialSteps[index] || { title: '', content: '' };
+        if (tTitle) tTitle.innerHTML = step.title;
+        if (tContent) tContent.innerHTML = step.content;
+        if (tIndicator) tIndicator.innerText = `Paso ${index+1} de ${tutorialSteps.length}`;
+        if (tNext) tNext.innerText = index < tutorialSteps.length - 1 ? 'Siguiente →' : 'Finalizar';
+        if (tPrev) tPrev.style.display = index > 0 ? 'inline-flex' : 'none';
+
+        // Progress bar width
+        if (tProgressBar) {
+            const pct = Math.round(((index+1) / tutorialSteps.length) * 100);
+            tProgressBar.style.width = pct + '%';
+        }
+
+        // Inject media if available
+        try {
+            const mediaEl = document.getElementById('tutorialMedia');
+            if (mediaEl) {
+                if (step.media) {
+                    // if data URL or img path, use an <img>
+                    if (typeof step.media === 'string' && (step.media.indexOf('<svg') === -1)) {
+                        mediaEl.innerHTML = '<img src="' + step.media + '" style="max-width:100%;height:auto;display:block;" alt="Ilustración tutorial">';
+                    } else if (typeof step.media === 'string') {
+                        // svg data or inline svg string
+                        if (step.media.trim().startsWith('<svg')) {
+                            mediaEl.innerHTML = step.media;
+                        } else {
+                            mediaEl.innerHTML = '<img src="' + step.media + '" style="max-width:100%;height:auto;display:block;" alt="Ilustración tutorial">';
+                        }
+                    } else {
+                        mediaEl.innerHTML = '';
+                    }
+                } else {
+                    mediaEl.innerHTML = '';
+                }
+            }
+        } catch(e){ /* ignore media errors */ }
+
+        performTutorialAction(tutorialSteps[index] && tutorialSteps[index].action);
+    }
+
+    function openTutorialModal(){
+        if (!tModal) return;
+        currentTutorialStep = 0;
+        renderTutorialStep(currentTutorialStep);
+        tModal.classList.add('open');
+        tModal.setAttribute('data-open','true');
+        window.__tutorial_open = true;
+        // focus first actionable button for keyboard users
+    // store previously focused element
+    window.__tutorial_prev_focus = document.activeElement;
+    setTimeout(()=>{ if (tNext) tNext.focus(); }, 120);
+    // mark main content as inert (simple approach)
+    try { document.querySelector('body').style.overflow = 'hidden'; } catch(e){}
+        // trap focus via keydown listener
+        document.addEventListener('keydown', tutorialKeyHandler);
+    }
+
+    function closeTutorialModal(){
+        if (!tModal) return;
+        tModal.classList.remove('open');
+        tModal.setAttribute('data-open','false');
+        window.__tutorial_open = false;
+        document.removeEventListener('keydown', tutorialKeyHandler);
+        // restore focus to previous element if possible
+        try { document.querySelector('body').style.overflow = ''; } catch(e){}
+        if (window.__tutorial_prev_focus && typeof window.__tutorial_prev_focus.focus === 'function') {
+            window.__tutorial_prev_focus.focus();
+        } else {
+            const openBtn = document.getElementById('openTutorial'); if (openBtn) openBtn.focus();
+        }
+    }
+
+    function tutorialKeyHandler(e){
+        if (!window.__tutorial_open) return;
+        if (e.key === 'Escape') { closeTutorialModal(); }
+        else if (e.key === 'ArrowLeft') { currentTutorialStep = Math.max(0, currentTutorialStep - 1); renderTutorialStep(currentTutorialStep); }
+        else if (e.key === 'ArrowRight') {
+            if (currentTutorialStep < tutorialSteps.length - 1) { currentTutorialStep++; renderTutorialStep(currentTutorialStep); }
+            else { closeTutorialModal(); showTutorialCompletionMessage(); }
+        }
+    }
+
+    if (tPrev) tPrev.addEventListener('click', ()=>{ currentTutorialStep = Math.max(0, currentTutorialStep - 1); renderTutorialStep(currentTutorialStep); });
+    if (tNext) tNext.addEventListener('click', ()=>{
+        if (currentTutorialStep < tutorialSteps.length - 1) { currentTutorialStep = Math.min(tutorialSteps.length - 1, currentTutorialStep + 1); renderTutorialStep(currentTutorialStep); }
+        else { closeTutorialModal(); showTutorialCompletionMessage(); }
+    });
+    if (tClose) tClose.addEventListener('click', ()=>{ closeTutorialModal(); });
+
+    // Clicking backdrop closes modal (but not clicks inside panel)
+    if (tModal) {
+        tModal.addEventListener('click', (ev)=>{
+            if (ev.target === tModal) { closeTutorialModal(); }
+        });
+    }
+
+    // Bind the top-level "Abrir Tutorial" button if present
+    try {
+        const openBtnElement = document.getElementById('openTutorial');
+        if (openBtnElement) openBtnElement.addEventListener('click', openTutorialModal);
+    } catch(e) { /* ignore */ }
+
+    // Expose opener
+    window.openTutorial = function(){ openTutorialModal(); };
+}
+
+function performTutorialAction(action){
+    try {
+        switch(action){
+            case 'bernoulli':
+                const panel = select('#bernoulli-calculations'); if (panel) { panel.style('border','2px solid #4a148c'); setTimeout(()=>{ if (panel) panel.style('border','1px solid #eee'); },900); }
+                break;
+            case 'wing_profile':
+                if (wingSizeSlider) { wingSizeSlider.value(14); }
+                if (flapAmplitudeSlider) { flapAmplitudeSlider.value(55); }
+                updateValues();
+                break;
+            case 'velocity_lift':
+                if (flapFrequencySlider) flapFrequencySlider.value(8);
+                if (flapAmplitudeSlider) flapAmplitudeSlider.value(60);
+                updateValues();
+                break;
+            case 'experiments':
+                if (flapFrequencySlider) flapFrequencySlider.value(7);
+                if (flapAmplitudeSlider) flapAmplitudeSlider.value(50);
+                if (wingSizeSlider) wingSizeSlider.value(11);
+                updateValues();
+                break;
+            default:
+                break;
+        }
+    } catch(e){ /* silent */ }
+}
+
+function showTutorialCompletionMessage(){
+    const overlay = select('#presentationContent');
+    if (!overlay) return;
+    overlay.html('<h3>🎉 Tutorial completado</h3><p>Explora los controles libremente. Usa <code>openPresentation()</code> para ver la ficha resumen.</p>');
 }

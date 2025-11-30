@@ -71,6 +71,50 @@
         .back-link:hover {
             background: #0056b3;
         }
+        /* Modern tutorial modal styles */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 24px;
+        }
+        .modal-backdrop.open { display: flex; }
+        .modal-panel {
+            width: 100%;
+            max-width: 900px;
+            background: linear-gradient(180deg,#ffffff,#fbfbfd);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(10,20,40,0.35);
+            overflow: hidden;
+            transform: translateY(8px);
+            opacity: 0;
+            transition: transform .28s cubic-bezier(.2,.9,.2,1), opacity .28s ease;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-backdrop.open .modal-panel { transform: translateY(0); opacity: 1; }
+        .modal-header {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(20,30,50,0.04);
+            display:flex;align-items:center;justify-content:space-between;gap:12px;
+        }
+        .modal-title { font-size:18px;font-weight:700;color:#102a43; }
+        .modal-body { padding: 18px 20px; overflow:auto; flex:1; }
+        .modal-footer { padding: 14px 18px; border-top:1px solid rgba(20,30,50,0.04); display:flex;align-items:center;justify-content:space-between;gap:12px; }
+        .tutorial-controls { display:flex;gap:8px;align-items:center; }
+        .btn { background:#0b6efd;color:#fff;border:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600 }
+        .btn.ghost { background:transparent;color:#0b6efd;border:1px solid rgba(11,110,253,0.12) }
+        .btn:focus { outline:2px solid rgba(11,110,253,0.18); outline-offset:2px }
+        .tutorial-indicator { font-size:13px;color:#445; }
+        .tutorial-progress { height:8px;background:#eef2ff;border-radius:6px;overflow:hidden;flex:1;margin-left:12px;margin-right:12px }
+        .tutorial-progress > i { display:block;height:100%;background:linear-gradient(90deg,#7c4dff,#4fc3f7);width:0%;transition:width .32s ease }
+        /* Responsive adjustments */
+        @media (max-width:700px){ .modal-panel{ max-width: 100%; padding:0; border-radius:10px } .modal-header, .modal-footer { padding:12px } }
     </style>
 </head>
 <body>
@@ -97,6 +141,28 @@
                     <div class="value-display" id="wingSize-value">10 cm</div>
                 </div>
 
+                <!-- Velocidad eliminada: se deriva de frecuencia/amplitud/tamaño para el dron -->
+
+                <div class="control-group">
+                    <label for="angleOfAttack">Ángulo de Ataque (°):</label>
+                    <input type="range" id="angleOfAttack" min="-10" max="20" step="0.1" value="5">
+                    <div class="value-display" id="angleOfAttack-value">5.0°</div>
+                </div>
+
+                <div class="control-group">
+                    <label for="altitude">Altitud (m):</label>
+                    <input type="range" id="altitude" min="0" max="12000" step="1" value="500">
+                    <div class="value-display" id="altitude-value">500 m</div>
+                </div>
+
+                <div class="control-group">
+                    <label for="planeMass">Masa del dron (kg):</label>
+                    <input type="range" id="planeMass" min="0.1" max="20000" step="0.1" value="1338">
+                    <div class="value-display" id="planeMass-value">1338.0 kg</div>
+                </div>
+
+                <!-- Área del ala opcional eliminada: se calcula automáticamente para el dron -->
+
 
 
                 <div class="control-group">
@@ -104,7 +170,9 @@
                     <input type="range" id="timeOfDay" min="0" max="24" step="0.1" value="12">
                     <div class="value-display" id="timeOfDay-value">12.0</div>
                 </div>
-                <!-- Presentation button removed per user request -->
+                    <div class="control-group">
+                        <button id="openTutorial" style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;background:#007bff;color:#fff;cursor:pointer;">Abrir Tutorial</button>
+                    </div>
                 
                 <!-- Controles de árboles y modo de rendimiento eliminados (valores por defecto en JS) -->
             </div>
@@ -116,17 +184,32 @@
         
     <!-- Experiments panel removed as requested -->
 
-        <!-- Tutorial modal (hidden by default) -->
-        <div id="tutorialModal" role="dialog" aria-modal="true" style="display:none;">
-            <div style="background:white;padding:16px;border-radius:8px;max-width:600px;margin:40px auto;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
-                <h2 id="tutorialTitle">Tutorial</h2>
-                <div id="tutorialContent"></div>
-                <div style="display:flex;justify-content:space-between;margin-top:12px;">
-                    <button id="tutorialPrev">Prev</button>
-                    <div id="tutorialIndicator"></div>
-                    <button id="tutorialNext">Next</button>
+        <!-- Tutorial modal (modern) -->
+        <div id="tutorialModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle" data-open="false">
+            <div class="modal-panel" role="document">
+                <div class="modal-header">
+                    <div class="modal-title" id="tutorialTitle">Tutorial</div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <div class="tutorial-indicator" id="tutorialIndicator">Paso 1</div>
+                        <button id="tutorialClose" class="btn ghost" aria-label="Cerrar tutorial">Cerrar</button>
+                    </div>
                 </div>
-                <div style="text-align:right;margin-top:8px;"><button id="tutorialClose">Close</button></div>
+                <div class="modal-body">
+                    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+                        <div id="tutorialMedia" style="flex:0 0 280px;max-width:280px;border-radius:8px;overflow:hidden;background:#f6f8fa;display:flex;align-items:center;justify-content:center;padding:8px;">
+                            <!-- media (svg/png) injected here -->
+                        </div>
+                        <div id="tutorialContent" style="flex:1 1 360px;min-width:180px;"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="tutorial-controls">
+                        <button id="tutorialPrev" class="btn ghost">← Anterior</button>
+                        <div class="tutorial-progress" aria-hidden="true"><i id="tutorialProgressBar"></i></div>
+                        <button id="tutorialNext" class="btn">Siguiente →</button>
+                    </div>
+                    <div style="font-size:12px;color:#6b7280">Use ESC para cerrar • Avance con teclado ← →</div>
+                </div>
             </div>
         </div>
 
