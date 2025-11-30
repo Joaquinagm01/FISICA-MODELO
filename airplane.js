@@ -158,8 +158,9 @@ function setup() {
     // Initialize educational features
     initializeEducationalFeatures();
 
-    // Hide educational panels initially
-    select('#tutorial-panel').style('display', 'none');
+    // Show tutorial modal initially for visibility
+    select('#tutorial-modal').style('display', 'block');
+    select('#tutorial-panel').style('display', 'block');
     select('#experiments-panel').style('display', 'none');
     select('#contextual-help-panel').style('display', 'none');
 }
