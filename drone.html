@@ -104,6 +104,9 @@
                     <input type="range" id="timeOfDay" min="0" max="24" step="0.1" value="12">
                     <div class="value-display" id="timeOfDay-value">12.0</div>
                 </div>
+                <!-- Presentation button removed per user request -->
+                
+                <!-- Controles de árboles y modo de rendimiento eliminados (valores por defecto en JS) -->
             </div>
             
             <div class="canvas-container">
@@ -111,12 +114,86 @@
             </div>
         </div>
         
+    <!-- Experiments panel removed as requested -->
+
+        <!-- Tutorial modal (hidden by default) -->
+        <div id="tutorialModal" role="dialog" aria-modal="true" style="display:none;">
+            <div style="background:white;padding:16px;border-radius:8px;max-width:600px;margin:40px auto;box-shadow:0 4px 20px rgba(0,0,0,0.2);">
+                <h2 id="tutorialTitle">Tutorial</h2>
+                <div id="tutorialContent"></div>
+                <div style="display:flex;justify-content:space-between;margin-top:12px;">
+                    <button id="tutorialPrev">Prev</button>
+                    <div id="tutorialIndicator"></div>
+                    <button id="tutorialNext">Next</button>
+                </div>
+                <div style="text-align:right;margin-top:8px;"><button id="tutorialClose">Close</button></div>
+            </div>
+        </div>
+
+        <!-- Presentation modal -->
+        <div id="presentationModal" role="dialog" aria-modal="true" aria-labelledby="presentationTitle" style="display:none;">
+            <div style="background:white;padding:20px;border-radius:8px;max-width:800px;margin:40px auto;box-shadow:0 4px 30px rgba(0,0,0,0.25);">
+                <div id="presentationContent" style="max-height:380px;overflow:auto;margin-top:8px;line-height:1.45;color:#222;">
+                    <p><strong>v₂ (bajo ala):</strong> 8.3 m/s</p>
+                    <p><strong>ΔP (P₂ - P₁):</strong> 301.2 Pa</p>
+                    <p><strong>Fuerza estimada (N):</strong> 2.1 N</p>
+                    <hr>
+                    <p>Esta simulación muestra cómo las alas batientes generan sustentación dinámica mediante el movimiento activo, inspirado en insectos como libélulas y colibríes.</p>
+                    <h3>¿Cómo logra volar un avión?</h3>
+                    <p>Volar ha sido uno de los sueños más antiguos de la humanidad. Pero ¿cómo puede una máquina de cientos de toneladas, como un avión comercial, levantarse y mantenerse en el aire? La respuesta está en una fuerza invisible pero poderosa: la sustentación.</p>
+                    <h4>✈️ ¿Qué es la sustentación?</h4>
+                    <p>La sustentación (lift) es una fuerza que actúa perpendicularmente al flujo del aire, generada por la forma del ala, el ángulo de ataque y la velocidad del avión.</p>
+                    <h4>Perfil aerodinámico</h4>
+                    <p>Las alas tienen una parte superior más curvada que obliga al aire a acelerar y reducir su presión local, creando una diferencia de presiones que genera sustentación.</p>
+                    <h4>Bernoulli y conservación de la energía</h4>
+                    <p>P + ½ ρ v² + ρ g h = constante. En vuelo nivelado, el término ρ g h se cancela y se obtiene ΔP = ½ ρ (v₂² − v₁²).</p>
+                    <h4>Complemento: Tercera Ley de Newton</h4>
+                    <p>El ala desvía aire hacia abajo; por acción y reacción, el aire empuja el ala hacia arriba. Ambas explicaciones son complementarias.</p>
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+                    <button id="presentationCopy" style="padding:8px 12px;">Copiar</button>
+                    <button id="presentationPrint" style="padding:8px 12px;">Imprimir</button>
+                    <button id="presentationClose" style="padding:8px 12px;">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
         <div class="info-panel">
-            <h3>Física del Vuelo Biomimético</h3>
-            <p><strong>Sustentación Dinámica (Lift):</strong> <span id="lift-display">0 N</span></p>
-            <p><strong>Potencia Requerida:</strong> <span id="power-display">0 W</span></p>
-            <p><strong>Frecuencia Actual:</strong> <span id="current-freq-display">0 Hz</span></p>
-            <p><strong>Ángulo de Batida:</strong> <span id="flap-angle-display">0°</span></p>
+            <h4 style="margin-bottom:8px;color:#1b5e20;">Bernoulli / Presión</h4>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <div style="flex:1 1 140px;background:#e3f2fd;padding:8px;border-radius:6px;">
+                    <div style="font-size:12px;color:#1565c0;">ρ (densidad)</div>
+                    <div id="rho-display" style="font-weight:700;font-size:15px;color:#0d47a1;">1.155 kg/m³</div>
+                </div>
+                <div style="flex:1 1 140px;background:#fff3e0;padding:8px;border-radius:6px;">
+                    <div style="font-size:12px;color:#e65100;">v₁ (sobre ala)</div>
+                    <div id="vtop-display" style="font-weight:700;font-size:15px;color:#bf360c;">24.3 m/s</div>
+                </div>
+                <div style="flex:1 1 140px;background:#e8f5e9;padding:8px;border-radius:6px;">
+                    <div style="font-size:12px;color:#2e7d32;">v₂ (bajo ala)</div>
+                    <div id="vbottom-display" style="font-weight:700;font-size:15px;color:#1b5e20;">8.3 m/s</div>
+                </div>
+                <div style="flex:1 1 160px;background:#f3e5f5;padding:8px;border-radius:6px;">
+                    <div style="font-size:12px;color:#6a1b9a;">ΔP (P₂ - P₁)</div>
+                    <div id="deltaP-display" style="font-weight:700;font-size:15px;color:#4a148c;">0 Pa</div>
+                </div>
+                <div style="flex:1 1 160px;background:#fff8e1;padding:8px;border-radius:6px;">
+                    <div style="font-size:12px;color:#f57f17;">Fuerza estimada</div>
+                    <div id="bernForce-display" style="font-weight:700;font-size:15px;color:#e65100;">0 N</div>
+                </div>
+            </div>
+
+            <div id="bernoulli-calculations" style="margin-top:12px;background:linear-gradient(180deg,#ffffff,#fafafa);padding:10px;border-radius:8px;border:1px solid #eee;font-size:13px;display:block;">
+                <div id="velocity-formula" style="margin-bottom:8px;color:#333;font-family:monospace;background:#f4f6f8;padding:8px;border-radius:4px;"></div>
+                <div id="pressure-formula" style="margin-bottom:8px;color:#333;font-family:monospace;background:#f4f6f8;padding:8px;border-radius:4px;"></div>
+                <div id="newton-formula" style="margin-bottom:6px;color:#333;font-family:monospace;background:#f4f6f8;padding:8px;border-radius:4px;"></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+                    <div style="flex:1;background:#eceff1;border-radius:6px;height:12px;overflow:hidden;">
+                        <div id="pressure-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#42a5f5,#1e88e5);"></div>
+                    </div>
+                    <div style="font-size:12px;color:#666;">Intensidad ΔP</div>
+                </div>
+            </div>
             <p><em>Esta simulación muestra cómo las alas batientes generan sustentación dinámica mediante el movimiento activo, inspirado en insectos como libélulas y colibríes.</em></p>
         </div>
         
