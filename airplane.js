@@ -154,6 +154,14 @@ function setup() {
     massSlider.input(updateValues);
     wingAreaSlider.input(updateValues);
     textSizeSlider.input(updateTextSize);
+
+    // Initialize educational features
+    initializeEducationalFeatures();
+
+    // Hide educational panels initially
+    select('#tutorial-panel').style('display', 'none');
+    select('#experiments-panel').style('display', 'none');
+    select('#contextual-help-panel').style('display', 'none');
 }
 
 function updateValues() {
@@ -3141,4 +3149,724 @@ function drawAtmosphericClouds() {
     ellipse(50, 5, 120, 25);
     ellipse(-40, -3, 100, 20);
     pop();
+}
+
+// ===== EDUCATIONAL FEATURES =====
+
+// Tutorial System Variables
+let currentTutorialStep = 0;
+let tutorialSteps = [
+    {
+        title: "Bienvenido a la Aerodinámica",
+        content: `
+            <h4>🎓 Introducción a la Simulación</h4>
+            <p>Esta simulación te ayudará a entender los principios fundamentales de la aerodinámica que hacen volar a los aviones.</p>
+            <p><strong>Objetivos de aprendizaje:</strong></p>
+            <ul>
+                <li>Comprender el Principio de Bernoulli</li>
+                <li>Entender las Leyes de Newton aplicadas al vuelo</li>
+                <li>Explorar cómo el ángulo de ataque afecta la sustentación</li>
+                <li>Analizar la relación entre velocidad y sustentación</li>
+            </ul>
+            <p><em>Haz clic en "Siguiente" para comenzar el tutorial.</em></p>
+        `,
+        action: "intro"
+    },
+    {
+        title: "Principio de Bernoulli",
+        content: `
+            <h4>📐 El Principio de Bernoulli</h4>
+            <p>La ecuación fundamental de Bernoulli establece:</p>
+            <div style="background: #f0f8ff; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center; font-weight: bold;">
+                P + ½ρv² + ρgh = constante
+            </div>
+            <p><strong>¿Qué significa esto?</strong></p>
+            <ul>
+                <li><strong>P</strong>: Presión del aire</li>
+                <li><strong>ρ</strong>: Densidad del aire</li>
+                <li><strong>v</strong>: Velocidad del flujo</li>
+                <li><strong>gh</strong>: Energía potencial</li>
+            </ul>
+            <p><em>Observa cómo cambia la presión cuando varía la velocidad del aire sobre el ala.</em></p>
+        `,
+        action: "bernoulli"
+    },
+    {
+        title: "El Ala del Avión",
+        content: `
+            <h4>✈️ Anatomía de un Ala</h4>
+            <p>Observa el perfil del ala en la simulación:</p>
+            <ul>
+                <li><strong>Superficie superior</strong>: Curvada (mayor distancia)</li>
+                <li><strong>Superficie inferior</strong>: Más plana (menor distancia)</li>
+                <li><strong>Borde de ataque</strong>: Parte delantera redondeada</li>
+                <li><strong>Borde de salida</strong>: Parte trasera afilada</li>
+            </ul>
+            <p><strong>Principio de Bernoulli aplicado:</strong></p>
+            <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                El aire viaja más rápido sobre la superficie superior → Presión más baja arriba → Sustentación hacia arriba
+            </div>
+            <p><em>Ajusta el ángulo de ataque y observa cómo cambia la sustentación.</em></p>
+        `,
+        action: "wing_profile"
+    },
+    {
+        title: "Fuerzas Aerodinámicas",
+        content: `
+            <h4>⚖️ Las Cuatro Fuerzas del Vuelo</h4>
+            <p>En vuelo nivelado, estas cuatro fuerzas deben estar equilibradas:</p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">
+                <div style="background: #d4edda; padding: 10px; border-radius: 5px; text-align: center;">
+                    <strong style="color: #155724;">↑ Sustentación</strong><br>
+                    Fuerza hacia arriba generada por la diferencia de presiones
+                </div>
+                <div style="background: #f8d7da; padding: 10px; border-radius: 5px; text-align: center;">
+                    <strong style="color: #721c24;">↓ Peso</strong><br>
+                    Fuerza de gravedad (masa × 9.81 m/s²)
+                </div>
+                <div style="background: #d1ecf1; padding: 10px; border-radius: 5px; text-align: center;">
+                    <strong style="color: #0c5460;">→ Empuje</strong><br>
+                    Fuerza hacia adelante del motor
+                </div>
+                <div style="background: #fff3cd; padding: 10px; border-radius: 5px; text-align: center;">
+                    <strong style="color: #856404;">← Resistencia</strong><br>
+                    Fuerza opuesta al movimiento
+                </div>
+            </div>
+            <p><em>Observa los vectores de fuerza en la simulación.</em></p>
+        `,
+        action: "forces"
+    },
+    {
+        title: "Ángulo de Ataque",
+        content: `
+            <h4>📏 Ángulo de Ataque (α)</h4>
+            <p>El ángulo entre el ala y la dirección del viento relativo.</p>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <strong>Rango típico de ángulos:</strong>
+                <ul>
+                    <li><span style="color: #28a745;">0° - 12°</span>: Vuelo normal (sustentación óptima)</li>
+                    <li><span style="color: #ffc107;">12° - 15°</span>: Ángulo crítico (cerca del stall)</li>
+                    <li><span style="color: #dc3545;">> 15°</span>: Pérdida de sustentación (stall)</li>
+                </ul>
+            </div>
+            <p><strong>¿Qué sucede al aumentar el ángulo?</strong></p>
+            <ul>
+                <li>↑ Sustentación (hasta cierto punto)</li>
+                <li>↑ Resistencia (arrastre inducido)</li>
+                <li>↑ Probabilidad de stall</li>
+            </ul>
+            <p><em>Experimenta cambiando el ángulo de ataque con el deslizador.</em></p>
+        `,
+        action: "angle_of_attack"
+    },
+    {
+        title: "Velocidad y Sustentación",
+        content: `
+            <h4>💨 Relación Velocidad-Sustentación</h4>
+            <p>La fórmula de sustentación es:</p>
+            <div style="background: #f0f8ff; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center; font-weight: bold;">
+                L = ½ × ρ × v² × A × Cl
+            </div>
+            <p><strong>Observaciones clave:</strong></p>
+            <ul>
+                <li>La sustentación es proporcional al cuadrado de la velocidad (v²)</li>
+                <li>Duplicar la velocidad → Cuadruplicar la sustentación</li>
+                <li>Esto explica por qué los aviones necesitan velocidad para despegar</li>
+            </ul>
+            <div style="background: #d4edda; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                <strong>Ejemplo:</strong> Si aumentas la velocidad de 30 km/h a 60 km/h, la sustentación se multiplica por 4 (² = 4).
+            </div>
+            <p><em>Ajusta la velocidad y observa cómo cambia la sustentación.</em></p>
+        `,
+        action: "velocity_lift"
+    },
+    {
+        title: "Pérdida de Sustentación (Stall)",
+        content: `
+            <h4>⚠️ Pérdida de Sustentación (Stall)</h4>
+            <p>Ocurre cuando el ángulo de ataque es demasiado alto y el flujo de aire se separa del ala.</p>
+            <div style="background: #f8d7da; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <strong>Signos de stall inminente:</strong>
+                <ul>
+                    <li>Ángulo de ataque > 15°</li>
+                    <li>Disminución repentina de sustentación</li>
+                    <li>Aumento de resistencia</li>
+                    <li>Vibraciones y pérdida de control</li>
+                </ul>
+            </div>
+            <p><strong>¿Cómo recuperar de un stall?</strong></p>
+            <ol>
+                <li>Reducir el ángulo de ataque (picar hacia abajo)</li>
+                <li>Aumentar velocidad</li>
+                <li>Recuperar gradualmente el control</li>
+            </ol>
+            <p><em>¡Cuidado! Si el ángulo supera los 15°, verás "STALL" en la simulación.</em></p>
+        `,
+        action: "stall"
+    },
+    {
+        title: "¡Tutorial Completado!",
+        content: `
+            <h4>🎉 ¡Felicitaciones!</h4>
+            <p>Has completado el tutorial básico de aerodinámica.</p>
+            <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <strong>Lo que has aprendido:</strong>
+                <ul>
+                    <li>✅ Principio de Bernoulli y su aplicación al vuelo</li>
+                    <li>✅ Cómo funciona el perfil aerodinámico del ala</li>
+                    <li>✅ Las cuatro fuerzas que actúan sobre un avión</li>
+                    <li>✅ Importancia del ángulo de ataque</li>
+                    <li>✅ Relación entre velocidad y sustentación</li>
+                    <li>✅ Qué es un stall y cómo evitarlo</li>
+                </ul>
+            </div>
+            <p><strong>Próximos pasos:</strong></p>
+            <ul>
+                <li>Explora los <strong>Experimentos Virtuales</strong> para escenarios específicos</li>
+                <li>Activa la <strong>Ayuda Contextual</strong> para explicaciones en tiempo real</li>
+                <li>Experimenta libremente con los controles</li>
+            </ul>
+            <p><em>¡Sigue explorando y aprendiendo!</em></p>
+        `,
+        action: "completed"
+    }
+];
+
+// Contextual Help System
+let contextualHelpEnabled = false;
+let lastContextualMessage = "";
+let contextualMessageTimer = 0;
+
+// Virtual Experiments
+let currentExperiment = null;
+let experimentResults = {};
+
+let experiments = {
+    takeoff: {
+        name: "🚀 Despegue",
+        description: "Simula las condiciones de despegue de un avión comercial. Velocidad baja, alta sustentación requerida.",
+        setup: function() {
+            velocity = 80; // km/h - takeoff speed
+            angleOfAttack = 12; // degrees - high angle for lift
+            altitude = 0; // ground level
+            aircraftMass = 1200; // kg
+            wingArea = 36.3; // m²
+        },
+        objectives: [
+            "Observar cómo se genera sustentación con velocidad relativamente baja",
+            "Entender por qué se necesita ángulo de ataque alto para despegar",
+            "Analizar la relación entre empuje y resistencia durante el despegue"
+        ],
+        successCriteria: "Sustentación > Peso con velocidad de despegue realista"
+    },
+    cruise: {
+        name: "✈️ Crucero",
+        description: "Condiciones de vuelo de crucero a alta altitud. Eficiencia óptima.",
+        setup: function() {
+            velocity = 250; // km/h - cruise speed
+            angleOfAttack = 5; // degrees - optimal angle
+            altitude = 10000; // meters - cruise altitude
+            aircraftMass = 1200; // kg
+            wingArea = 36.3; // m²
+        },
+        objectives: [
+            "Observar vuelo eficiente con bajo ángulo de ataque",
+            "Entender cómo la altitud afecta la densidad del aire",
+            "Analizar el equilibrio de fuerzas en vuelo nivelado"
+        ],
+        successCriteria: "Eficiencia L/D máxima con sustentación = peso"
+    },
+    climb: {
+        name: "⬆️ Ascenso",
+        description: "Fase de ascenso después del despegue. Máxima sustentación para ganar altura.",
+        setup: function() {
+            velocity = 180; // km/h - climb speed
+            angleOfAttack = 10; // degrees - climb angle
+            altitude = 1000; // meters - initial climb
+            aircraftMass = 1200; // kg
+            wingArea = 36.3; // m²
+        },
+        objectives: [
+            "Entender el compromiso entre velocidad y ángulo de ascenso",
+            "Observar cómo cambia la sustentación con la altitud",
+            "Analizar el aumento de resistencia durante el ascenso"
+        ],
+        successCriteria: "Sustentación > Peso para ganar altura"
+    },
+    stall: {
+        name: "⚠️ Pérdida (Stall)",
+        description: "Demostración de pérdida de sustentación. ¡Cuidado con el ángulo crítico!",
+        setup: function() {
+            velocity = 120; // km/h - moderate speed
+            angleOfAttack = 16; // degrees - above critical angle
+            altitude = 2000; // meters
+            aircraftMass = 1200; // kg
+            wingArea = 36.3; // m²
+        },
+        objectives: [
+            "Observar qué sucede cuando el ángulo de ataque es demasiado alto",
+            "Entender los signos de stall inminente",
+            "Aprender cómo recuperar de una pérdida de sustentación"
+        ],
+        successCriteria: "Demostrar stall y recuperación"
+    },
+    landing: {
+        name: "🛬 Aterrizaje",
+        description: "Configuración para aterrizaje. Alta sustentación a baja velocidad.",
+        setup: function() {
+            velocity = 70; // km/h - approach speed
+            angleOfAttack = 8; // degrees - landing angle
+            altitude = 50; // meters - approach altitude
+            aircraftMass = 1100; // kg - lighter after fuel burn
+            wingArea = 36.3; // m²
+        },
+        objectives: [
+            "Observar vuelo lento con alta sustentación",
+            "Entender la importancia de la velocidad de aproximación",
+            "Analizar el equilibrio de fuerzas cerca del suelo"
+        ],
+        successCriteria: "Sustentación controlada a velocidad mínima de vuelo"
+    },
+    "high-altitude": {
+        name: "🏔️ Alta Altitud",
+        description: "Efectos de la altitud en el rendimiento aerodinámico.",
+        setup: function() {
+            velocity = 200; // km/h
+            angleOfAttack = 6; // degrees
+            altitude = 12000; // meters - high altitude
+            aircraftMass = 1200; // kg
+            wingArea = 36.3; // m²
+        },
+        objectives: [
+            "Observar cómo disminuye la densidad del aire con la altitud",
+            "Entender por qué la sustentación disminuye en altitudes elevadas",
+            "Analizar la necesidad de mayor velocidad a gran altura"
+        ],
+        successCriteria: "Comprensión de los efectos de la altitud"
+    },
+    crosswind: {
+        name: "💨 Viento Cruzado",
+        description: "Simulación de condiciones con viento lateral.",
+        setup: function() {
+            velocity = 150; // km/h
+            angleOfAttack = 7; // degrees
+            altitude = 1000; // meters
+            aircraftMass = 1200; // kg
+            wingArea = 36.3; // m²
+        },
+        objectives: [
+            "Entender los efectos del viento cruzado en el vuelo",
+            "Observar cómo afecta la sustentación y estabilidad",
+            "Analizar la necesidad de correcciones de control"
+        ],
+        successCriteria: "Comprensión de vuelo con viento cruzado"
+    }
+};
+
+// Initialize educational features
+function initializeEducationalFeatures() {
+    // Tutorial event listeners
+    const tutorialBtn = select('#tutorial-btn');
+    const tutorialPrev = select('#tutorial-prev');
+    const tutorialNext = select('#tutorial-next');
+
+    if (tutorialBtn) {
+        tutorialBtn.mousePressed(() => {
+            showTutorialPanel();
+            updateTutorialDisplay();
+        });
+    }
+
+    if (tutorialPrev) {
+        tutorialPrev.mousePressed(() => {
+            if (currentTutorialStep > 0) {
+                currentTutorialStep--;
+                updateTutorialDisplay();
+            }
+        });
+    }
+
+    if (tutorialNext) {
+        tutorialNext.mousePressed(() => {
+            if (currentTutorialStep < tutorialSteps.length - 1) {
+                currentTutorialStep++;
+                updateTutorialDisplay();
+            }
+        });
+    }
+
+    // Experiments event listeners
+    const experimentsBtn = select('#experiments-btn');
+    const experimentSelect = select('#experiment-select');
+    const runExperimentBtn = select('#run-experiment');
+    const resetExperimentBtn = select('#reset-experiment');
+
+    if (experimentsBtn) {
+        experimentsBtn.mousePressed(() => {
+            showExperimentsPanel();
+        });
+    }
+
+    if (experimentSelect) {
+        experimentSelect.changed(() => {
+            updateExperimentDescription();
+        });
+    }
+
+    if (runExperimentBtn) {
+        runExperimentBtn.mousePressed(() => {
+            runSelectedExperiment();
+        });
+    }
+
+    if (resetExperimentBtn) {
+        resetExperimentBtn.mousePressed(() => {
+            resetToDefaultValues();
+        });
+    }
+
+    // Contextual help
+    const contextualHelpBtn = select('#contextual-help-btn');
+    if (contextualHelpBtn) {
+        contextualHelpBtn.mousePressed(() => {
+            toggleContextualHelp();
+        });
+    }
+
+    // Initialize tutorial step indicators
+    createTutorialStepIndicators();
+}
+
+function showTutorialPanel() {
+    // Hide other panels
+    select('#experiments-panel').style('display', 'none');
+    select('#contextual-help-panel').style('display', 'none');
+
+    // Show tutorial modal
+    select('#tutorial-modal').style('display', 'block');
+
+    // Reset to first step
+    currentTutorialStep = 0;
+    updateTutorialDisplay();
+}
+
+function updateTutorialDisplay() {
+    const progressElement = select('#tutorial-progress');
+    const contentElement = select('#tutorial-content');
+
+    if (progressElement) {
+        progressElement.html(`Paso ${currentTutorialStep + 1} de ${tutorialSteps.length}`);
+    }
+
+    if (contentElement) {
+        contentElement.html(tutorialSteps[currentTutorialStep].content);
+    }
+
+    // Update navigation buttons
+    const prevBtn = select('#tutorial-prev');
+    const nextBtn = select('#tutorial-next');
+
+    if (prevBtn) {
+        prevBtn.style('display', currentTutorialStep > 0 ? 'inline-block' : 'none');
+    }
+
+    if (nextBtn) {
+        nextBtn.html(currentTutorialStep < tutorialSteps.length - 1 ? 'Siguiente →' : 'Finalizar');
+    }
+
+    // Update step indicators
+    updateTutorialStepIndicators();
+
+    // Perform tutorial action
+    performTutorialAction(tutorialSteps[currentTutorialStep].action);
+}
+
+function createTutorialStepIndicators() {
+    const stepsContainer = select('#tutorial-steps');
+    if (!stepsContainer) return;
+
+    let html = '';
+    for (let i = 0; i < tutorialSteps.length; i++) {
+        html += `<div class="tutorial-step-indicator" id="step-${i}" style="width: 12px; height: 12px; border-radius: 50%; background: #ddd; display: inline-block; margin: 0 2px; cursor: pointer;" onclick="jumpToTutorialStep(${i})"></div>`;
+    }
+    stepsContainer.html(html);
+}
+
+function updateTutorialStepIndicators() {
+    for (let i = 0; i < tutorialSteps.length; i++) {
+        const indicator = select(`#step-${i}`);
+        if (indicator) {
+            if (i < currentTutorialStep) {
+                indicator.style('background', '#28a745'); // Completed - green
+            } else if (i === currentTutorialStep) {
+                indicator.style('background', '#007bff'); // Current - blue
+            } else {
+                indicator.style('background', '#ddd'); // Future - gray
+            }
+        }
+    }
+}
+
+function jumpToTutorialStep(step) {
+    currentTutorialStep = step;
+    updateTutorialDisplay();
+}
+
+function performTutorialAction(action) {
+    switch (action) {
+        case "bernoulli":
+            // Highlight Bernoulli-related elements
+            break;
+        case "wing_profile":
+            // Focus on wing visualization
+            break;
+        case "forces":
+            // Show force vectors prominently
+            break;
+        case "angle_of_attack":
+            // Highlight angle of attack slider
+            break;
+        case "velocity_lift":
+            // Highlight velocity slider
+            break;
+        case "stall":
+            // Set conditions for stall demonstration
+            break;
+        default:
+            break;
+    }
+}
+
+function showExperimentsPanel() {
+    // Hide other panels
+    select('#tutorial-panel').style('display', 'none');
+    select('#contextual-help-panel').style('display', 'none');
+
+    // Show experiments panel
+    select('#experiments-panel').style('display', 'block');
+
+    // Update experiment description
+    updateExperimentDescription();
+}
+
+function updateExperimentDescription() {
+    const selectElement = select('#experiment-select');
+    const descriptionElement = select('#experiment-description');
+
+    if (!selectElement || !descriptionElement) return;
+
+    const selectedExperiment = selectElement.value();
+
+    if (selectedExperiment && experiments[selectedExperiment]) {
+        const exp = experiments[selectedExperiment];
+        let html = `<h4>${exp.name}</h4>`;
+        html += `<p>${exp.description}</p>`;
+        html += `<h5>Objetivos:</h5><ul>`;
+        exp.objectives.forEach(obj => {
+            html += `<li>${obj}</li>`;
+        });
+        html += `</ul>`;
+        html += `<p><strong>Criterios de éxito:</strong> ${exp.successCriteria}</p>`;
+
+        descriptionElement.html(html);
+    } else {
+        descriptionElement.html('Selecciona un experimento para ver su descripción y objetivos.');
+    }
+}
+
+function runSelectedExperiment() {
+    const selectElement = select('#experiment-select');
+    if (!selectElement) return;
+
+    const selectedExperiment = selectElement.value();
+
+    if (selectedExperiment && experiments[selectedExperiment]) {
+        const exp = experiments[selectedExperiment];
+
+        // Apply experiment setup
+        exp.setup();
+
+        // Update UI sliders
+        select('#velocity').value(velocity);
+        select('#angle').value(angleOfAttack);
+        select('#altitude').value(altitude);
+        select('#mass').value(aircraftMass);
+        select('#wing-area').value(wingArea);
+
+        // Update displays
+        updateValues();
+
+        // Store current experiment
+        currentExperiment = selectedExperiment;
+
+        // Show results
+        updateExperimentResults();
+    }
+}
+
+function updateExperimentResults() {
+    const resultsElement = select('#experiment-results');
+    if (!resultsElement || !currentExperiment) return;
+
+    const exp = experiments[currentExperiment];
+    const lift = calculateLift(velocity, angleOfAttack, altitude);
+    const drag = calculateDrag(velocity, angleOfAttack, altitude);
+    const weight = calculateWeight();
+    const efficiency = calculateEfficiency(lift, drag);
+    const flightStatus = getFlightStatus(lift, weight, angleOfAttack, calculateCriticalAngle());
+
+    let html = `<h4>Resultados del Experimento: ${exp.name}</h4>`;
+    html += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">`;
+    html += `<div style="background: #e9ecef; padding: 10px; border-radius: 5px;"><strong>Velocidad:</strong> ${velocity} km/h</div>`;
+    html += `<div style="background: #e9ecef; padding: 10px; border-radius: 5px;"><strong>Ángulo:</strong> ${angleOfAttack}°</div>`;
+    html += `<div style="background: #e9ecef; padding: 10px; border-radius: 5px;"><strong>Sustentación:</strong> ${lift.toFixed(0)} N</div>`;
+    html += `<div style="background: #e9ecef; padding: 10px; border-radius: 5px;"><strong>Peso:</strong> ${weight.toFixed(0)} N</div>`;
+    html += `<div style="background: #e9ecef; padding: 10px; border-radius: 5px;"><strong>Resistencia:</strong> ${drag.toFixed(0)} N</div>`;
+    html += `<div style="background: #e9ecef; padding: 10px; border-radius: 5px;"><strong>Eficiencia L/D:</strong> ${efficiency.toFixed(2)}</div>`;
+    html += `</div>`;
+    html += `<div style="background: ${flightStatus.includes('STALL') ? '#f8d7da' : '#d4edda'}; padding: 10px; border-radius: 5px; margin: 10px 0;"><strong>Estado:</strong> ${flightStatus}</div>`;
+
+    // Add specific analysis based on experiment
+    html += `<h5>Análisis:</h5>`;
+    switch (currentExperiment) {
+        case 'takeoff':
+            html += `<p>En despegue, necesitas ${lift > weight ? 'suficiente' : 'más'} sustentación para superar el peso. `;
+            html += `La velocidad de ${velocity} km/h genera ${lift.toFixed(0)} N de sustentación.</p>`;
+            break;
+        case 'cruise':
+            html += `<p>En crucero a ${altitude}m, la densidad del aire es menor, requiriendo mayor velocidad para mantener sustentación.</p>`;
+            break;
+        case 'stall':
+            html += `<p>Con ángulo de ${angleOfAttack}°, ${angleOfAttack > 15 ? 'se produce stall' : 'el vuelo es normal'}. `;
+            html += `Observa cómo la sustentación ${angleOfAttack > 15 ? 'disminuye' : 'se mantiene'}.</p>`;
+            break;
+        default:
+            html += `<p>Experimenta ajustando los parámetros para ver cómo cambian las fuerzas aerodinámicas.</p>`;
+    }
+
+    resultsElement.html(html);
+}
+
+function resetToDefaultValues() {
+    velocity = 30;
+    angleOfAttack = 5;
+    altitude = 500;
+    aircraftMass = 1200;
+    wingArea = 36.3;
+
+    // Update UI sliders
+    select('#velocity').value(velocity);
+    select('#angle').value(angleOfAttack);
+    select('#altitude').value(altitude);
+    select('#mass').value(aircraftMass);
+    select('#wing-area').value(wingArea);
+
+    // Update displays
+    updateValues();
+
+    // Clear current experiment
+    currentExperiment = null;
+
+    // Reset results
+    const resultsElement = select('#experiment-results');
+    if (resultsElement) {
+        resultsElement.html('Los resultados del experimento aparecerán aquí después de ejecutarlo.');
+    }
+}
+
+function toggleContextualHelp() {
+    contextualHelpEnabled = !contextualHelpEnabled;
+
+    const helpPanel = select('#contextual-help-panel');
+    const helpBtn = select('#contextual-help-btn');
+
+    if (contextualHelpEnabled) {
+        helpPanel.style('display', 'block');
+        helpBtn.style('background', '#FF9800');
+        helpBtn.html('💡 Ayuda: ON');
+    } else {
+        helpPanel.style('display', 'none');
+        helpBtn.style('background', '#FF9800');
+        helpBtn.html('💡 Ayuda');
+    }
+}
+
+function updateContextualHelp() {
+    if (!contextualHelpEnabled) return;
+
+    const contextualElement = select('#contextual-content');
+    if (!contextualElement) return;
+
+    let message = "";
+    let messageType = "info";
+
+    // Calculate current state
+    const lift = calculateLift(velocity, angleOfAttack, altitude);
+    const drag = calculateDrag(velocity, angleOfAttack, altitude);
+    const weight = calculateWeight();
+    const criticalAngle = calculateCriticalAngle();
+    const efficiency = calculateEfficiency(lift, drag);
+
+    // Contextual messages based on current parameters
+    if (angleOfAttack >= criticalAngle) {
+        message = `<div style="background: #f8d7da; padding: 15px; border-radius: 8px; border-left: 4px solid #dc3545;">
+            <h4 style="color: #721c24; margin: 0 0 10px 0;">⚠️ ¡Peligro de Stall!</h4>
+            <p style="margin: 0; color: #721c24;">El ángulo de ataque (${angleOfAttack}°) supera el ángulo crítico (${criticalAngle}°). Esto causa separación del flujo de aire y pérdida de sustentación.</p>
+            <p style="margin: 10px 0 0 0; color: #721c24;"><strong>Solución:</strong> Reduce el ángulo de ataque y aumenta la velocidad.</p>
+        </div>`;
+        messageType = "danger";
+    } else if (angleOfAttack > 12) {
+        message = `<div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <h4 style="color: #856404; margin: 0 0 10px 0;">⚡ Ángulo Alto</h4>
+            <p style="margin: 0; color: #856404;">Ángulo de ataque de ${angleOfAttack}° está cerca del límite. La sustentación aumenta pero también la resistencia.</p>
+            <p style="margin: 10px 0 0 0; color: #856404;"><strong>Observación:</strong> Ideal para despegue, pero consume más combustible.</p>
+        </div>`;
+        messageType = "warning";
+    } else if (velocity < 20) {
+        message = `<div style="background: #d1ecf1; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8;">
+            <h4 style="color: #0c5460; margin: 0 0 10px 0;">🐌 Velocidad Baja</h4>
+            <p style="margin: 0; color: #0c5460;">Velocidad de ${velocity} km/h es muy baja. La sustentación es proporcional a v², así que aumenta la velocidad para generar más fuerza.</p>
+            <p style="margin: 10px 0 0 0; color: #0c5460;"><strong>Recuerda:</strong> L = ½ρv²ACl → Duplicar velocidad = Cuadruplicar sustentación.</p>
+        </div>`;
+        messageType = "info";
+    } else if (altitude > 8000) {
+        message = `<div style="background: #e2e3e5; padding: 15px; border-radius: 8px; border-left: 4px solid #6c757d;">
+            <h4 style="color: #383d41; margin: 0 0 10px 0;">🏔️ Alta Altitud</h4>
+            <p style="margin: 0; color: #383d41;">A ${altitude}m, la densidad del aire es menor. Necesitas más velocidad para mantener la misma sustentación.</p>
+            <p style="margin: 10px 0 0 0; color: #383d41;"><strong>Física:</strong> La densidad del aire disminuye exponencialmente con la altitud.</p>
+        </div>`;
+        messageType = "info";
+    } else if (lift > weight * 1.2) {
+        message = `<div style="background: #d4edda; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
+            <h4 style="color: #155724; margin: 0 0 10px 0;">⬆️ Ascenso</h4>
+            <p style="margin: 0; color: #155724;">Excelente sustentación! Con ${lift.toFixed(0)}N de fuerza hacia arriba, el avión puede ascender.</p>
+            <p style="margin: 10px 0 0 0; color: #155724;"><strong>Equilibrio:</strong> Sustentación > Peso → Movimiento hacia arriba.</p>
+        </div>`;
+        messageType = "success";
+    } else if (Math.abs(lift - weight) < weight * 0.1) {
+        message = `<div style="background: #d4edda; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
+            <h4 style="color: #155724; margin: 0 0 10px 0;">✈️ Vuelo Nivelado</h4>
+            <p style="margin: 0; color: #155724;">¡Perfecto equilibrio! Sustentación (${lift.toFixed(0)}N) ≈ Peso (${weight.toFixed(0)}N).</p>
+            <p style="margin: 10px 0 0 0; color: #155724;"><strong>Equilibrio:</strong> Sustentación ≈ Peso → Vuelo nivelado.</p>
+        </div>`;
+        messageType = "success";
+    } else {
+        message = `<div style="background: #d1ecf1; padding: 15px; border-radius: 8px; border-left: 4px solid #17a2b8;">
+            <h4 style="color: #0c5460; margin: 0 0 10px 0;">📊 Estado Normal</h4>
+            <p style="margin: 0; color: #0c5460;">Condiciones de vuelo estándar. Ajusta los parámetros para explorar diferentes escenarios aerodinámicos.</p>
+        </div>`;
+        messageType = "info";
+    }
+
+    // Update the contextual help display
+    if (contextualElement) {
+        contextualElement.html(message);
+    }
+
+    // Update last message to avoid repetition
+    if (message !== lastContextualMessage) {
+        lastContextualMessage = message;
+        contextualMessageTimer = frameCount;
+    }
 }
