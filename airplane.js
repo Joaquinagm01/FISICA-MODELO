@@ -3328,6 +3328,101 @@ let tutorialSteps = [
     }
 ];
 
+// Insertar contenido detallado adicional solicitado por el usuario
+tutorialSteps.splice(1, 0, {
+    title: "Fundamentos: Sustentación, Peso, Empuje y Resistencia",
+    content: `
+        <h4>¡Hola! Introducción histórica y concepto</h4>
+        <p>Desde el antiguo sueño de volar hasta las modernas aeronaves, cuatro fuerzas gobiernan el vuelo:</p>
+        <ul>
+            <li><strong>Sustentación</strong>: fuerza hacia arriba generada por las alas.</li>
+            <li><strong>Peso</strong>: fuerza hacia abajo por la gravedad.</li>
+            <li><strong>Empuje</strong>: fuerza hacia adelante proporcionada por motores.</li>
+            <li><strong>Resistencia (Drag)</strong>: fricción del aire que se opone al movimiento.</li>
+        </ul>
+        <h4>Sustentación aerodinámica (alas fijas)</h4>
+        <p>La sustentación en alas fijas nace por dos efectos complementarios:</p>
+        <ol>
+            <li><strong>Bernoulli:</strong> la forma del ala (curvatura superior mayor) hace que el aire sobre el ala vaya más rápido → presión menor arriba → empuje neto hacia arriba.</li>
+            <li><strong>Newton (3ª Ley):</strong> el ala desvía el aire hacia abajo; por reacción, el aire empuja el ala hacia arriba (F = ṁ·Δv).</li>
+        </ol>
+        <h5>Perfil alar y Ángulo de Ataque</h5>
+        <p>El perfil típico tiene la parte superior más curva y la inferior más plana. El <strong>ángulo de ataque</strong> (α) es el ángulo entre la cuerda del ala y la dirección del flujo relativo.</p>
+        <p>Al aumentar α, la sustentación aumenta hasta un punto crítico; si α es demasiado grande, el flujo se separa y se produce <strong>stall</strong> (pérdida de sustentación).</p>
+        <h5>Consejos para la simulación</h5>
+        <ul>
+            <li>Ajusta la velocidad y observa cómo L crece con v².</li>
+            <li>Incrementa α hasta ver la zona crítica y el stall en la simulación.</li>
+            <li>Compara los efectos de empuje y resistencia en diferentes regímenes de vuelo.</li>
+        </ul>
+        <h5>Diagramas</h5>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <div style="flex:1 1 300px;max-width:320px;background:#fff;padding:8px;border-radius:8px;">
+                <div style="font-weight:700;margin-bottom:6px;font-size:13px;">Perfil y Bernoulli</div>
+                <svg viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg" width="100%">
+                    <path d="M10,80 C80,30 240,30 310,80 L310,100 L10,100 Z" fill="#dbeafe" stroke="#9fb7ff"/>
+                    <line x1="40" y1="50" x2="140" y2="20" stroke="#bf360c" stroke-width="3" marker-end="url(#arrow)" />
+                    <line x1="40" y1="90" x2="100" y2="96" stroke="#1b5e20" stroke-width="2" marker-end="url(#arrow)" />
+                </svg>
+            </div>
+            <div style="flex:1 1 300px;max-width:320px;background:#fff;padding:8px;border-radius:8px;">
+                <div style="font-weight:700;margin-bottom:6px;font-size:13px;">Acción — Reacción</div>
+                <svg viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg" width="100%">
+                    <rect x="110" y="40" width="100" height="12" rx="3" fill="#c7f9d9" stroke="#2e7d32"/>
+                    <line x1="160" y1="60" x2="160" y2="96" stroke="#0b6efd" stroke-width="3" />
+                    <line x1="160" y1="60" x2="160" y2="36" stroke="#e65100" stroke-width="3" />
+                </svg>
+            </div>
+        </div>
+        <p>Este contenido amplía las secciones del tutorial: Bernoulli, perfil alar, ángulo de ataque y la relación entre fuerzas. Usa los controles y los experimentos para observar cada efecto en la práctica.</p>
+    `,
+    action: 'detailed_intro'
+});
+
+// Sección nueva: Flaps y Slats
+tutorialSteps.splice(2, 0, {
+    title: "Flaps y Slats",
+    content: `
+        <h4>🛬 Flaps y Slats: dispositivos para baja velocidad</h4>
+        <p>Los <strong>flaps</strong> y los <strong>slats</strong> son dispositivos que se colocan en las alas para aumentar la sustentación en situaciones de baja velocidad.</p>
+        <p><strong>Flaps:</strong></p>
+        <p>Los flaps se extienden desde la parte posterior del ala. Al desplegarlos, aumentan la curvatura y el área del ala, lo que incrementa la sustentación, pero también aumentan la resistencia. Esto es muy útil al despegar o aterrizar, porque permite al avión volar a velocidades más bajas sin perder sustentación.</p>
+        <p><strong>Slats:</strong></p>
+        <p>Los slats se encuentran en el borde de ataque del ala. Al desplegarlos, se crea un canal que permite que el aire fluya de manera más suave sobre el ala, evitando que se separe el flujo y ayudando a mantener la sustentación incluso a ángulos de ataque mayores.</p>
+        <p><strong>Combinación y efectos:</strong></p>
+        <p>En conjunto, flaps y slats permiten que el avión tenga un mejor rendimiento a bajas velocidades, aumentando la seguridad en las fases críticas del vuelo (despegue y aterrizaje).</p>
+        <h5>Diagramas ilustrativos</h5>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <div style="flex:1 1 320px;max-width:320px;background:#fff;padding:8px;border-radius:8px;">
+                <div style="font-weight:700;margin-bottom:6px;font-size:13px;">Flap desplegado</div>
+                <svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg" width="100%">
+                    <!-- ala con flap replegado y desplegado -->
+                    <path d="M10,90 C80,40 240,40 310,90 L310,120 L10,120 Z" fill="#f0f8ff" stroke="#9fb7ff"/>
+                    <path d="M200,90 C240,70 270,70 300,90 L300,105 L200,105 Z" fill="#cfe8ff" stroke="#7fb4ff" opacity="0.9"/>
+                    <line x1="200" y1="95" x2="200" y2="115" stroke="#333" stroke-width="1" />
+                    <text x="110" y="30" font-size="12" fill="#333">Flap (parte posterior)</text>
+                </svg>
+            </div>
+            <div style="flex:1 1 320px;max-width:320px;background:#fff;padding:8px;border-radius:8px;">
+                <div style="font-weight:700;margin-bottom:6px;font-size:13px;">Slat en borde de ataque</div>
+                <svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg" width="100%">
+                    <!-- ala con slat -->
+                    <path d="M10,90 C80,40 240,40 310,90 L310,120 L10,120 Z" fill="#fff8e1" stroke="#ffecb3"/>
+                    <path d="M20,60 C60,50 90,50 130,60 L130,75 L20,75 Z" fill="#fff1b8" stroke="#ffd966" opacity="0.95"/>
+                    <text x="110" y="30" font-size="12" fill="#333">Slat (borde de ataque)</text>
+                </svg>
+            </div>
+        </div>
+        <h5>Cómo experimentar en la simulación</h5>
+        <ul>
+            <li>Simula una aproximación reduciendo la velocidad y aumentando el ángulo — imagina los flaps extendidos: mayor sustentación, más resistencia.</li>
+            <li>Observa el efecto de los slats cuando aumentas el ángulo de ataque: retrasan el stall y mantienen el flujo adherente.</li>
+            <li>Combina ambos para ver cómo se mejora la capacidad de despegar y aterrizar a velocidades menores.</li>
+        </ul>
+    `,
+    action: 'flaps_slats'
+});
+
 // Contextual Help System
 let contextualHelpEnabled = false;
 let lastContextualMessage = "";
