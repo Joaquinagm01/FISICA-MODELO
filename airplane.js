@@ -389,16 +389,7 @@ function draw() {
     // Draw force vectors
     drawEnhancedForceVectors(lift, drag, weight);
 
-    // Draw lift/drag ratio indicator (without box)
-    push();
-    translate(width/2, height/2 + 200);
-    fill(255, 255, 0);
-    textAlign(CENTER);
-    textSize(16 * textSizeMultiplier);
-    textStyle(BOLD);
-    let ldRatio = lift / drag;
-    text('L/D: ' + ldRatio.toFixed(2), 0, 0);
-    pop();
+
 
     // Draw title label with better styling
     drawTitleLabel();
