@@ -198,8 +198,11 @@ function updateDynamicCalculations(lift, drag, weight, CL, CD, airDensity, effic
 
     // Update Bernoulli equation
     const bernoulliFormula = `P + ½ρv² + ρgh = constante`;
-    document.getElementById('bernoulli-formula').textContent = bernoulliFormula;
-    document.getElementById('bernoulli-explanation').innerHTML = `<strong>Principio:</strong> La suma de presión, energía cinética y potencial se conserva en un fluido en movimiento.`;
+    const bernoulliElement = document.getElementById('bernoulli-formula');
+    if (bernoulliElement) bernoulliElement.textContent = bernoulliFormula;
+
+    const bernoulliExplanationElement = document.getElementById('bernoulli-explanation');
+    if (bernoulliExplanationElement) bernoulliExplanationElement.innerHTML = `<strong>Principio:</strong> La suma de presión, energía cinética y potencial se conserva en un fluido en movimiento.`;
 
     // Calculate pressure difference using Bernoulli (ΔP = lift / area for consistency)
     const pressure_diff = lift / WING_AREA;
@@ -212,18 +215,27 @@ function updateDynamicCalculations(lift, drag, weight, CL, CD, airDensity, effic
 
     // Update velocity calculation
     const velocityFormula = `v₁ = ${velocity_above.toFixed(1)} m/s (superior), v₂ = ${velocity_below.toFixed(1)} m/s (inferior)`;
-    document.getElementById('velocity-formula').textContent = velocityFormula;
-    document.getElementById('velocity-explanation').innerHTML = `<strong>Cálculo:</strong> La velocidad superior es mayor debido a la curvatura del perfil aerodinámico (ángulo de ataque: ${angleOfAttack}°).`;
+    const velocityElement = document.getElementById('velocity-formula');
+    if (velocityElement) velocityElement.textContent = velocityFormula;
+
+    const velocityExplanationElement = document.getElementById('velocity-explanation');
+    if (velocityExplanationElement) velocityExplanationElement.innerHTML = `<strong>Cálculo:</strong> La velocidad superior es mayor debido a la curvatura del perfil aerodinámico (ángulo de ataque: ${angleOfAttack}°).`;
 
     // Update pressure difference calculation
     const pressureFormula = `ΔP = P₂ - P₁ = ½ρ(v₁² - v₂²) = ${pressure_diff.toFixed(0)} Pa`;
-    document.getElementById('pressure-formula').textContent = pressureFormula;
-    document.getElementById('pressure-explanation').innerHTML = `<strong>Resultado:</strong> Presión ${pressure_comparison} debajo del ala genera fuerza hacia arriba (ρ = ${airDensity.toFixed(3)} kg/m³).`;
+    const pressureElement = document.getElementById('pressure-formula');
+    if (pressureElement) pressureElement.textContent = pressureFormula;
+
+    const pressureExplanationElement = document.getElementById('pressure-explanation');
+    if (pressureExplanationElement) pressureExplanationElement.innerHTML = `<strong>Resultado:</strong> Presión ${pressure_comparison} debajo del ala genera fuerza hacia arriba (ρ = ${airDensity.toFixed(3)} kg/m³).`;
 
     // Update Newton's Third Law calculation
     const newtonFormula = `F↑ = F↓ (sobre el aire) = ${lift.toFixed(0)} N`;
-    document.getElementById('newton-formula').textContent = newtonFormula;
-    document.getElementById('newton-explanation').innerHTML = `<strong>Complementario:</strong> El ala desvía el aire hacia abajo, generando una fuerza igual y opuesta hacia arriba.`;
+    const newtonElement = document.getElementById('newton-formula');
+    if (newtonElement) newtonElement.textContent = newtonFormula;
+
+    const newtonExplanationElement = document.getElementById('newton-explanation');
+    if (newtonExplanationElement) newtonExplanationElement.innerHTML = `<strong>Complementario:</strong> El ala desvía el aire hacia abajo, generando una fuerza igual y opuesta hacia arriba.`;
 
     // Update General Bernoulli Equation section with actual values
     const generalBernoulliHTML = `
@@ -343,10 +355,11 @@ function draw() {
         drawCondensationTrails();
     }
 
-    // Draw ground - green strip at bottom
-    fill(34, 139, 34);
-    noStroke();
-    rect(0, height - 80, width, 80);
+    // Draw enhanced terrain and landscape
+    drawTerrainAndLandscape();
+
+    // Draw trees for enhanced scenery
+    drawTrees();
 
     // Update and draw flow particles - Optimizado para rendimiento
     updateFlowParticles();
@@ -1325,6 +1338,745 @@ function drawEnhancedClouds() {
     ellipse(0, 0, 200, 20);
     ellipse(60, 3, 150, 15);
     ellipse(-50, -2, 130, 18);
+    pop();
+
+    // Cloud 6 - mid altitude
+    push();
+    translate(250 + sin(cloudOffset * 0.6) * 12, 130);
+    fill(255, 255, 255, 160);
+    noStroke();
+    ellipse(0, 0, 100, 55);
+    ellipse(30, -5, 80, 45);
+    ellipse(-20, 8, 70, 40);
+    pop();
+
+    // Cloud 7 - fast moving
+    push();
+    translate(450 + sin(cloudOffset * 1.5) * 30, 150);
+    fill(255, 255, 255, 140);
+    noStroke();
+    ellipse(0, 0, 80, 45);
+    ellipse(25, -3, 60, 35);
+    ellipse(-15, 5, 55, 30);
+    pop();
+
+    // Cloud 8 - wispy high
+    push();
+    translate(100 + sin(cloudOffset * 0.4) * 8, 170);
+    fill(240, 248, 255, 100);
+    noStroke();
+    ellipse(0, 0, 180, 25);
+    ellipse(55, 4, 140, 20);
+    ellipse(-45, -2, 120, 22);
+    pop();
+
+    // Additional clouds for more density
+    // Cloud 9 - medium altitude, slow moving
+    push();
+    translate(50 + sin(cloudOffset * 0.3) * 10, 140);
+    fill(255, 255, 255, 170);
+    noStroke();
+    ellipse(0, 0, 85, 50);
+    ellipse(25, -5, 65, 40);
+    ellipse(-20, 7, 60, 35);
+    pop();
+
+    // Cloud 10 - high altitude, wispy
+    push();
+    translate(650 + sin(cloudOffset * 0.7) * 15, 190);
+    fill(240, 248, 255, 90);
+    noStroke();
+    ellipse(0, 0, 160, 25);
+    ellipse(45, 4, 130, 20);
+    ellipse(-40, -2, 110, 18);
+    pop();
+
+    // Cloud 11 - low altitude, puffy
+    push();
+    translate(300 + sin(cloudOffset * 1.1) * 20, 90);
+    fill(255, 255, 255, 190);
+    noStroke();
+    ellipse(0, 0, 95, 55);
+    ellipse(30, -8, 75, 45);
+    ellipse(-25, 10, 70, 40);
+    ellipse(15, 12, 55, 30);
+    pop();
+
+    // Cloud 12 - fast moving, small
+    push();
+    translate(700 + sin(cloudOffset * 1.8) * 35, 160);
+    fill(255, 255, 255, 150);
+    noStroke();
+    ellipse(0, 0, 65, 38);
+    ellipse(18, -4, 50, 32);
+    ellipse(-12, 6, 45, 28);
+    pop();
+}
+
+function drawTerrainAndLandscape() {
+    let groundY = height - 80;
+
+    // ===== TEXTURA DEL SUELO =====
+    // Base ground with texture variation
+    for (let x = 0; x < width; x += 4) {
+        let variation = sin(x * 0.01) * 2 + random(-1, 1);
+        let groundColor = map(variation, -3, 3, 25, 45); // Darker to lighter green
+
+        stroke(34 + groundColor, 139 + groundColor * 0.5, 34 + groundColor * 0.3);
+        strokeWeight(4);
+        line(x, groundY, x, groundY + 80);
+    }
+
+    // Add grass texture details
+    for (let i = 0; i < 200; i++) {
+        let x = random(width);
+        let y = groundY + random(5, 15);
+        let grassLength = random(3, 8);
+
+        stroke(25, 120, 25, 150);
+        strokeWeight(1);
+        line(x, y, x + random(-2, 2), y - grassLength);
+    }
+
+    // Add small rocks and dirt patches
+    for (let i = 0; i < 50; i++) {
+        let x = random(width);
+        let y = groundY + random(10, 30);
+        let size = random(2, 6);
+
+        fill(80, 60, 40, 200);
+        noStroke();
+        ellipse(x, y, size, size * 0.7);
+    }
+
+    // ===== COLINAS Y ELEVACIONES =====
+    // Draw rolling hills in the background
+    drawHills();
+
+    // ===== RÍOS Y LAGOS =====
+    // Draw winding river
+    drawRiver();
+
+    // ===== EDIFICIOS Y ESTRUCTURAS =====
+    // Draw airport structures
+    drawAirportStructures();
+}
+
+function drawHills() {
+    // Background hills with snow caps
+    let hillBaseY = height - 60;
+
+    // Hill 1 - gentle slope
+    fill(34, 139, 34, 200);
+    stroke(25, 120, 25);
+    strokeWeight(2);
+    beginShape();
+    vertex(0, height);
+    bezierVertex(100, hillBaseY - 20, 200, hillBaseY - 30, 300, hillBaseY - 15);
+    bezierVertex(400, hillBaseY - 25, 500, hillBaseY - 35, 600, hillBaseY - 20);
+    vertex(600, height);
+    endShape(CLOSE);
+
+    // Hill 2 - steeper
+    fill(45, 160, 45, 180);
+    stroke(35, 130, 35);
+    beginShape();
+    vertex(400, height);
+    bezierVertex(500, hillBaseY - 40, 600, hillBaseY - 60, 700, hillBaseY - 45);
+    bezierVertex(800, hillBaseY - 55, 900, hillBaseY - 65, 1000, hillBaseY - 50);
+    vertex(1000, height);
+    endShape(CLOSE);
+
+    // Hill 3 - distant mountain with snow cap
+    fill(60, 180, 60, 150);
+    stroke(50, 150, 50);
+    beginShape();
+    vertex(800, height);
+    bezierVertex(900, hillBaseY - 70, 1000, hillBaseY - 90, 1100, hillBaseY - 75);
+    bezierVertex(1200, hillBaseY - 85, 1300, hillBaseY - 95, 1400, hillBaseY - 80);
+    vertex(1400, height);
+    endShape(CLOSE);
+
+    // Snow caps on distant mountains
+    fill(255, 255, 255, 200);
+    noStroke();
+    beginShape();
+    vertex(950, hillBaseY - 85);
+    bezierVertex(1000, hillBaseY - 95, 1050, hillBaseY - 100, 1100, hillBaseY - 90);
+    bezierVertex(1150, hillBaseY - 95, 1200, hillBaseY - 100, 1250, hillBaseY - 95);
+    vertex(1250, hillBaseY - 80);
+    bezierVertex(1200, hillBaseY - 75, 1150, hillBaseY - 70, 1100, hillBaseY - 75);
+    bezierVertex(1050, hillBaseY - 70, 1000, hillBaseY - 75, 950, hillBaseY - 80);
+    endShape(CLOSE);
+}
+
+function drawRiver() {
+    let riverY = height - 40;
+
+    // River path with gentle curves
+    stroke(30, 100, 200, 180);
+    strokeWeight(12);
+    noFill();
+    beginShape();
+    for (let x = -50; x < width + 50; x += 10) {
+        let y = riverY + sin(x * 0.01) * 8 + sin(x * 0.03) * 4;
+        vertex(x, y);
+    }
+    endShape();
+
+    // River water with animation
+    let waterAnimation = sin(frameCount * 0.1) * 2;
+    stroke(50, 150, 255, 120);
+    strokeWeight(8);
+    beginShape();
+    for (let x = -50; x < width + 50; x += 8) {
+        let y = riverY + sin(x * 0.01) * 8 + sin(x * 0.03) * 4 + waterAnimation;
+        vertex(x, y);
+    }
+    endShape();
+
+    // River reflections (lighter blue)
+    stroke(100, 200, 255, 80);
+    strokeWeight(4);
+    beginShape();
+    for (let x = -50; x < width + 50; x += 15) {
+        let y = riverY + sin(x * 0.01) * 8 + sin(x * 0.03) * 4 - 3;
+        vertex(x, y);
+    }
+    endShape();
+
+    // River banks (green edges)
+    stroke(25, 120, 25, 150);
+    strokeWeight(2);
+    beginShape();
+    for (let x = -50; x < width + 50; x += 10) {
+        let y = riverY + sin(x * 0.01) * 8 + sin(x * 0.03) * 4 + 8;
+        vertex(x, y);
+    }
+    endShape();
+}
+
+function drawAirportStructures() {
+    let groundY = height - 80;
+
+    // ===== RUNWAY =====
+    // Main runway
+    fill(80, 80, 80);
+    stroke(100, 100, 100);
+    strokeWeight(2);
+    rect(width/2 - 150, groundY - 10, 300, 20);
+
+    // Runway center line (dashed)
+    stroke(255, 255, 255);
+    strokeWeight(3);
+    for (let x = width/2 - 140; x < width/2 + 140; x += 20) {
+        line(x, groundY, x + 10, groundY);
+    }
+
+    // Runway threshold markings
+    fill(255, 255, 255);
+    noStroke();
+    rect(width/2 - 150, groundY - 8, 5, 16); // Left threshold
+    rect(width/2 + 145, groundY - 8, 5, 16); // Right threshold
+
+    // ===== CONTROL TOWER =====
+    let towerX = width/2 + 200;
+    let towerY = groundY - 60;
+
+    // Tower base
+    fill(150, 150, 150);
+    stroke(100, 100, 100);
+    strokeWeight(2);
+    rect(towerX - 8, towerY, 16, 60);
+
+    // Tower cabin
+    fill(200, 200, 200);
+    stroke(150, 150, 150);
+    rect(towerX - 12, towerY - 15, 24, 15);
+
+    // Tower windows
+    fill(100, 150, 200, 150);
+    noStroke();
+    rect(towerX - 10, towerY - 12, 6, 8);
+    rect(towerX + 4, towerY - 12, 6, 8);
+
+    // Antenna
+    stroke(50, 50, 50);
+    strokeWeight(2);
+    line(towerX, towerY - 15, towerX, towerY - 25);
+
+    // ===== HANGAR =====
+    let hangarX = width/2 - 250;
+    let hangarY = groundY - 40;
+
+    // Hangar main building
+    fill(120, 120, 120);
+    stroke(80, 80, 80);
+    strokeWeight(2);
+    rect(hangarX, hangarY, 80, 40);
+
+    // Hangar roof
+    fill(100, 100, 100);
+    triangle(hangarX, hangarY, hangarX + 40, hangarY - 20, hangarX + 80, hangarY);
+
+    // Hangar door (large opening)
+    fill(60, 60, 60);
+    noStroke();
+    rect(hangarX + 30, hangarY + 10, 20, 25);
+
+    // ===== TERMINAL BUILDING =====
+    let terminalX = width/2 + 80;
+    let terminalY = groundY - 25;
+
+    // Terminal main building
+    fill(180, 180, 180);
+    stroke(120, 120, 120);
+    strokeWeight(2);
+    rect(terminalX, terminalY, 60, 25);
+
+    // Terminal roof
+    fill(140, 140, 140);
+    triangle(terminalX, terminalY, terminalX + 30, terminalY - 15, terminalX + 60, terminalY);
+
+    // Terminal windows
+    fill(100, 150, 200, 150);
+    noStroke();
+    for (let i = 0; i < 3; i++) {
+        rect(terminalX + 5 + i * 18, terminalY + 5, 12, 8);
+    }
+
+    // Terminal entrance
+    fill(80, 80, 80);
+    rect(terminalX + 25, terminalY + 15, 10, 10);
+
+    // ===== FUEL TANKS =====
+    let fuelX = width/2 - 320;
+    let fuelY = groundY - 15;
+
+    // Fuel tank 1
+    fill(200, 200, 200);
+    stroke(150, 150, 150);
+    strokeWeight(1);
+    ellipse(fuelX, fuelY, 20, 15);
+    rect(fuelX - 10, fuelY, 20, 10);
+
+    // Fuel tank 2
+    ellipse(fuelX + 30, fuelY, 20, 15);
+    rect(fuelX + 20, fuelY, 20, 10);
+
+    // Fuel tank labels
+    fill(255, 0, 0);
+    textAlign(CENTER);
+    textSize(8 * textSizeMultiplier);
+    text('FUEL', fuelX, fuelY - 12);
+    text('FUEL', fuelX + 30, fuelY - 12);
+}
+
+function drawTrees() {
+    // Draw various trees along the ground for enhanced scenery (static, no animation)
+    let groundY = height - 80;
+
+    // Define tree positions with variable density (pre-calculated for consistency)
+    let treePositions = [
+        {x: 100, type: 'oak', show: true},       // Dense forest area start
+        {x: 180, type: 'pine', show: true},      // Transition
+        {x: 250, type: 'pine', show: true},
+        {x: 320, type: 'bush', show: false},     // Sparse area - skip some
+        {x: 400, type: 'bush', show: true},
+        {x: 500, type: 'tall', show: false},     // Very sparse - skip
+        {x: 550, type: 'tall', show: true},
+        {x: 650, type: 'spreading', show: true}, // Dense again
+        {x: 700, type: 'spreading', show: true},
+        {x: 780, type: 'rounded', show: true},  // Dense forest area
+        {x: 850, type: 'rounded', show: true},
+        {x: 920, type: 'small', show: true},
+        {x: 1000, type: 'small', show: true},
+        {x: 1080, type: 'pine_var', show: false}, // Sparse transition - skip
+        {x: 1150, type: 'pine_var', show: true},
+        {x: 1240, type: 'bushy', show: false},   // Sparse area - skip
+        {x: 1300, type: 'bushy', show: true},
+        {x: 1380, type: 'slender', show: false}  // Very sparse end - skip
+    ];
+
+    // Draw trees statically (no animation)
+    for (let i = 0; i < treePositions.length; i++) {
+        let tree = treePositions[i];
+
+        // Only show trees marked to be visible
+        if (!tree.show) continue;
+
+        drawStaticTree(tree.x, groundY, tree.type);
+    }
+
+    // Add some additional scattered trees in dense areas (pre-calculated positions)
+    let extraTrees = [
+        {x: 120, type: 'oak'},
+        {x: 680, type: 'pine'},
+        {x: 820, type: 'rounded'}
+    ];
+
+    for (let extraTree of extraTrees) {
+        drawStaticTree(extraTree.x, groundY, extraTree.type);
+    }
+}
+
+function drawStaticTree(x, groundY, type) {
+    push();
+    translate(x, groundY);
+
+    // No scaling for static trees - use default heights
+    switch(type) {
+        case 'oak':
+            // Large oak-like tree
+            // Trunk
+            fill(101, 67, 33);
+            noStroke();
+            rect(-8, -60, 16, 60);
+
+            // Static leaves
+            fill(34, 139, 34);
+            ellipse(0, -70, 80, 60);
+            ellipse(-15, -60, 60, 50);
+            ellipse(15, -60, 60, 50);
+            ellipse(0, -50, 70, 55);
+            break;
+
+        case 'pine':
+            // Medium pine tree
+            // Trunk
+            fill(139, 69, 19);
+            noStroke();
+            rect(-5, -45, 10, 45);
+
+            // Static pine layers
+            fill(0, 100, 0);
+            triangle(-25, -25, 0, -55, 25, -25);
+            triangle(-20, -15, 0, -40, 20, -15);
+            triangle(-15, -5, 0, -25, 15, -5);
+            break;
+
+        case 'bush':
+            // Small bushy tree
+            // Trunk
+            fill(101, 67, 33);
+            noStroke();
+            rect(-4, -35, 8, 35);
+
+            // Static leaves
+            fill(50, 150, 50);
+            ellipse(0, -40, 50, 40);
+            ellipse(-10, -30, 40, 35);
+            ellipse(10, -30, 40, 35);
+            break;
+
+        case 'tall':
+            // Tall thin tree
+            // Trunk
+            fill(139, 69, 19);
+            noStroke();
+            rect(-3, -70, 6, 70);
+
+            // Static top leaves
+            fill(34, 139, 34);
+            ellipse(0, -80, 40, 35);
+            ellipse(-8, -70, 35, 30);
+            ellipse(8, -70, 35, 30);
+            break;
+
+        case 'spreading':
+            // Large spreading tree
+            // Trunk
+            fill(101, 67, 33);
+            noStroke();
+            rect(-10, -65, 20, 65);
+
+            // Static leaves
+            fill(34, 139, 34);
+            ellipse(0, -75, 90, 65);
+            ellipse(-20, -65, 70, 55);
+            ellipse(20, -65, 70, 55);
+            ellipse(0, -55, 80, 60);
+            ellipse(-15, -45, 60, 50);
+            ellipse(15, -45, 60, 50);
+            break;
+
+        case 'rounded':
+            // Medium tree with rounded canopy
+            // Trunk
+            fill(139, 69, 19);
+            noStroke();
+            rect(-6, -50, 12, 50);
+
+            // Static rounded leaves
+            fill(50, 150, 50);
+            ellipse(0, -60, 65, 50);
+            ellipse(-12, -50, 55, 45);
+            ellipse(12, -50, 55, 45);
+            ellipse(0, -40, 60, 48);
+            break;
+
+        case 'small':
+            // Small tree
+            // Trunk
+            fill(101, 67, 33);
+            noStroke();
+            rect(-4, -40, 8, 40);
+
+            // Static leaves
+            fill(34, 139, 34);
+            ellipse(0, -45, 55, 45);
+            ellipse(-8, -35, 45, 40);
+            ellipse(8, -35, 45, 40);
+            break;
+
+        case 'pine_var':
+            // Pine tree variation
+            // Trunk
+            fill(139, 69, 19);
+            noStroke();
+            rect(-5, -48, 10, 48);
+
+            // Static pine layers with variation
+            fill(0, 100, 0);
+            triangle(-28, -28, 0, -58, 28, -28);
+            triangle(-22, -18, 0, -43, 22, -18);
+            triangle(-16, -8, 0, -28, 16, -8);
+            break;
+
+        case 'bushy':
+            // Bushy tree with dense leaves
+            // Trunk
+            fill(101, 67, 33);
+            noStroke();
+            rect(-5, -38, 10, 38);
+
+            // Dense static leaves
+            fill(50, 150, 50);
+            ellipse(0, -45, 60, 50);
+            ellipse(-10, -35, 50, 45);
+            ellipse(10, -35, 50, 45);
+            ellipse(0, -25, 55, 48);
+            ellipse(-8, -15, 45, 42);
+            ellipse(8, -15, 45, 42);
+            break;
+
+        case 'slender':
+            // Tall slender tree
+            // Trunk
+            fill(139, 69, 19);
+            noStroke();
+            rect(-3, -75, 6, 75);
+
+            // Small static canopy
+            fill(34, 139, 34);
+            ellipse(0, -85, 35, 30);
+            ellipse(-6, -75, 30, 25);
+            ellipse(6, -75, 30, 25);
+            break;
+    }
+
+    pop();
+}
+
+function drawAnimatedTree(x, groundY, type, wind1, wind2, wind3, treeIndex, height) {
+    push();
+    translate(x, groundY);
+
+    // Calculate scaling based on height parameter
+    let defaultHeight;
+    switch(type) {
+        case 'oak': defaultHeight = 60; break;
+        case 'pine': defaultHeight = 45; break;
+        case 'bush': defaultHeight = 35; break;
+        case 'tall': defaultHeight = 70; break;
+        case 'spreading': defaultHeight = 65; break;
+        case 'rounded': defaultHeight = 50; break;
+        case 'small': defaultHeight = 40; break;
+        case 'pine_var': defaultHeight = 48; break;
+        case 'bushy': defaultHeight = 38; break;
+        case 'slender': defaultHeight = 75; break;
+        default: defaultHeight = 50;
+    }
+    let scaleFactor = height / defaultHeight;
+    scale(scaleFactor);
+
+    // Individual tree wind variation
+    let treeWind1 = wind1 * (0.8 + sin(treeIndex * 0.5) * 0.4);
+    let treeWind2 = wind2 * (0.9 + cos(treeIndex * 0.3) * 0.2);
+    let treeWind3 = wind3 * (0.7 + sin(treeIndex * 0.7) * 0.6);
+    switch(type) {
+        case 'oak':
+            // Large oak-like tree with animated branches
+            // Trunk (stable)
+            fill(101, 67, 33);
+            noStroke();
+            rect(-8, -60, 16, 60);
+
+            // Animated leaves with wind
+            fill(34, 139, 34);
+            let oakWindX1 = treeWind1 * 2;
+            let oakWindY1 = treeWind2 * 1.5;
+            ellipse(oakWindX1, -70 + oakWindY1, 80, 60);
+
+            let oakWindX2 = treeWind2 * 1.8;
+            let oakWindY2 = treeWind3 * 1.2;
+            ellipse(-15 + oakWindX2, -60 + oakWindY2, 60, 50);
+
+            let oakWindX3 = treeWind3 * 2.2;
+            let oakWindY3 = treeWind1 * 1.8;
+            ellipse(15 + oakWindX3, -60 + oakWindY3, 60, 50);
+
+            ellipse(treeWind1 * 1.5, -50 + treeWind2, 70, 55);
+            break;
+
+        case 'pine':
+            // Medium pine tree with swaying layers
+            // Trunk
+            fill(139, 69, 19);
+            noStroke();
+            rect(-5, -45, 10, 45);
+
+            // Animated pine layers
+            fill(0, 100, 0);
+            let pineWind1 = treeWind1 * 1.2;
+            triangle(-25 + pineWind1, -25 + treeWind2 * 0.5, pineWind1, -55 + treeWind2, 25 + pineWind1, -25 + treeWind2 * 0.5);
+
+            let pineWind2 = treeWind2 * 1.5;
+            triangle(-20 + pineWind2, -15 + treeWind3 * 0.3, pineWind2 * 0.8, -40 + treeWind3, 20 + pineWind2, -15 + treeWind3 * 0.3);
+
+            let pineWind3 = treeWind3 * 1.8;
+            triangle(-15 + pineWind3, -5 + treeWind1 * 0.4, pineWind3 * 0.6, -25 + treeWind1, 15 + pineWind3, -5 + treeWind1 * 0.4);
+            break;
+
+        case 'bush':
+            // Small bushy tree with rustling leaves
+            // Trunk
+            fill(101, 67, 33);
+            noStroke();
+            rect(-4, -35, 8, 35);
+
+            // Animated leaves
+            fill(50, 150, 50);
+            ellipse(treeWind1 * 1.5, -40 + treeWind2, 50, 40);
+            ellipse(-10 + treeWind2 * 1.2, -30 + treeWind3, 40, 35);
+            ellipse(10 + treeWind3 * 1.4, -30 + treeWind1, 40, 35);
+            break;
+
+        case 'tall':
+            // Tall thin tree with top-heavy animation
+            // Trunk
+            fill(139, 69, 19);
+            noStroke();
+            rect(-3, -70, 6, 70);
+
+            // Animated top leaves (more movement)
+            fill(34, 139, 34);
+            let tallWind1 = treeWind1 * 2.5;
+            let tallWind2 = treeWind2 * 2.2;
+            ellipse(tallWind1, -80 + treeWind2 * 1.8, 40, 35);
+            ellipse(-8 + tallWind2, -70 + treeWind3 * 1.5, 35, 30);
+            ellipse(8 + treeWind3 * 2.1, -70 + treeWind1 * 1.9, 35, 30);
+            break;
+
+        case 'spreading':
+            // Large spreading tree with complex animation
+            // Trunk
+            fill(101, 67, 33);
+            noStroke();
+            rect(-10, -65, 20, 65);
+
+            // Animated leaves with different wind phases
+            fill(34, 139, 34);
+            ellipse(treeWind1 * 1.8, -75 + treeWind2 * 1.2, 90, 65);
+            ellipse(-20 + treeWind2 * 2.1, -65 + treeWind3 * 1.5, 70, 55);
+            ellipse(20 + treeWind3 * 1.9, -65 + treeWind1 * 1.7, 70, 55);
+            ellipse(treeWind1 * 1.5, -55 + treeWind2 * 1.3, 80, 60);
+            ellipse(-15 + treeWind2 * 1.6, -45 + treeWind3 * 1.8, 60, 50);
+            ellipse(15 + treeWind3 * 2.0, -45 + treeWind1 * 1.4, 60, 50);
+            break;
+
+        case 'rounded':
+            // Medium tree with rounded canopy
+            // Trunk
+            fill(139, 69, 19);
+            noStroke();
+            rect(-6, -50, 12, 50);
+
+            // Animated rounded leaves
+            fill(50, 150, 50);
+            ellipse(treeWind1 * 1.6, -60 + treeWind2 * 1.1, 65, 50);
+            ellipse(-12 + treeWind2 * 1.8, -50 + treeWind3 * 1.4, 55, 45);
+            ellipse(12 + treeWind3 * 1.7, -50 + treeWind1 * 1.3, 55, 45);
+            ellipse(treeWind1 * 1.4, -40 + treeWind2 * 1.6, 60, 48);
+            break;
+
+        case 'small':
+            // Small tree near center
+            // Trunk
+            fill(101, 67, 33);
+            noStroke();
+            rect(-4, -40, 8, 40);
+
+            // Animated leaves
+            fill(34, 139, 34);
+            ellipse(treeWind1 * 1.3, -45 + treeWind2 * 0.9, 55, 45);
+            ellipse(-8 + treeWind2 * 1.4, -35 + treeWind3 * 1.1, 45, 40);
+            ellipse(8 + treeWind3 * 1.5, -35 + treeWind1 * 1.0, 45, 40);
+            break;
+
+        case 'pine_var':
+            // Pine tree variation
+            // Trunk
+            fill(139, 69, 19);
+            noStroke();
+            rect(-5, -48, 10, 48);
+
+            // Animated pine layers with variation
+            fill(0, 100, 0);
+            let pvarWind1 = treeWind1 * 1.4;
+            triangle(-28 + pvarWind1, -28 + treeWind2 * 0.6, pvarWind1 * 0.5, -58 + treeWind2 * 0.8, 28 + pvarWind1, -28 + treeWind2 * 0.6);
+
+            let pvarWind2 = treeWind2 * 1.6;
+            triangle(-22 + pvarWind2, -18 + treeWind3 * 0.4, pvarWind2 * 0.7, -43 + treeWind3 * 0.7, 22 + pvarWind2, -18 + treeWind3 * 0.4);
+
+            let pvarWind3 = treeWind3 * 1.9;
+            triangle(-16 + pvarWind3, -8 + treeWind1 * 0.5, pvarWind3 * 0.6, -28 + treeWind1 * 0.6, 16 + pvarWind3, -8 + treeWind1 * 0.5);
+            break;
+
+        case 'bushy':
+            // Bushy tree with dense animated leaves
+            // Trunk
+            fill(101, 67, 33);
+            noStroke();
+            rect(-5, -38, 10, 38);
+
+            // Dense animated leaves
+            fill(50, 150, 50);
+            ellipse(treeWind1 * 1.7, -45 + treeWind2 * 1.2, 60, 50);
+            ellipse(-10 + treeWind2 * 1.8, -35 + treeWind3 * 1.4, 50, 45);
+            ellipse(10 + treeWind3 * 1.6, -35 + treeWind1 * 1.3, 50, 45);
+            ellipse(treeWind1 * 1.4, -25 + treeWind2 * 1.5, 55, 48);
+            ellipse(-8 + treeWind2 * 1.9, -15 + treeWind3 * 1.6, 45, 42);
+            ellipse(8 + treeWind3 * 1.7, -15 + treeWind1 * 1.4, 45, 42);
+            break;
+
+        case 'slender':
+            // Tall slender tree with minimal animation
+            // Trunk
+            fill(139, 69, 19);
+            noStroke();
+            rect(-3, -75, 6, 75);
+
+            // Small animated canopy
+            fill(34, 139, 34);
+            let slenderWind1 = treeWind1 * 2.8; // More movement at top
+            let slenderWind2 = treeWind2 * 2.5;
+            ellipse(slenderWind1, -85 + treeWind2 * 2.0, 35, 30);
+            ellipse(-6 + slenderWind2, -75 + treeWind3 * 1.8, 30, 25);
+            ellipse(6 + treeWind3 * 2.3, -75 + treeWind1 * 1.9, 30, 25);
+            break;
+    }
+
     pop();
 }
 

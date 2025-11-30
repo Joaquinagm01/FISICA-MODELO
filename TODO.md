@@ -1,68 +1,113 @@
-# Checklist de Funcionalidades para Simulación de Sustentación de Avión
+# Checklist de Mejoras para la Animación de Simulación de Avión
 
-## ✅ **Conceptos Básicos de Vuelo**
-- [x] Sustentación (Lift) - Fuerza perpendicular al flujo que levanta el avión
-- [x] Contrarrestar el peso del avión
-- [x] Forma del ala (perfil aerodinámico)
+## 🌳 Mejoras Ambientales y Visuales
 
-## ✅ **Principio de Bernoulli**
-- [x] Ecuación general: P + ½ρv² + ρgh = constante
-- [x] Visualización de zonas de presión (alta abajo, baja arriba)
-- [x] Diferencia de velocidades del aire (más rápido arriba, más lento abajo)
-- [x] Cálculo de diferencia de presiones: ΔP = P₂ - P₁ = ½ρ(v₁² - v₂²)
+### Nubes y Atmósfera
+- [x] **Aumentar densidad de nubes**: Agregar más capas de nubes con diferentes altitudes y velocidades de movimiento (Completado: 12 nubes con variadas altitudes y movimientos)
+- [ ] **Nubes volumétricas**: Implementar nubes 3D con profundidad y sombreado realista
+- [ ] **Efectos atmosféricos**: Agregar niebla, bruma y efectos de dispersión de luz
+- [ ] **Nubes dinámicas**: Hacer que las nubes respondan al viento y condiciones meteorológicas
 
-## ✅ **Tercera Ley de Newton**
-- [ ] Visualización del aire desviado hacia abajo por el ala
-- [ ] Fuerza de reacción hacia arriba sobre el ala
-- [ ] Animación de flujo de aire mostrando deflexión
+### Árboles y Vegetación
+- [x] **Bosque básico**: Agregar árboles simples en el suelo para crear profundidad visual (Completado: 10 árboles variados)
+- [x] **Variedad de árboles**: Implementar diferentes tipos de árboles (pinos, robles, palmeras) con texturas (Completado: robles, pinos, árboles delgados y arbustos)
+- [x] **Árboles animados**: Agregar movimiento sutil de ramas con el viento (Completado: animación basada en velocidad del avión con múltiples fases de viento)
+- [x] **Densidad variable**: Crear zonas boscosas y áreas abiertas para mejor composición visual (Completado: zonas con densidad 0.3-1.0 con variación aleatoria)
 
-## ✅ **Factores que Influyen en la Sustentación**
-- [x] Velocidad del avión (más rápido → más sustentación)
-- [x] Ángulo de ataque (ángulo entre ala y dirección del flujo)
-- [x] Densidad del aire (menor a mayor altitud)
-- [x] Superficie del ala (área del ala)
-- [ ] Forma del ala (perfiles más curvos → mayor diferencia de presiones)
+### Terreno y Paisaje
+- [x] **Textura del suelo**: Mejorar el suelo con texturas realistas (hierba, tierra, asfalto) (Completado: suelo con variación de color, hierba y rocas)
+- [x] **Colinas y elevaciones**: Agregar ondulaciones del terreno para mayor realismo (Completado: colinas ondulantes con nieve en picos distantes)
+- [x] **Ríos y lagos**: Incorporar elementos acuáticos con reflejos (Completado: río serpenteante con animación de agua y reflejos)
+- [x] **Edificios y estructuras**: Agregar aeropuertos, hangares y elementos urbanos (Completado: torre de control, hangar, terminal, pista de aterrizaje)
 
-## 📊 **Visualizaciones Educativas**
-- [x] Vectores de fuerza (sustentación, resistencia, peso)
-- [x] Zonas de presión con colores (azul = baja presión, rojo = alta presión)
-- [x] Flujo de aire sobre y bajo el ala
-- [ ] Flechas mostrando deflexión del aire (Tercera Ley)
-- [ ] Perfil del ala con mediciones de curvatura
-- [ ] Gráfico de distribución de presiones a lo largo del ala
+## ⚡ Mejoras de Rendimiento
 
-## 🧮 **Cálculos y Fórmulas**
-- [x] Cálculo de sustentación: L = ½ρv²SC_L
-- [x] Coeficiente de sustentación C_L
-- [x] Densidad del aire en función de la altitud
-- [ ] Cálculo detallado de diferencia de presiones
-- [ ] Energía cinética vs energía de presión
-- [ ] Comparación de velocidades arriba/abajo del ala
+### Optimización de Partículas
+- [ ] **Reducir partículas de flujo**: Optimizar el sistema de partículas de aire para mejor FPS
+- [ ] **LOD (Level of Detail)**: Implementar niveles de detalle para elementos lejanos
+- [ ] **Pooling de objetos**: Reutilizar objetos en lugar de crear/destruir constantemente
 
-## 🎓 **Elementos Educativos**
-- [x] Panel de cálculos dinámicos con fórmulas
-- [x] Explicaciones contextuales según parámetros
-- [ ] Glosario de términos aerodinámicos
-- [ ] Ejemplos numéricos paso a paso
-- [ ] Preguntas interactivas sobre conceptos
-- [ ] Animaciones explicativas de Bernoulli
+### Renderizado
+- [ ] **WebGL optimizado**: Mejorar el uso de GPU para animaciones complejas
+- [ ] **Frustum culling**: No renderizar objetos fuera del campo de visión
+- [ ] **Batch rendering**: Agrupar llamadas de dibujo para mejor rendimiento
 
-## 🎮 **Interactividad**
-- [x] Sliders para velocidad, ángulo de ataque, altitud, masa
-- [x] Actualización automática de cálculos
-- [ ] Modos de visualización (presión, velocidad, fuerzas)
-- [ ] Comparación de diferentes perfiles de ala
-- [ ] Escenarios de vuelo (despegue, crucero, aterrizaje)
+## 🎮 Mejoras de Interfaz y UX
 
-## 🔬 **Aspectos Científicos Avanzados**
-- [ ] Efecto de la viscosidad del aire
-- [ ] Separación del flujo (stall) a altos ángulos de ataque
-- [ ] Arrastre inducido vs arrastre de perfil
-- [ ] Número de Reynolds y su influencia
-- [ ] Efectos de compresibilidad a altas velocidades
+### Controles Interactivos
+- [ ] **Controles de cámara**: Permitir rotar, zoom y cambiar perspectivas de vista
+- [ ] **Modo pausa**: Agregar capacidad de pausar la simulación
+- [ ] **Controles de tiempo**: Acelerar/desacelerar el tiempo de simulación
+- [ ] **Presets de escenarios**: Cargar configuraciones predefinidas (despegue, crucero, aterrizaje)
 
-## 📱 **Mejoras de UI/UX**
-- [ ] Leyendas explicativas para cada visualización
-- [ ] Tooltips con definiciones de términos
-- [ ] Guía tutorial para principiantes
-- [ ] Modo experto con más parámetros técnicos
+### Visualización de Datos
+- [ ] **Gráficos en tiempo real**: Agregar gráficos de fuerzas, velocidad y altitud
+- [ ] **Indicadores mejorados**: Mejorar los displays de coeficientes aerodinámicos
+- [ ] **Modo debug**: Agregar herramientas de desarrollo para análisis técnico
+- [ ] **Exportar datos**: Permitir guardar datos de simulación para análisis posterior
+
+## 🛩️ Mejoras del Avión y Física
+
+### Modelo del Avión
+- [ ] **Animaciones detalladas**: Agregar movimiento de flaps, alerones y timón
+- [ ] **Efectos de daño**: Simular desgaste y efectos visuales de alta velocidad
+- [ ] **Luces dinámicas**: Mejorar sistema de luces de navegación y aterrizaje
+- [ ] **Partículas de motor**: Agregar efectos de escape de motores
+
+### Física Aerodinámica
+- [ ] **Modelo más preciso**: Implementar ecuaciones aerodinámicas más complejas
+- [ ] **Efectos de turbulencia**: Agregar inestabilidad realista en vuelo
+- [ ] **Condiciones climáticas**: Implementar viento, lluvia y efectos en el vuelo
+- [ ] **Múltiples superficies**: Simular interacción entre alas, cola y fuselaje
+
+## 🎨 Mejoras Visuales Avanzadas
+
+### Iluminación y Sombras
+- [ ] **Sombras dinámicas**: Agregar sombras del avión en el suelo
+- [ ] **Iluminación volumétrica**: Implementar luz dispersada por la atmósfera
+- [ ] **Efectos de lente**: Agregar flares solares y aberración cromática
+- [ ] **HDR y tonemapping**: Mejorar el rango dinámico de colores
+
+### Efectos Especiales
+- [ ] **Estelas de condensación**: Mejorar las estelas a alta altitud
+- [ ] **Efectos de velocidad**: Agregar motion blur y distorsión visual
+- [ ] **Partículas ambientales**: Polvo, insectos y otros elementos flotantes
+- [ ] **Transiciones suaves**: Mejorar animaciones de cambio de estado
+
+## 📱 Mejoras de Accesibilidad y Compatibilidad
+
+### Responsive Design
+- [ ] **Adaptación móvil**: Optimizar para dispositivos táctiles
+- [ ] **Controles alternativos**: Agregar soporte para gamepads y otros dispositivos
+- [ ] **Modo accesible**: Implementar alto contraste y opciones de tamaño de fuente
+
+### Compatibilidad
+- [ ] **Navegadores múltiples**: Asegurar funcionamiento en todos los navegadores modernos
+- [ ] **WebGL fallback**: Implementar modo Canvas 2D para dispositivos sin WebGL
+- [ ] **Optimización móvil**: Reducir complejidad para dispositivos con menos poder
+
+## 🔧 Mejoras Técnicas
+
+### Arquitectura del Código
+- [ ] **Modularización**: Separar el código en módulos reutilizables
+- [ ] **Configuración externa**: Mover parámetros a archivos de configuración
+- [ ] **Sistema de plugins**: Permitir extensiones y mods de la simulación
+
+### Testing y Calidad
+- [ ] **Pruebas unitarias**: Agregar tests para funciones críticas
+- [ ] **Validación física**: Verificar que los cálculos aerodinámicos sean correctos
+- [ ] **Performance monitoring**: Implementar métricas de rendimiento
+
+## 🎯 Mejoras Educativas
+
+### Modo Didáctico
+- [ ] **Tutoriales interactivos**: Guías paso a paso para entender los conceptos
+- [ ] **Explicaciones contextuales**: Información detallada sobre principios físicos
+- [ ] **Experimentos virtuales**: Permitir modificar parámetros y ver resultados
+- [ ] **Comparaciones históricas**: Mostrar evolución de diseños de aviones
+
+### Visualización Científica
+- [ ] **Vectores de fuerza**: Mejorar la representación de fuerzas aerodinámicas
+- [ ] **Flujos de aire**: Visualizar patrones de flujo con más detalle
+- [ ] **Análisis de datos**: Herramientas para estudiar el comportamiento del avión
+- [ ] **Comparación de diseños**: Permitir cargar diferentes configuraciones de ala
