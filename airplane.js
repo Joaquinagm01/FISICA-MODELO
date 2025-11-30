@@ -93,6 +93,10 @@ let sunAngle = 0; // Ángulo del sol
 let cameraShake = 0;
 let cameraRoll = 0;
 let cameraPitch = 0;
+let showClouds = true; // predeterminado: mostrar nubes
+// Eliminados controles de UI para hora y nubes; se usan valores por defecto
+let showCloudsCheckbox, timeOfDaySlider, timeOfDayValueDisplay;
+let time = 0; // tiempo para animaciones (parallax, nubes)
 
 // Partículas de flujo de aire - Optimizadas para rendimiento
 let flowParticles = [];
@@ -138,6 +142,10 @@ function setup() {
     
     // Initialize text size control
     textSizeSlider = select('#text-size');
+    // Valores predeterminados: mostrar nubes y hora mediodía
+    showClouds = true;
+    // Default timeOfDay = 12 (mediodía) -> map to 0-2PI internally in draw()
+    defaultTimeOfDay = 12;
     textSizeDisplay = select('#text-size-value');
     
     // Initialize flow particles
@@ -324,8 +332,18 @@ function toggleCoefficients() {
 
 function draw() {
     // Variables para efectos visuales mejorados
-    timeOfDay = (frameCount * 0.01) % (2 * PI); // Ciclo de día completo
-    sunAngle = sin(timeOfDay) * PI/3; // Ángulo del sol (-60° a +60°)
+    // Si existe un slider de Hora del Día, usar su valor; si no, animar automáticamente
+    if (typeof timeOfDaySlider !== 'undefined' && timeOfDaySlider && timeOfDaySlider.value) {
+        const tod = Number(timeOfDaySlider.value());
+        // map 0-24 a 0-2PI para ciclo completo
+        sunAngle = map(tod, 0, 24, 0, TWO_PI);
+    } else {
+        timeOfDay = (frameCount * 0.01) % (2 * PI); // Ciclo de día completo
+        sunAngle = sin(timeOfDay) * PI/3; // Ángulo del sol (-60° a +60°)
+    }
+
+    // Update generic time used by parallax and other animations
+    time += 0.05;
 
     // Camera effects for flight sensation
     cameraShake = sin(frameCount * 0.1) * map(velocity, 10, 100, 0, 2);
@@ -340,9 +358,11 @@ function draw() {
     translate(cameraShake, cameraPitch);
 
     // Enhanced sky background with time-of-day lighting
-    let skyR = map(sunAngle, -PI/3, PI/3, 50, 135);
-    let skyG = map(sunAngle, -PI/3, PI/3, 100, 206);
-    let skyB = map(sunAngle, -PI/3, PI/3, 150, 235);
+    // Base celeste claro: RGB (135,206,235) - variamos ligeramente con la posición del sol
+    let baseR = 135, baseG = 206, baseB = 235;
+    let skyR = map(sunAngle, -PI/3, PI/3, baseR * 0.6, baseR * 1.0);
+    let skyG = map(sunAngle, -PI/3, PI/3, baseG * 0.6, baseG * 1.0);
+    let skyB = map(sunAngle, -PI/3, PI/3, baseB * 0.6, baseB * 1.0);
 
     for (let y = 0; y < height; y++) {
         let alpha = map(y, 0, height * 0.7, 255, 200);
@@ -352,7 +372,11 @@ function draw() {
     }
 
     // Draw enhanced clouds with atmospheric effects
-    drawEnhancedClouds();
+    // Draw sun (glow) and clouds with parallax (copiado de la simulación del dron)
+    drawSunWithGlow();
+    // Draw sun and enhanced clouds with atmospheric effects
+    if (typeof drawSunWithGlow === 'function') drawSunWithGlow();
+    if (showClouds) drawEnhancedClouds();
 
     // Draw condensation trails if at high altitude and fast
     if (altitude > 8000 && velocity > 80) {
@@ -405,20 +429,11 @@ function draw() {
 
 }
 
-function calculateLift() {
-    // Simplified lift calculation: L = 0.5 * ρ * v² * A * Cl
-    // Cl ≈ 2π * α (small angle approximation)
-    let cl = 2 * PI * (angleOfAttack * PI / 180); // Convert to radians
-    let lift = 0.5 * airDensity * velocity * velocity * wingArea * cl;
-    return lift;
-}
-
-function calculateDrag() {
-    // Simplified drag calculation
-    let cd = 0.05 + 0.01 * abs(angleOfAttack); // Basic drag coefficient
-    let drag = 0.5 * airDensity * velocity * velocity * wingArea * cd;
-    return drag;
-}
+// NOTE: Removed duplicate parameter-less implementations of calculateLift/calculateDrag
+// The canonical implementations are the parameterized functions defined earlier:
+//   function calculateLift(velocity, angleOfAttack, altitude) { ... }
+//   function calculateDrag(velocity, angleOfAttack, altitude) { ... }
+// Keep only the parameterized versions to avoid ambiguity and ensure consistent units (velocity in km/h is converted inside those functions).
 
 function drawAirplane() {
     push();
@@ -1262,478 +1277,332 @@ function drawReferencePoint() {
 }
 
 function drawEnhancedClouds() {
-    let cloudOffset = frameCount * 0.02;
-
-    // Enhanced volumetric clouds with better layering
-    // Cloud 1 - large, slow moving with volume
+    // Use same layered parallax implementation as in drone.js
     push();
-    translate(150 + sin(cloudOffset) * 20, 80);
-    // Base layer
-    fill(255, 255, 255, 180);
     noStroke();
-    ellipse(0, 0, 120, 70);
-    ellipse(40, -10, 100, 60);
-    ellipse(-30, 10, 90, 50);
-    ellipse(20, 15, 80, 45);
-    // Highlight layer for volume
-    fill(255, 255, 255, 120);
-    ellipse(-10, -5, 80, 40);
-    ellipse(25, 5, 60, 30);
+    const layers = [0.2, 0.5, 1.0]; // parallax factors
+    for (let L = 0; L < layers.length; L++){
+        const speed = 0.02 * layers[L];
+        const yBase = 60 + L * 40;
+        for (let i = -1; i < 6; i++){
+            let x = (i * 220 + (time * 60 * speed)) % (width + 300) - 150;
+            let y = yBase + sin((i + time*0.01) * 0.6) * 8;
+            let s = 80 + L * 60;
+            let alpha = map(L, 0, layers.length-1, 180, 100);
+            fill(255, 255, 255, alpha);
+            ellipse(x, y, s*1.4, s*0.8);
+            ellipse(x + 40, y - 10, s, s*0.6);
+            ellipse(x - 40, y - 6, s*0.9, s*0.5);
+        }
+    }
     pop();
+}
 
-    // Cloud 2 - medium, medium speed with turbulence
+// Sun with glow influenced by timeOfDay (copiado de drone.js)
+function drawSunWithGlow(){
     push();
-    translate(350 + sin(cloudOffset * 0.8) * 15, 110);
-    let turbulence = sin(cloudOffset * 2) * 3;
-    fill(255, 255, 255, 160);
+    const cx = width * 0.1 + map(cos(sunAngle), -1, 1, 0, width * 0.8);
+    const cy = height * 0.15 + map(-sin(sunAngle), -1, 1, -height*0.05, height*0.05);
+    const sunSize = 60;
+    let sunHue = lerpColor(color(255, 240, 200), color(255, 200, 140), map(abs(sunAngle), 0, PI/2, 0, 1));
+    // Glow rings
     noStroke();
-    ellipse(0 + turbulence, 0, 90, 55);
-    ellipse(30 + turbulence * 0.5, -5, 75, 45);
-    ellipse(-20 - turbulence * 0.3, 8, 70, 40);
-    // Add some wispy edges
-    fill(255, 255, 255, 100);
-    ellipse(45, -15, 40, 20);
-    pop();
-
-    // Cloud 3 - small, fast moving with dynamic shape
-    push();
-    translate(550 + sin(cloudOffset * 1.2) * 25, 140);
-    let shapeOffset = sin(cloudOffset * 3) * 5;
-    fill(255, 255, 255, 140);
-    noStroke();
-    ellipse(0, 0, 70 + shapeOffset, 40);
-    ellipse(20 + shapeOffset * 0.5, -3, 55, 35);
-    ellipse(-15 - shapeOffset * 0.3, 5, 50, 30);
-    pop();
-
-    // Cloud 4 - wispy, high altitude with atmospheric perspective
-    push();
-    translate(200 + sin(cloudOffset * 0.5) * 10, 160);
-    fill(240, 248, 255, 120);
-    noStroke();
-    ellipse(0, 0, 150, 30);
-    ellipse(50, 5, 120, 25);
-    ellipse(-40, -3, 100, 20);
-    // Add cirrus-like streaks
-    stroke(240, 248, 255, 80);
-    strokeWeight(2);
-    noFill();
-    beginShape();
-    vertex(-80, -5);
-    bezierVertex(-60, -10, -40, -8, -20, -5);
-    bezierVertex(0, -3, 20, -5, 40, -8);
-    endShape();
-    pop();
-
-    // Cloud 5 - distant, very high altitude
-    push();
-    translate(600 + sin(cloudOffset * 0.3) * 8, 180);
-    fill(245, 250, 255, 80);
-    noStroke();
-    ellipse(0, 0, 200, 20);
-    ellipse(60, 3, 150, 15);
-    ellipse(-50, -2, 130, 18);
-    pop();
-
-    // Cloud 6 - mid altitude
-    push();
-    translate(250 + sin(cloudOffset * 0.6) * 12, 130);
-    fill(255, 255, 255, 160);
-    noStroke();
-    ellipse(0, 0, 100, 55);
-    ellipse(30, -5, 80, 45);
-    ellipse(-20, 8, 70, 40);
-    pop();
-
-    // Cloud 7 - fast moving
-    push();
-    translate(450 + sin(cloudOffset * 1.5) * 30, 150);
-    fill(255, 255, 255, 140);
-    noStroke();
-    ellipse(0, 0, 80, 45);
-    ellipse(25, -3, 60, 35);
-    ellipse(-15, 5, 55, 30);
-    pop();
-
-    // Cloud 8 - wispy high
-    push();
-    translate(100 + sin(cloudOffset * 0.4) * 8, 170);
-    fill(240, 248, 255, 100);
-    noStroke();
-    ellipse(0, 0, 180, 25);
-    ellipse(55, 4, 140, 20);
-    ellipse(-45, -2, 120, 22);
-    pop();
-
-    // Additional clouds for more density
-    // Cloud 9 - medium altitude, slow moving
-    push();
-    translate(50 + sin(cloudOffset * 0.3) * 10, 140);
-    fill(255, 255, 255, 170);
-    noStroke();
-    ellipse(0, 0, 85, 50);
-    ellipse(25, -5, 65, 40);
-    ellipse(-20, 7, 60, 35);
-    pop();
-
-    // Cloud 10 - high altitude, wispy
-    push();
-    translate(650 + sin(cloudOffset * 0.7) * 15, 190);
-    fill(240, 248, 255, 90);
-    noStroke();
-    ellipse(0, 0, 160, 25);
-    ellipse(45, 4, 130, 20);
-    ellipse(-40, -2, 110, 18);
-    pop();
-
-    // Cloud 11 - low altitude, puffy
-    push();
-    translate(300 + sin(cloudOffset * 1.1) * 20, 90);
-    fill(255, 255, 255, 190);
-    noStroke();
-    ellipse(0, 0, 95, 55);
-    ellipse(30, -8, 75, 45);
-    ellipse(-25, 10, 70, 40);
-    ellipse(15, 12, 55, 30);
-    pop();
-
-    // Cloud 12 - fast moving, small
-    push();
-    translate(700 + sin(cloudOffset * 1.8) * 35, 160);
-    fill(255, 255, 255, 150);
-    noStroke();
-    ellipse(0, 0, 65, 38);
-    ellipse(18, -4, 50, 32);
-    ellipse(-12, 6, 45, 28);
+    for (let i = 6; i > 0; i--){
+        let a = map(i, 6, 0, 20, 180);
+        fill(red(sunHue), green(sunHue), blue(sunHue), a);
+        ellipse(cx, cy, sunSize * (1 + i*0.6), sunSize * (1 + i*0.6));
+    }
+    // Core
+    fill(255, 250, 200);
+    ellipse(cx, cy, sunSize, sunSize);
     pop();
 }
 
 function drawTerrainAndLandscape() {
-    let groundY = height - 80;
-
-    // ===== TEXTURA DEL SUELO =====
-    // Base ground with texture variation
-    for (let x = 0; x < width; x += 4) {
-        let variation = sin(x * 0.01) * 2 + random(-1, 1);
-        let groundColor = map(variation, -3, 3, 25, 45); // Darker to lighter green
-
-        stroke(34 + groundColor, 139 + groundColor * 0.5, 34 + groundColor * 0.3);
-        strokeWeight(4);
-        line(x, groundY, x, groundY + 80);
-    }
-
-    // Add grass texture details
-    for (let i = 0; i < 200; i++) {
-        let x = random(width);
-        let y = groundY + random(5, 15);
-        let grassLength = random(3, 8);
-
-        stroke(25, 120, 25, 150);
-        strokeWeight(1);
-        line(x, y, x + random(-2, 2), y - grassLength);
-    }
-
-    // Add small rocks and dirt patches
-    for (let i = 0; i < 50; i++) {
-        let x = random(width);
-        let y = groundY + random(10, 30);
-        let size = random(2, 6);
-
-        fill(80, 60, 40, 200);
-        noStroke();
-        ellipse(x, y, size, size * 0.7);
-    }
-
-    // ===== COLINAS Y ELEVACIONES =====
-    // Draw rolling hills in the background
-    drawHills();
-
-    // ===== RÍOS Y LAGOS =====
-    // Draw winding river
-    drawRiver();
-
-    // ===== EDIFICIOS Y ESTRUCTURAS =====
-    // Draw airport structures
-    drawAirportStructures();
-}
-
-function drawHills() {
-    // Background hills with snow caps
-    let hillBaseY = height - 60;
-
-    // Hill 1 - gentle slope
-    fill(34, 139, 34, 200);
-    stroke(25, 120, 25);
-    strokeWeight(2);
-    beginShape();
-    vertex(0, height);
-    bezierVertex(100, hillBaseY - 20, 200, hillBaseY - 30, 300, hillBaseY - 15);
-    bezierVertex(400, hillBaseY - 25, 500, hillBaseY - 35, 600, hillBaseY - 20);
-    vertex(600, height);
-    endShape(CLOSE);
-
-    // Hill 2 - steeper
-    fill(45, 160, 45, 180);
-    stroke(35, 130, 35);
-    beginShape();
-    vertex(400, height);
-    bezierVertex(500, hillBaseY - 40, 600, hillBaseY - 60, 700, hillBaseY - 45);
-    bezierVertex(800, hillBaseY - 55, 900, hillBaseY - 65, 1000, hillBaseY - 50);
-    vertex(1000, height);
-    endShape(CLOSE);
-
-    // Hill 3 - distant mountain with snow cap
-    fill(60, 180, 60, 150);
-    stroke(50, 150, 50);
-    beginShape();
-    vertex(800, height);
-    bezierVertex(900, hillBaseY - 70, 1000, hillBaseY - 90, 1100, hillBaseY - 75);
-    bezierVertex(1200, hillBaseY - 85, 1300, hillBaseY - 95, 1400, hillBaseY - 80);
-    vertex(1400, height);
-    endShape(CLOSE);
-
-    // Snow caps on distant mountains
-    fill(255, 255, 255, 200);
+    // Modular terrain: delegate to specific drawing functions (copiado del dron)
+    push();
     noStroke();
-    beginShape();
-    vertex(950, hillBaseY - 85);
-    bezierVertex(1000, hillBaseY - 95, 1050, hillBaseY - 100, 1100, hillBaseY - 90);
-    bezierVertex(1150, hillBaseY - 95, 1200, hillBaseY - 100, 1250, hillBaseY - 95);
-    vertex(1250, hillBaseY - 80);
-    bezierVertex(1200, hillBaseY - 75, 1150, hillBaseY - 70, 1100, hillBaseY - 75);
-    bezierVertex(1050, hillBaseY - 70, 1000, hillBaseY - 75, 950, hillBaseY - 80);
-    endShape(CLOSE);
+    let groundY = height - 60;
+
+    drawHills(groundY);
+    drawRiver(groundY);
+    drawGroundTexture(groundY);
+    drawAirportStructures(groundY);
+    // Vegetation layer (density/performance aware)
+    drawTrees(groundY);
+
+    pop();
 }
 
-function drawRiver() {
-    let riverY = height - 40;
+// Draw layered hills with subtle motion and optional snow caps (drone version)
+function drawHills(groundY){
+    push();
+    noStroke();
+    // Back hill layer
+    fill(50, 120, 50);
+    for (let x = -200; x < width + 200; x += 160){
+        let h = 80 + 40 * sin((x * 0.008) + time*0.001);
+        ellipse(x + 40, groundY + 10, 400, h);
+    }
 
-    // River path with gentle curves
-    stroke(30, 100, 200, 180);
-    strokeWeight(12);
+    // Mid hill layer
+    fill(34, 139, 34);
+    for (let x = -200; x < width + 200; x += 120){
+        let h = 60 + 30 * sin((x * 0.01) + time*0.002);
+        ellipse(x + 60, groundY + 30, 300, h);
+    }
+
+    // Distant mountains with snow caps
+    fill(60, 180, 60, 150);
+    for (let x = 300; x < width + 600; x += 400){
+        let mh = 120 + 30 * sin((x * 0.005) + time*0.0005);
+        ellipse(x, groundY - 10, 600, mh);
+        // snow cap
+        fill(255,255,255,200);
+        ellipse(x - 30, groundY - mh/2 - 10, 120, 30);
+        fill(60, 180, 60, 150);
+    }
+    pop();
+}
+
+// Draw a winding river with reflections and simple animation (drone version)
+function drawRiver(groundY){
+    push();
+    noStroke();
+    fill(30, 144, 255, 200);
+    beginShape();
+    vertex(0, groundY + 80);
+    bezierVertex(width*0.2, groundY + 30 + sin(time*0.002)*20, width*0.6, groundY + 140 + cos(time*0.001)*20, width, groundY + 80);
+    vertex(width, height);
+    vertex(0, height);
+    endShape(CLOSE);
+
+    // Reflections: light bands moving
+    stroke(100,200,255,120);
+    strokeWeight(6);
     noFill();
     beginShape();
-    for (let x = -50; x < width + 50; x += 10) {
-        let y = riverY + sin(x * 0.01) * 8 + sin(x * 0.03) * 4;
+    for (let x = -50; x < width + 50; x += 8){
+        let y = groundY + 80 + sin(x * 0.01 + time * 0.5) * 6;
         vertex(x, y);
     }
     endShape();
-
-    // River water with animation
-    let waterAnimation = sin(frameCount * 0.1) * 2;
-    stroke(50, 150, 255, 120);
-    strokeWeight(8);
-    beginShape();
-    for (let x = -50; x < width + 50; x += 8) {
-        let y = riverY + sin(x * 0.01) * 8 + sin(x * 0.03) * 4 + waterAnimation;
-        vertex(x, y);
-    }
-    endShape();
-
-    // River reflections (lighter blue)
-    stroke(100, 200, 255, 80);
-    strokeWeight(4);
-    beginShape();
-    for (let x = -50; x < width + 50; x += 15) {
-        let y = riverY + sin(x * 0.01) * 8 + sin(x * 0.03) * 4 - 3;
-        vertex(x, y);
-    }
-    endShape();
-
-    // River banks (green edges)
-    stroke(25, 120, 25, 150);
-    strokeWeight(2);
-    beginShape();
-    for (let x = -50; x < width + 50; x += 10) {
-        let y = riverY + sin(x * 0.01) * 8 + sin(x * 0.03) * 4 + 8;
-        vertex(x, y);
-    }
-    endShape();
+    noStroke();
+    pop();
 }
 
-function drawAirportStructures() {
-    let groundY = height - 80;
+// Ground texture: grass strips, rocks and small variations
+function drawGroundTexture(groundY){
+    push();
+    // Foreground grass
+    fill(30, 110, 30);
+    rect(0, groundY + 40, width, height - (groundY + 40));
 
-    // ===== RUNWAY =====
-    // Main runway
-    fill(80, 80, 80);
-    stroke(100, 100, 100);
+    // Grass strokes
+    stroke(25, 120, 25, 140);
+    strokeWeight(1);
+    for (let i = 0; i < 120; i++){
+        let x = (i * 37) % width;
+        let y = groundY + 50 + (i%7);
+        line(x, y, x + random(-2,2), y - random(4,10));
+    }
+    noStroke();
+
+    // Rocks
+    for (let i = 0; i < 30; i++){
+        let x = (i * 73) % width;
+        let y = groundY + 60 + (i%5);
+        fill(80,60,40,200);
+        ellipse(x, y, random(4,10), random(3,7));
+    }
+    pop();
+}
+
+// Airport structures: runway, tower, hangar, terminal, fuel tanks (drone version)
+function drawAirportStructures(groundY){
+    push();
+    // Runway
+    fill(80,80,80);
+    stroke(100,100,100);
     strokeWeight(2);
     rect(width/2 - 150, groundY - 10, 300, 20);
 
-    // Runway center line (dashed)
-    stroke(255, 255, 255);
+    // Runway center dashed line
+    stroke(255);
     strokeWeight(3);
     for (let x = width/2 - 140; x < width/2 + 140; x += 20) {
         line(x, groundY, x + 10, groundY);
     }
 
-    // Runway threshold markings
-    fill(255, 255, 255);
+    // Threshold markings
     noStroke();
-    rect(width/2 - 150, groundY - 8, 5, 16); // Left threshold
-    rect(width/2 + 145, groundY - 8, 5, 16); // Right threshold
+    fill(255);
+    rect(width/2 - 150, groundY - 8, 5, 16);
+    rect(width/2 + 145, groundY - 8, 5, 16);
 
-    // ===== CONTROL TOWER =====
+    // Control tower
     let towerX = width/2 + 200;
     let towerY = groundY - 60;
-
-    // Tower base
-    fill(150, 150, 150);
-    stroke(100, 100, 100);
-    strokeWeight(2);
+    fill(150,150,150);
+    stroke(100);
     rect(towerX - 8, towerY, 16, 60);
-
-    // Tower cabin
-    fill(200, 200, 200);
-    stroke(150, 150, 150);
+    fill(200,200,200);
     rect(towerX - 12, towerY - 15, 24, 15);
-
-    // Tower windows
-    fill(100, 150, 200, 150);
     noStroke();
+    fill(100,150,200,150);
     rect(towerX - 10, towerY - 12, 6, 8);
     rect(towerX + 4, towerY - 12, 6, 8);
 
-    // Antenna
-    stroke(50, 50, 50);
-    strokeWeight(2);
-    line(towerX, towerY - 15, towerX, towerY - 25);
-
-    // ===== HANGAR =====
+    // Hangar
     let hangarX = width/2 - 250;
     let hangarY = groundY - 40;
-
-    // Hangar main building
-    fill(120, 120, 120);
-    stroke(80, 80, 80);
-    strokeWeight(2);
+    fill(120,120,120);
+    stroke(80);
     rect(hangarX, hangarY, 80, 40);
-
-    // Hangar roof
-    fill(100, 100, 100);
+    fill(100);
     triangle(hangarX, hangarY, hangarX + 40, hangarY - 20, hangarX + 80, hangarY);
-
-    // Hangar door (large opening)
-    fill(60, 60, 60);
     noStroke();
+    fill(60,60,60);
     rect(hangarX + 30, hangarY + 10, 20, 25);
 
-    // ===== TERMINAL BUILDING =====
+    // Terminal
     let terminalX = width/2 + 80;
     let terminalY = groundY - 25;
-
-    // Terminal main building
-    fill(180, 180, 180);
-    stroke(120, 120, 120);
-    strokeWeight(2);
+    stroke(120);
+    fill(180);
     rect(terminalX, terminalY, 60, 25);
-
-    // Terminal roof
-    fill(140, 140, 140);
+    fill(140);
     triangle(terminalX, terminalY, terminalX + 30, terminalY - 15, terminalX + 60, terminalY);
-
-    // Terminal windows
-    fill(100, 150, 200, 150);
     noStroke();
-    for (let i = 0; i < 3; i++) {
-        rect(terminalX + 5 + i * 18, terminalY + 5, 12, 8);
-    }
+    fill(100,150,200,150);
+    for (let i = 0; i < 3; i++) rect(terminalX + 5 + i * 18, terminalY + 5, 12, 8);
 
-    // Terminal entrance
-    fill(80, 80, 80);
-    rect(terminalX + 25, terminalY + 15, 10, 10);
-
-    // ===== FUEL TANKS =====
+    // Fuel tanks
     let fuelX = width/2 - 320;
     let fuelY = groundY - 15;
-
-    // Fuel tank 1
-    fill(200, 200, 200);
-    stroke(150, 150, 150);
-    strokeWeight(1);
+    fill(200);
+    stroke(150);
     ellipse(fuelX, fuelY, 20, 15);
     rect(fuelX - 10, fuelY, 20, 10);
-
-    // Fuel tank 2
     ellipse(fuelX + 30, fuelY, 20, 15);
     rect(fuelX + 20, fuelY, 20, 10);
-
-    // Fuel tank labels
-    fill(255, 0, 0);
+    noStroke();
+    fill(255,0,0);
     textAlign(CENTER);
-    textSize(8 * textSizeMultiplier);
+    textSize(10);
     text('FUEL', fuelX, fuelY - 12);
     text('FUEL', fuelX + 30, fuelY - 12);
+
+    pop();
 }
 
-function drawTrees() {
-    // Draw various trees along the ground for enhanced scenery (static, no animation)
-    let groundY = height - 80;
+// Draw trees: static and animated varieties (copiado del dron)
+function drawTrees(groundY){
+    push();
+    // Density and performance-aware drawing
+    // Use JS defaults unless runtime variables override
+    let density = (typeof treeDensity !== 'undefined') ? treeDensity : 58;
+    let lowPerf = (typeof lowPerformance !== 'undefined') ? lowPerformance : false;
 
-    // Define tree positions with variable density (pre-calculated for consistency)
-    let treePositions = [
-        {x: 100, type: 'oak', show: true},       // Dense forest area start
-        {x: 180, type: 'pine', show: true},      // Transition
-        {x: 250, type: 'pine', show: true},
-        {x: 320, type: 'bush', show: false},     // Sparse area - skip some
-        {x: 400, type: 'bush', show: true},
-        {x: 500, type: 'tall', show: false},     // Very sparse - skip
-        {x: 550, type: 'tall', show: true},
-        {x: 650, type: 'spreading', show: true}, // Dense again
-        {x: 700, type: 'spreading', show: true},
-        {x: 780, type: 'rounded', show: true},  // Dense forest area
-        {x: 850, type: 'rounded', show: true},
-        {x: 920, type: 'small', show: true},
-        {x: 1000, type: 'small', show: true},
-        {x: 1080, type: 'pine_var', show: false}, // Sparse transition - skip
-        {x: 1150, type: 'pine_var', show: true},
-        {x: 1240, type: 'bushy', show: false},   // Sparse area - skip
-        {x: 1300, type: 'bushy', show: true},
-        {x: 1380, type: 'slender', show: false}  // Very sparse end - skip
-    ];
-
-    // Draw trees statically (no animation)
-    for (let i = 0; i < treePositions.length; i++) {
-        let tree = treePositions[i];
-
-        // Only show trees marked to be visible
-        if (!tree.show) continue;
-
-        drawStaticTree(tree.x, groundY, tree.type);
+    // Base positions along the ground; we'll sample according to density
+    let basePositions = [60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780];
+    // Determine effective count based on density and performance mode
+    let maxCount = basePositions.length;
+    let effectiveCount = Math.max(1, Math.floor(maxCount * (density / 100)));
+    if (lowPerf) {
+        effectiveCount = Math.max(1, Math.floor(effectiveCount * 0.4));
     }
 
-    // Add some additional scattered trees in dense areas (pre-calculated positions)
-    let extraTrees = [
-        {x: 120, type: 'oak'},
-        {x: 680, type: 'pine'},
-        {x: 820, type: 'rounded'}
-    ];
-
-    for (let extraTree of extraTrees) {
-        drawStaticTree(extraTree.x, groundY, extraTree.type);
+    // Choose positions evenly from basePositions
+    for (let i = 0; i < effectiveCount; i++){
+        let idx = Math.floor(map(i, 0, effectiveCount, 0, basePositions.length - 1));
+        let x = basePositions[idx];
+        let typeIndex = i % 6;
+        if (i === 2 && !lowPerf) {
+            // animated tree example (skip animated in low perf)
+            drawAnimatedTree(x, groundY + 5, 'spreading', sin(time * 0.8) * 2, cos(time * 0.6) * 1.5, sin(time * 1.2) * 1.2, i, 65);
+        } else {
+            drawStaticTree(x, groundY + 5, typeIndex);
+        }
     }
+    pop();
 }
 
-function drawStaticTree(x, groundY, type) {
+function drawStaticTree(x, groundY, typeIndex){
+    push();
+    translate(x, groundY);
+    noStroke();
+    switch(typeIndex){
+        case 0:
+            // Oak
+            fill(101,67,33); rect(-6, -50, 12, 50);
+            fill(34,139,34); ellipse(0, -65, 70, 50); break;
+        case 1:
+            // Pine
+            fill(139,69,19); rect(-4, -45, 8, 45);
+            fill(0,100,0); triangle(-25, -25, 0, -55, 25, -25); break;
+        case 2:
+            // Rounded
+            fill(101,67,33); rect(-5, -40, 10, 40);
+            fill(50,150,50); ellipse(0, -50, 60, 48); break;
+        case 3:
+            // Tall slender
+            fill(139,69,19); rect(-3, -70, 6, 70);
+            fill(34,139,34); ellipse(0, -80, 40, 35); break;
+        case 4:
+            // Spreading
+            fill(101,67,33); rect(-10, -65, 20, 65);
+            fill(34,139,34); ellipse(0, -75, 90, 65); break;
+        case 5:
+            // Rounded variant
+            fill(139,69,19); rect(-6, -50, 12, 50);
+            fill(50,150,50); ellipse(0, -60, 65, 50); break;
+    }
+    pop();
+}
+
+function drawAnimatedTree(x, groundY, type, wind1, wind2, wind3, treeIndex, height) {
     push();
     translate(x, groundY);
 
-    // No scaling for static trees - use default heights
+    // Calculate scaling based on height parameter
+    let defaultHeight;
+    switch(type) {
+        case 'oak': defaultHeight = 60; break;
+        case 'pine': defaultHeight = 45; break;
+        case 'bush': defaultHeight = 35; break;
+        case 'tall': defaultHeight = 70; break;
+        case 'spreading': defaultHeight = 65; break;
+        case 'rounded': defaultHeight = 50; break;
+        case 'small': defaultHeight = 40; break;
+        case 'pine_var': defaultHeight = 48; break;
+        case 'bushy': defaultHeight = 38; break;
+        case 'slender': defaultHeight = 75; break;
+        default: defaultHeight = 50;
+    }
+    let scaleFactor = height / defaultHeight;
+    scale(scaleFactor);
+
+    // Individual tree wind variation
+    let treeWind1 = wind1 * (0.8 + sin(treeIndex * 0.5) * 0.4);
+    let treeWind2 = wind2 * (0.9 + cos(treeIndex * 0.3) * 0.2);
+    let treeWind3 = wind3 * (0.7 + sin(treeIndex * 0.7) * 0.6);
     switch(type) {
         case 'oak':
-            // Large oak-like tree
-            // Trunk
             fill(101, 67, 33);
             noStroke();
             rect(-8, -60, 16, 60);
-
-            // Static leaves
             fill(34, 139, 34);
-            ellipse(0, -70, 80, 60);
-            ellipse(-15, -60, 60, 50);
-            ellipse(15, -60, 60, 50);
-            ellipse(0, -50, 70, 55);
+            let oakWindX1 = treeWind1 * 2;
+            let oakWindY1 = treeWind2 * 1.5;
+            ellipse(oakWindX1, -70 + oakWindY1, 80, 60);
+            let oakWindX2 = treeWind2 * 1.8;
+            let oakWindY2 = treeWind3 * 1.2;
+            ellipse(-15 + oakWindX2, -60 + oakWindY2, 60, 50);
+            let oakWindX3 = treeWind3 * 2.2;
+            let oakWindY3 = treeWind1 * 1.8;
+            ellipse(15 + oakWindX3, -60 + oakWindY3, 60, 50);
+            ellipse(treeWind1 * 1.5, -50 + treeWind2, 70, 55);
             break;
 
         case 'pine':
@@ -3255,27 +3124,7 @@ let tutorialSteps = [
         `,
         action: "angle_of_attack"
     },
-    {
-        title: "Velocidad y Sustentación",
-        content: `
-            <h4>💨 Relación Velocidad-Sustentación</h4>
-            <p>La fórmula de sustentación es:</p>
-            <div style="background: #f0f8ff; padding: 10px; border-radius: 5px; margin: 10px 0; text-align: center; font-weight: bold;">
-                L = ½ × ρ × v² × A × Cl
-            </div>
-            <p><strong>Observaciones clave:</strong></p>
-            <ul>
-                <li>La sustentación es proporcional al cuadrado de la velocidad (v²)</li>
-                <li>Duplicar la velocidad → Cuadruplicar la sustentación</li>
-                <li>Esto explica por qué los aviones necesitan velocidad para despegar</li>
-            </ul>
-            <div style="background: #d4edda; padding: 10px; border-radius: 5px; margin: 10px 0;">
-                <strong>Ejemplo:</strong> Si aumentas la velocidad de 30 km/h a 60 km/h, la sustentación se multiplica por 4 (² = 4).
-            </div>
-            <p><em>Ajusta la velocidad y observa cómo cambia la sustentación.</em></p>
-        `,
-        action: "velocity_lift"
-    },
+
     {
         title: "Pérdida de Sustentación (Stall)",
         content: `
