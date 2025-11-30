@@ -1899,72 +1899,67 @@ function drawVelocityComparison() {
     scale(2.5);
 
     // Wing position
-    let wingX = 40;
-    let wingY = -10;
+   // let wingX = 40;
+    //let wingY = -10;
 
     // Calculate velocities using Bernoulli's principle
-    let velocity_ms = velocity / 3.6; // Convert km/h to m/s
-    let velocityAbove = velocity_ms * 1.3; // Faster above (lower pressure)
-    let velocityBelow = velocity_ms * 0.7; // Slower below (higher pressure)
+    //let velocity_ms = velocity / 3.6; // Convert km/h to m/s
+    //let velocityAbove = velocity_ms * 1.3; // Faster above (lower pressure)
+    //let velocityBelow = velocity_ms * 0.7; // Slower below (higher pressure)
 
     // ===== VELOCITY COMPARISON VISUALIZATION =====
     // Show velocity vectors above and below the wing
 
     // Above wing velocity (faster, blue)
-    let aboveX = wingX + 80;
-    let aboveY = wingY - 40;
+    //let aboveX = wingX + 80;
+    //let aboveY = wingY - 40;
 
     // Velocity vector above
-    stroke(100, 150, 255, 200);
-    strokeWeight(4);
-    fill(100, 150, 255, 150);
+    //stroke(100, 150, 255, 200);
+    //strokeWeight(4);
+    //fill(100, 150, 255, 150);
 
-    let aboveVectorLength = velocityAbove * 2;
-    line(aboveX, aboveY, aboveX + aboveVectorLength, aboveY);
+    //let aboveVectorLength = velocityAbove * 2;
+    //line(aboveX, aboveY, aboveX + aboveVectorLength, aboveY);
 
     // Arrow head
-    fill(100, 150, 255, 200);
-    triangle(aboveX + aboveVectorLength, aboveY, aboveX + aboveVectorLength - 8, aboveY - 4, aboveX + aboveVectorLength - 8, aboveY + 4);
+    //fill(100, 150, 255, 200);
+    //triangle(aboveX + aboveVectorLength, aboveY, aboveX + aboveVectorLength - 8, aboveY - 4, aboveX + aboveVectorLength - 8, aboveY + 4);
 
     // Label
-    fill(100, 150, 255);
-    textAlign(CENTER);
-    textSize(10 * textSizeMultiplier);
-    text('v₁ = ' + velocityAbove.toFixed(1) + ' m/s', aboveX + aboveVectorLength/2, aboveY - 15);
+    //fill(100, 150, 255);
+    //textAlign(CENTER);
+    //textSize(10 * textSizeMultiplier);
+    //text('v₁ = ' + velocityAbove.toFixed(1) + ' m/s', aboveX + aboveVectorLength/2, aboveY - 15);
 
     // Below wing velocity (slower, red)
-    let belowX = wingX + 80;
-    let belowY = wingY + 40;
+   // let belowX = wingX + 80;
+    //let belowY = wingY + 40;
 
     // Velocity vector below
-    stroke(255, 100, 100, 200);
-    strokeWeight(4);
-    fill(255, 100, 100, 150);
+   // stroke(255, 100, 100, 200);
+    //strokeWeight(4);
+    //fill(255, 100, 100, 150);
 
-    let belowVectorLength = velocityBelow * 2;
-    line(belowX, belowY, belowX + belowVectorLength, belowY);
+    //let belowVectorLength = velocityBelow * 2;
+    //line(belowX, belowY, belowX + belowVectorLength, belowY);
 
     // Arrow head
-    fill(255, 100, 100, 200);
-    triangle(belowX + belowVectorLength, belowY, belowX + belowVectorLength - 8, belowY - 4, belowX + belowVectorLength - 8, belowY + 4);
+   // fill(255, 100, 100, 200);
+    //triangle(belowX + belowVectorLength, belowY, belowX + belowVectorLength - 8, belowY - 4, belowX + belowVectorLength - 8, belowY + 4);
 
     // Label
-    fill(255, 100, 100);
-    textAlign(CENTER);
-    textSize(10 * textSizeMultiplier);
-    text('v₂ = ' + velocityBelow.toFixed(1) + ' m/s', belowX + belowVectorLength/2, belowY + 20);
+    //fill(255, 100, 100);
+    //textAlign(CENTER);
+    //textSize(10 * textSizeMultiplier);
+    //text('v₂ = ' + velocityBelow.toFixed(1) + ' m/s', belowX + belowVectorLength/2, belowY + 20);
 
-    // Bernoulli equation reminder
-    fill(255, 255, 0);
-    textAlign(CENTER);
-    textSize(12 * textSizeMultiplier);
-    text('Bernoulli: v₁ > v₂ → P₁ < P₂', wingX + 80, wingY - 70);
 
     // Velocity ratio
-    let ratio = velocityAbove / velocityBelow;
-    fill(255, 255, 255);
-    textSize(10 * textSizeMultiplier);
-    text('Relación: ' + ratio.toFixed(2) + ':1', wingX + 80, wingY + 80);
+    //let ratio = velocityAbove / velocityBelow;
+   // fill(255, 255, 255);
+    //textSize(10 * textSizeMultiplier);
+    //text('Relación: ' + ratio.toFixed(2) + ':1', wingX + 80, wingY + 80);
 
     pop();
 }
