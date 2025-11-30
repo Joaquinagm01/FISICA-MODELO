@@ -20,18 +20,6 @@
 - [x] **Ríos y lagos**: Incorporar elementos acuáticos con reflejos (Completado: río serpenteante con animación de agua y reflejos)
 - [x] **Edificios y estructuras**: Agregar aeropuertos, hangares y elementos urbanos (Completado: torre de control, hangar, terminal, pista de aterrizaje)
 
-## ⚡ Mejoras de Rendimiento
-
-### Optimización de Partículas
-- [ ] **Reducir partículas de flujo**: Optimizar el sistema de partículas de aire para mejor FPS
-- [ ] **LOD (Level of Detail)**: Implementar niveles de detalle para elementos lejanos
-- [ ] **Pooling de objetos**: Reutilizar objetos en lugar de crear/destruir constantemente
-
-### Renderizado
-- [ ] **WebGL optimizado**: Mejorar el uso de GPU para animaciones complejas
-- [ ] **Frustum culling**: No renderizar objetos fuera del campo de visión
-- [ ] **Batch rendering**: Agrupar llamadas de dibujo para mejor rendimiento
-
 ## 🎮 Mejoras de Interfaz y UX
 
 ### Controles Interactivos
@@ -44,7 +32,6 @@
 - [ ] **Gráficos en tiempo real**: Agregar gráficos de fuerzas, velocidad y altitud
 - [ ] **Indicadores mejorados**: Mejorar los displays de coeficientes aerodinámicos
 - [ ] **Modo debug**: Agregar herramientas de desarrollo para análisis técnico
-- [ ] **Exportar datos**: Permitir guardar datos de simulación para análisis posterior
 
 ## 🛩️ Mejoras del Avión y Física
 
@@ -74,29 +61,8 @@
 - [ ] **Partículas ambientales**: Polvo, insectos y otros elementos flotantes
 - [ ] **Transiciones suaves**: Mejorar animaciones de cambio de estado
 
-## 📱 Mejoras de Accesibilidad y Compatibilidad
 
-### Responsive Design
-- [ ] **Adaptación móvil**: Optimizar para dispositivos táctiles
-- [ ] **Controles alternativos**: Agregar soporte para gamepads y otros dispositivos
-- [ ] **Modo accesible**: Implementar alto contraste y opciones de tamaño de fuente
 
-### Compatibilidad
-- [ ] **Navegadores múltiples**: Asegurar funcionamiento en todos los navegadores modernos
-- [ ] **WebGL fallback**: Implementar modo Canvas 2D para dispositivos sin WebGL
-- [ ] **Optimización móvil**: Reducir complejidad para dispositivos con menos poder
-
-## 🔧 Mejoras Técnicas
-
-### Arquitectura del Código
-- [ ] **Modularización**: Separar el código en módulos reutilizables
-- [ ] **Configuración externa**: Mover parámetros a archivos de configuración
-- [ ] **Sistema de plugins**: Permitir extensiones y mods de la simulación
-
-### Testing y Calidad
-- [ ] **Pruebas unitarias**: Agregar tests para funciones críticas
-- [ ] **Validación física**: Verificar que los cálculos aerodinámicos sean correctos
-- [ ] **Performance monitoring**: Implementar métricas de rendimiento
 
 ## 🎯 Mejoras Educativas
 

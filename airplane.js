@@ -4,23 +4,24 @@ let angleOfAttack = 5;
 let altitude = 500;
 let wingSpan = 10.9; // m
 let wingChord = 1.49; // m
-let wingArea = wingSpan * wingChord;
 let airDensity = 1.225; // Densidad del aire al nivel del mar (kg/m³)
 let gravity = 9.81;
 let mass = 1338; // kg
 
-let velocitySlider, angleSlider, altitudeSlider, massSlider;
+let velocitySlider, angleSlider, altitudeSlider, massSlider, wingAreaSlider;
 let liftDisplay, dragDisplay, weightDisplay, airVelocityDisplay;
+let showFormulasToggle, formulasPanel;
+
+// Coefficient display elements
 let clDisplay, cdDisplay, ldDisplay, alphaDisplay, criticalAngleDisplay, flightStatusDisplay, efficiencyDisplay;
-let showFormulasToggle, showCoefficientsToggle, formulasPanel, coefficientsPanel;
 
 // Aerodynamic constants
 const AIR_DENSITY_SEA_LEVEL = 1.225; // kg/m³
 const GRAVITY = 9.81; // m/s²
-const WING_AREA = 36.3; // m² (adjusted for flight with given parameters)
 const WING_SPAN = 10.9; // m
 const MEAN_CHORD = 1.49; // m
 let aircraftMass = 1200; // kg (default mass)
+let wingArea = 36.3; // m² (controlled by slider)
 
 // Aerodynamic calculation functions
 function calculateLiftCoefficient(angleOfAttack) {
@@ -51,14 +52,14 @@ function calculateLift(velocity, angleOfAttack, altitude) {
   const CL = calculateLiftCoefficient(angleOfAttack);
   const rho = calculateAirDensity(altitude);
   const V = velocity / 3.6; // Convert km/h to m/s
-  return 0.5 * rho * V * V * WING_AREA * CL;
+  return 0.5 * rho * V * V * wingArea * CL;
 }
 
 function calculateDrag(velocity, angleOfAttack, altitude) {
   const CD = calculateDragCoefficient(angleOfAttack);
   const rho = calculateAirDensity(altitude);
   const V = velocity / 3.6; // Convert km/h to m/s
-  return 0.5 * rho * V * V * WING_AREA * CD;
+  return 0.5 * rho * V * V * wingArea * CD;
 }
 
 function calculateWeight() {
@@ -118,19 +119,22 @@ function setup() {
     angleSlider = select('#angle');
     altitudeSlider = select('#altitude');
     massSlider = select('#mass');
+    wingAreaSlider = select('#wing-area');
     liftDisplay = select('#lift-display');
     dragDisplay = select('#drag-display');
     weightDisplay = select('#weight-display');
     airVelocityDisplay = select('#air-velocity-display');
+
+    // Get coefficient display elements
+    clDisplay = select('#clDisplay');
+    cdDisplay = select('#cdDisplay');
+    ldDisplay = select('#ldDisplay');
+    alphaDisplay = select('#alphaDisplay');
+    criticalAngleDisplay = select('#criticalAngleDisplay');
+    flightStatusDisplay = select('#flightStatusDisplay');
+    efficiencyDisplay = select('#efficiencyDisplay');
     
-    // Use document.querySelector for coefficient displays to ensure they are found
-    clDisplay = document.querySelector('#cl-display');
-    cdDisplay = document.querySelector('#cd-display');
-    ldDisplay = document.querySelector('#ld-display');
-    alphaDisplay = document.querySelector('#alpha-display');
-    criticalAngleDisplay = document.querySelector('#critical-angle');
-    flightStatusDisplay = document.querySelector('#flight-status');
-    efficiencyDisplay = document.querySelector('#efficiency');
+
     
     // Initialize text size control
     textSizeSlider = select('#text-size');
@@ -148,6 +152,7 @@ function setup() {
     angleSlider.input(updateValues);
     altitudeSlider.input(updateValues);
     massSlider.input(updateValues);
+    wingAreaSlider.input(updateValues);
     textSizeSlider.input(updateTextSize);
 }
 
@@ -156,12 +161,14 @@ function updateValues() {
     angleOfAttack = angleSlider.value();
     altitude = altitudeSlider.value();
     aircraftMass = massSlider.value();
+    wingArea = wingAreaSlider.value();
 
     // Update display values with null checks
     if (select('#velocity-value')) select('#velocity-value').html((velocity / 3.6).toFixed(1) + ' m/s');
     if (select('#angle-value')) select('#angle-value').html(angleOfAttack + '°');
     if (select('#altitude-value')) select('#altitude-value').html(altitude + ' m');
     if (select('#mass-value')) select('#mass-value').html(aircraftMass + ' kg');
+    if (select('#wing-area-value')) select('#wing-area-value').html(wingArea.toFixed(1) + ' m²');
 
     // Calculate aerodynamic forces
     const lift = calculateLift(velocity, angleOfAttack, altitude);
@@ -181,13 +188,13 @@ function updateValues() {
     if (airVelocityDisplay) airVelocityDisplay.html((velocity / 3.6).toFixed(1) + ' m/s');
 
     // Update coefficient displays (with safety checks)
-    if (clDisplay) clDisplay.textContent = CL.toFixed(3);
-    if (cdDisplay) cdDisplay.textContent = CD.toFixed(3);
-    if (ldDisplay) ldDisplay.textContent = efficiency.toFixed(2);
-    if (alphaDisplay) alphaDisplay.textContent = angleOfAttack + '°';
-    if (criticalAngleDisplay) criticalAngleDisplay.textContent = criticalAngle + '°';
-    if (flightStatusDisplay) flightStatusDisplay.textContent = flightStatus;
-    if (efficiencyDisplay) efficiencyDisplay.textContent = efficiency.toFixed(2);
+    if (clDisplay) clDisplay.html(CL.toFixed(3));
+    if (cdDisplay) cdDisplay.html(CD.toFixed(3));
+    if (ldDisplay) ldDisplay.html(efficiency.toFixed(2));
+    if (alphaDisplay) alphaDisplay.html(angleOfAttack + '°');
+    if (criticalAngleDisplay) criticalAngleDisplay.html(criticalAngle + '°');
+    if (flightStatusDisplay) flightStatusDisplay.html(flightStatus);
+    if (efficiencyDisplay) efficiencyDisplay.html(efficiency.toFixed(2));
 
     // Update dynamic calculations panel
     updateDynamicCalculations(lift, drag, weight, CL, CD, airDensity, efficiency, velocity, angleOfAttack, altitude, aircraftMass);
@@ -196,16 +203,10 @@ function updateValues() {
 function updateDynamicCalculations(lift, drag, weight, CL, CD, airDensity, efficiency, velocity, angleOfAttack, altitude, mass) {
     const velocity_ms = velocity / 3.6; // Convert km/h to m/s
 
-    // Update Bernoulli equation
-    const bernoulliFormula = `P + ½ρv² + ρgh = constante`;
-    const bernoulliElement = document.getElementById('bernoulli-formula');
-    if (bernoulliElement) bernoulliElement.textContent = bernoulliFormula;
 
-    const bernoulliExplanationElement = document.getElementById('bernoulli-explanation');
-    if (bernoulliExplanationElement) bernoulliExplanationElement.innerHTML = `<strong>Principio:</strong> La suma de presión, energía cinética y potencial se conserva en un fluido en movimiento.`;
 
     // Calculate pressure difference using Bernoulli (ΔP = lift / area for consistency)
-    const pressure_diff = lift / WING_AREA;
+    const pressure_diff = lift / wingArea;
     const pressure_comparison = pressure_diff > 0 ? 'mayor' : 'menor';
 
     // Calculate velocities above and below wing using Bernoulli principle
@@ -2815,9 +2816,9 @@ function drawNumericalExamples() {
     yPos += lineHeight;
     text('3. V = ' + V.toFixed(1) + ' m/s', 10, yPos);
     yPos += lineHeight;
-    text('4. Área = ' + WING_AREA + ' m²', 10, yPos);
+    text('4. Área = ' + wingArea.toFixed(1) + ' m²', 10, yPos);
     yPos += lineHeight;
-    text('5. L = ½ × ' + rho.toFixed(3) + ' × ' + V.toFixed(0) + '² × ' + WING_AREA + ' × ' + CL.toFixed(3), 10, yPos);
+    text('5. L = ½ × ' + rho.toFixed(3) + ' × ' + V.toFixed(0) + '² × ' + wingArea.toFixed(1) + ' × ' + CL.toFixed(3), 10, yPos);
     yPos += lineHeight;
     text('   = ' + lift.toFixed(0) + ' N', 10, yPos);
 

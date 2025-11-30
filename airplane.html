@@ -5,6 +5,7 @@ erhacrra e<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulación de Avión - Alas Fijas</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -156,10 +157,19 @@ erhacrra e<!DOCTYPE html>
                 </div>
 
                 <div class="control-group">
+                    <label for="wing-area">Área del Ala (m²):</label>
+                    <input type="range" id="wing-area" min="10" max="100" step="0.1" value="16.2">
+                    <div class="value-display" id="wing-area-value">16.2 m²</div>
+                </div>
+
+                <div class="control-group">
                     <label for="text-size">Tamaño del Texto:</label>
                     <input type="range" id="text-size" min="0.5" max="3.0" step="0.1" value="1.0">
                     <div class="value-display" id="text-size-value">1.0x</div>
                 </div>
+
+
+
 
 
             </div>
@@ -172,13 +182,7 @@ erhacrra e<!DOCTYPE html>
         <div class="formula-panel" id="calculations-panel">
             <h3>🧮 Cálculos en Tiempo Real - Principio de Bernoulli</h3>
 
-            <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #28a745;">
-                <h4 style="margin: 0 0 8px 0; color: #155724;">🌪️ Ecuación de Bernoulli</h4>
-                <div class="formula" id="bernoulli-formula">P + ½ρv² + ρgh = constante</div>
-                <p id="bernoulli-explanation" style="font-size: 12px; margin: 5px 0; color: #155724;">
-                    <strong>Principio:</strong> La suma de presión, energía cinética y potencial se conserva en un fluido en movimiento.
-                </p>
-            </div>
+
 
             <div style="background: #d1ecf1; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #17a2b8;">
                 <h4 style="margin: 0 0 8px 0; color: #0c5460;">💨 Velocidades del Aire sobre el Ala</h4>
@@ -243,16 +247,17 @@ erhacrra e<!DOCTYPE html>
             <div style="background: #fce4ec; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 5px solid #e91e63;">
                 <h4 style="margin: 0 0 10px 0; color: #c2185b;">🔢 Ejemplo Práctico</h4>
                 <div style="background: #f8f8f8; padding: 10px; border-radius: 5px; margin: 8px 0;">
-                    <div style="font-size: 12px; margin-bottom: 5px;"><strong>Datos:</strong></div>
-                    <div style="font-size: 12px; margin: 2px 0;">ρ = 1.225 kg/m³</div>
-                    <div style="font-size: 12px; margin: 2px 0;">v₁ = 80 m/s (sobre el ala)</div>
-                    <div style="font-size: 12px; margin: 2px 0;">v₂ = 60 m/s (bajo el ala)</div>
+                    <div style="font-size: 12px; margin-bottom: 5px;"><strong>Datos actuales de la simulación:</strong></div>
+                    <div style="font-size: 12px; margin: 2px 0;">ρ = <span id="example-density">1.225</span> kg/m³</div>
+                    <div style="font-size: 12px; margin: 2px 0;">v₁ = <span id="example-velocity-above">48.0</span> m/s (sobre el ala)</div>
+                    <div style="font-size: 12px; margin: 2px 0;">v₂ = <span id="example-velocity-below">36.0</span> m/s (bajo el ala)</div>
                 </div>
-                <div class="formula" style="font-size: 14px; margin: 8px 0;">ΔP = ½ × 1.225 × (60² - 80²) = ½ × 1.225 × (-2800) = -1,715 Pa</div>
+                <div class="formula" style="font-size: 14px; margin: 8px 0;">ΔP = ½ × <span id="example-density-calc">1.225</span> × (<span id="example-velocity-above-calc">48.0</span>² - <span id="example-velocity-below-calc">36.0</span>²) = ½ × <span id="example-density-calc">1.225</span> × <span id="example-velocity-diff">784</span> = <span id="example-pressure-diff">480</span> Pa</div>
                 <p style="font-size: 12px; margin: 5px 0; color: #c2185b; font-weight: bold;">
-                    <strong>Resultado:</strong> La presión es 1,715 Pa mayor debajo del ala → fuerza neta hacia arriba.
+                    <strong>Resultado:</strong> La presión es <span id="example-pressure-comparison">mayor</span> debajo del ala → fuerza neta hacia arriba (<span id="example-lift">23520</span> N).
                 </p>
             </div>
+
         </div>
 
         <div class="formula-panel" id="formulas-panel">
@@ -324,6 +329,65 @@ erhacrra e<!DOCTYPE html>
             </div>
 
 
+        </div>
+
+        <!-- Data Visualization Panels -->
+        <div class="formula-panel" id="data-visualization-panel" style="display: none;">
+            <h3>📊 Visualización de Datos en Tiempo Real</h3>
+
+            <!-- Real-time Charts -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px;">
+                <div style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #007bff;">
+                    <h4 style="margin-top: 0; color: #007bff;">📈 Velocidad vs Tiempo</h4>
+                    <canvas id="velocity-chart" width="300" height="150"></canvas>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #28a745;">
+                    <h4 style="margin-top: 0; color: #28a745;">📈 Altitud vs Tiempo</h4>
+                    <canvas id="altitude-chart" width="300" height="150"></canvas>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px;">
+                <div style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #dc3545;">
+                    <h4 style="margin-top: 0; color: #dc3545;">📈 Sustentación vs Tiempo</h4>
+                    <canvas id="lift-chart" width="300" height="150"></canvas>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 8px; border: 2px solid #ffc107;">
+                    <h4 style="margin-top: 0; color: #ffc107;">📈 Arrastre vs Tiempo</h4>
+                    <canvas id="drag-chart" width="300" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Debug Panel -->
+        <div class="formula-panel" id="debug-panel" style="display: none;">
+            <h3>🔧 Panel de Debug - Análisis Técnico</h3>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 14px; font-weight: bold; color: #495057;">FPS</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #007bff;" id="fps-display">60</div>
+                </div>
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 14px; font-weight: bold; color: #495057;">Frame Time</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #28a745;" id="frame-time-display">16.7ms</div>
+                </div>
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center;">
+                    <div style="font-size: 14px; font-weight: bold; color: #495057;">Memory Usage</div>
+                    <div style="font-size: 20px; font-weight: bold; color: #ffc107;" id="memory-display">N/A</div>
+                </div>
+            </div>
+
+            <div style="background: #e9ecef; padding: 15px; border-radius: 8px;">
+                <h4 style="margin-top: 0; color: #495057;">📋 Variables de Estado</h4>
+                <div style="font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.4;">
+                    <div id="debug-variables">
+                        Cargando variables de debug...
+                    </div>
+                </div>
+            </div>
         </div>
 
         <a href="index.html" class="back-link">← Volver al Menú Principal</a>
