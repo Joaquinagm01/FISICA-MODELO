@@ -157,12 +157,6 @@ function setup() {
 
     // Initialize educational features
     initializeEducationalFeatures();
-
-    // Show tutorial modal initially for visibility
-    select('#tutorial-modal').style('display', 'block');
-    select('#tutorial-panel').style('display', 'block');
-    select('#experiments-panel').style('display', 'none');
-    select('#contextual-help-panel').style('display', 'none');
 }
 
 function updateValues() {
@@ -3471,16 +3465,17 @@ function initializeEducationalFeatures() {
     const tutorialBtn = select('#tutorial-btn');
     const tutorialPrev = select('#tutorial-prev');
     const tutorialNext = select('#tutorial-next');
+    const tutorialClose = select('#tutorial-close');
 
     if (tutorialBtn) {
-        tutorialBtn.mousePressed(() => {
+        tutorialBtn.elt.addEventListener('click', () => {
             showTutorialPanel();
             updateTutorialDisplay();
         });
     }
 
     if (tutorialPrev) {
-        tutorialPrev.mousePressed(() => {
+        tutorialPrev.elt.addEventListener('click', () => {
             if (currentTutorialStep > 0) {
                 currentTutorialStep--;
                 updateTutorialDisplay();
@@ -3489,11 +3484,21 @@ function initializeEducationalFeatures() {
     }
 
     if (tutorialNext) {
-        tutorialNext.mousePressed(() => {
+        tutorialNext.elt.addEventListener('click', () => {
             if (currentTutorialStep < tutorialSteps.length - 1) {
                 currentTutorialStep++;
                 updateTutorialDisplay();
+            } else {
+                // Finish tutorial - close modal and show completion message
+                select('#tutorial-modal').style('display', 'none');
+                showTutorialCompletionMessage();
             }
+        });
+    }
+
+    if (tutorialClose) {
+        tutorialClose.elt.addEventListener('click', () => {
+            select('#tutorial-modal').style('display', 'none');
         });
     }
 
@@ -3637,6 +3642,67 @@ function performTutorialAction(action) {
         default:
             break;
     }
+}
+
+function showTutorialCompletionMessage() {
+    // Create a completion message overlay
+    const completionDiv = createDiv(`
+        <div style="
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            z-index: 10000;
+            max-width: 500px;
+            font-family: Arial, sans-serif;
+        ">
+            <h2 style="margin: 0 0 15px 0; font-size: 28px;">🎉 ¡Tutorial Completado!</h2>
+            <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 1.5;">
+                ¡Felicitaciones! Has completado exitosamente el tutorial de aerodinámica.
+                Ahora tienes una comprensión sólida de los principios fundamentales del vuelo.
+            </p>
+            <div style="
+                background: rgba(255,255,255,0.2);
+                padding: 15px;
+                border-radius: 8px;
+                margin: 20px 0;
+            ">
+                <strong>Próximos pasos recomendados:</strong>
+                <ul style="text-align: left; margin: 10px 0 0 20px; padding: 0;">
+                    <li>Explora los Experimentos Virtuales</li>
+                    <li>Activa la Ayuda Contextual</li>
+                    <li>Experimenta libremente con los controles</li>
+                </ul>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove();" style="
+                background: white;
+                color: #28a745;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 25px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                margin-top: 15px;
+            ">¡Entendido!</button>
+        </div>
+    `);
+
+    // Add to body
+    completionDiv.parent(document.body);
+
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+        if (completionDiv.elt && completionDiv.elt.parentElement) {
+            completionDiv.remove();
+        }
+    }, 10000);
 }
 
 function showExperimentsPanel() {
