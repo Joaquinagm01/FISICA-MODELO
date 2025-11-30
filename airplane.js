@@ -1,5 +1,5 @@
 // Simulación de Avión con Alas Fijas
-let velocity = 108; // km/h (30 m/s)
+let velocity = 30; // km/h
 let angleOfAttack = 5;
 let altitude = 500;
 let wingSpan = 10.9; // m
@@ -7,7 +7,7 @@ let wingChord = 1.49; // m
 let wingArea = wingSpan * wingChord;
 let airDensity = 1.225; // Densidad del aire al nivel del mar (kg/m³)
 let gravity = 9.81;
-let mass = 1200; // kg
+let mass = 1338; // kg
 
 let velocitySlider, angleSlider, altitudeSlider, massSlider;
 let liftDisplay, dragDisplay, weightDisplay, airVelocityDisplay;
@@ -17,7 +17,7 @@ let showFormulasToggle, showCoefficientsToggle, formulasPanel, coefficientsPanel
 // Aerodynamic constants
 const AIR_DENSITY_SEA_LEVEL = 1.225; // kg/m³
 const GRAVITY = 9.81; // m/s²
-const WING_AREA = 16.2; // m² (wingSpan * wingChord = 10.9 * 1.49)
+const WING_AREA = 36.3; // m² (adjusted for flight with given parameters)
 const WING_SPAN = 10.9; // m
 const MEAN_CHORD = 1.49; // m
 let aircraftMass = 1200; // kg (default mass)
@@ -158,7 +158,7 @@ function updateValues() {
     aircraftMass = massSlider.value();
 
     // Update display values with null checks
-    if (select('#velocity-value')) select('#velocity-value').html(velocity + ' km/h');
+    if (select('#velocity-value')) select('#velocity-value').html((velocity / 3.6).toFixed(1) + ' m/s');
     if (select('#angle-value')) select('#angle-value').html(angleOfAttack + '°');
     if (select('#altitude-value')) select('#altitude-value').html(altitude + ' m');
     if (select('#mass-value')) select('#mass-value').html(aircraftMass + ' kg');
@@ -196,80 +196,93 @@ function updateValues() {
 function updateDynamicCalculations(lift, drag, weight, CL, CD, airDensity, efficiency, velocity, angleOfAttack, altitude, mass) {
     const velocity_ms = velocity / 3.6; // Convert km/h to m/s
 
-    // Update lift calculation
-    const liftFormula = `L = ½ × ${airDensity.toFixed(3)} × ${velocity_ms.toFixed(0)}² × ${WING_AREA} × ${CL.toFixed(3)} = ${lift.toFixed(0)} N`;
-    document.getElementById('lift-formula').textContent = liftFormula;
+    // Update Bernoulli equation
+    const bernoulliFormula = `P + ½ρv² + ρgh = constante`;
+    document.getElementById('bernoulli-formula').textContent = bernoulliFormula;
+    document.getElementById('bernoulli-explanation').innerHTML = `<strong>Principio:</strong> La suma de presión, energía cinética y potencial se conserva en un fluido en movimiento.`;
 
-    let liftExplanation = '';
-    if (velocity_ms < 20) {
-        liftExplanation = `La velocidad es baja (${velocity_ms.toFixed(0)} m/s). Aumenta la velocidad para generar más sustentación mediante el principio de Bernoulli.`;
-    } else if (velocity_ms > 50) {
-        liftExplanation = `Alta velocidad (${velocity_ms.toFixed(0)} m/s) genera mucha sustentación, pero también aumenta el arrastre.`;
-    } else {
-        liftExplanation = `Velocidad óptima (${velocity_ms.toFixed(0)} m/s). La densidad del aire de ${airDensity.toFixed(3)} kg/m³ y área alar de ${WING_AREA} m² producen ${lift.toFixed(0)} N de sustentación.`;
-    }
-    document.getElementById('lift-explanation').innerHTML = `<strong>Explicación:</strong> ${liftExplanation}`;
+    // Calculate pressure difference using Bernoulli (ΔP = lift / area for consistency)
+    const pressure_diff = lift / WING_AREA;
+    const pressure_comparison = pressure_diff > 0 ? 'mayor' : 'menor';
 
-    // Update drag calculation
-    const dragFormula = `D = ½ × ${airDensity.toFixed(3)} × ${velocity_ms.toFixed(0)}² × ${WING_AREA} × ${CD.toFixed(3)} = ${drag.toFixed(0)} N`;
-    document.getElementById('drag-formula').textContent = dragFormula;
+    // Calculate velocities above and below wing using Bernoulli principle
+    // Assuming freestream velocity below, and pressure difference gives velocity above
+    const velocity_below = velocity_ms; // Freestream velocity (below wing approximation)
+    const velocity_above = Math.sqrt(velocity_below * velocity_below + 2 * pressure_diff / airDensity);
 
-    const ldRatio = lift / drag;
-    let dragExplanation = '';
-    if (ldRatio > 15) {
-        dragExplanation = `Excelente eficiencia aerodinámica (L/D = ${ldRatio.toFixed(1)}). El arrastre es mínimo comparado con la sustentación.`;
-    } else if (ldRatio > 8) {
-        dragExplanation = `Buena relación sustentación/arrastre (${ldRatio.toFixed(1)}). El vuelo es eficiente pero se puede mejorar.`;
-    } else {
-        dragExplanation = `Relación L/D baja (${ldRatio.toFixed(1)}). El arrastre es significativo. Considera reducir el ángulo de ataque.`;
-    }
-    document.getElementById('drag-explanation').innerHTML = `<strong>Explicación:</strong> ${dragExplanation}`;
+    // Update velocity calculation
+    const velocityFormula = `v₁ = ${velocity_above.toFixed(1)} m/s (superior), v₂ = ${velocity_below.toFixed(1)} m/s (inferior)`;
+    document.getElementById('velocity-formula').textContent = velocityFormula;
+    document.getElementById('velocity-explanation').innerHTML = `<strong>Cálculo:</strong> La velocidad superior es mayor debido a la curvatura del perfil aerodinámico (ángulo de ataque: ${angleOfAttack}°).`;
 
-    // Update equilibrium calculation
-    const equilibriumFormula = `L = W → ${lift.toFixed(0)} N ${lift >= weight ? '≥' : '<'} ${weight.toFixed(0)} N`;
-    document.getElementById('equilibrium-formula').textContent = equilibriumFormula;
+    // Update pressure difference calculation
+    const pressureFormula = `ΔP = P₂ - P₁ = ½ρ(v₁² - v₂²) = ${pressure_diff.toFixed(0)} Pa`;
+    document.getElementById('pressure-formula').textContent = pressureFormula;
+    document.getElementById('pressure-explanation').innerHTML = `<strong>Resultado:</strong> Presión ${pressure_comparison} debajo del ala genera fuerza hacia arriba (ρ = ${airDensity.toFixed(3)} kg/m³).`;
 
-    let equilibriumStatus = '';
-    if (lift > weight * 1.1) {
-        equilibriumStatus = '¡Sustentación excesiva! El avión tenderá a ascender. Reduce la velocidad o el ángulo de ataque.';
-    } else if (lift >= weight * 0.95) {
-        equilibriumStatus = 'Equilibrio casi perfecto. El avión puede volar nivelado con estos parámetros.';
-    } else {
-        equilibriumStatus = 'La sustentación es insuficiente para el peso. Aumenta la velocidad o el ángulo de ataque para generar más sustentación.';
-    }
-    document.getElementById('equilibrium-status').textContent = equilibriumStatus;
+    // Update Newton's Third Law calculation
+    const newtonFormula = `F↑ = F↓ (sobre el aire) = ${lift.toFixed(0)} N`;
+    document.getElementById('newton-formula').textContent = newtonFormula;
+    document.getElementById('newton-explanation').innerHTML = `<strong>Complementario:</strong> El ala desvía el aire hacia abajo, generando una fuerza igual y opuesta hacia arriba.`;
 
-    // Update altitude effects
-    const scaleHeight = 8435; // m
-    const altitudeFormula = `ρ = ${AIR_DENSITY_SEA_LEVEL.toFixed(3)} × e^(-${altitude}/${scaleHeight}) = ${airDensity.toFixed(3)} kg/m³`;
-    document.getElementById('altitude-formula').textContent = altitudeFormula;
+    // Update General Bernoulli Equation section with actual values
+    const generalBernoulliHTML = `
+        <h4 style="margin: 0 0 10px 0; color: #2e7d32;">📐 Ecuación General de Bernoulli</h4>
+        <div class="formula" style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">P + ½ρv² + ρgh = constante</div>
+        <p style="font-size: 12px; margin: 5px 0; color: #2e7d32; line-height: 1.4;">
+            <strong>Donde:</strong><br>
+            P: presión estática del aire (Pa)<br>
+            ρ: densidad del aire (${airDensity.toFixed(3)} kg/m³)<br>
+            v: velocidad del flujo (${velocity_ms.toFixed(1)} m/s)<br>
+            g: gravedad (9.81 m/s²)<br>
+            h: altura sobre un punto de referencia (${altitude} m)
+        </p>
+    `;
+    const generalBernoulliDiv = document.querySelector('#calculations-panel > div:nth-child(5)');
+    if (generalBernoulliDiv) generalBernoulliDiv.innerHTML = generalBernoulliHTML;
 
-    const densityReduction = ((AIR_DENSITY_SEA_LEVEL - airDensity) / AIR_DENSITY_SEA_LEVEL * 100);
-    let altitudeExplanation = '';
-    if (altitude < 500) {
-        altitudeExplanation = `A baja altitud (${altitude}m), la densidad del aire es casi la del nivel del mar, maximizando la sustentación.`;
-    } else if (altitude < 1500) {
-        altitudeExplanation = `A ${altitude}m, la densidad del aire es ${airDensity.toFixed(3)} kg/m³ (${densityReduction.toFixed(1)}% menos que al nivel del mar), reduciendo la sustentación.`;
-    } else {
-        altitudeExplanation = `A gran altitud (${altitude}m), la densidad del aire es muy baja (${airDensity.toFixed(3)} kg/m³), lo que requiere mayor velocidad para mantener la sustentación.`;
-    }
-    document.getElementById('altitude-explanation').innerHTML = `<strong>Impacto:</strong> ${altitudeExplanation}`;
+    // Update Airplane Wing Application section with actual values
+    const wingApplicationHTML = `
+        <h4 style="margin: 0 0 10px 0; color: #e65100;">✈️ Aplicación al Ala de un Avión</h4>
+        <p style="font-size: 12px; margin: 5px 0; color: #e65100; line-height: 1.4;">
+            En un vuelo recto y nivelado (horizontal), se puede suponer que la altura h no cambia significativamente entre la parte superior e inferior del ala. Por lo tanto, el término ρgh se mantiene constante y puede eliminarse de la comparación:
+        </p>
+        <div class="formula" style="font-size: 14px; margin: 8px 0;">P + ½ρv² = constante</div>
+        <p style="font-size: 12px; margin: 5px 0; color: #e65100;">
+            <strong>Ahora comparamos dos puntos en la superficie del ala:</strong><br>
+            Punto 1: Parte superior del ala (aire más rápido: ${velocity_above.toFixed(1)} m/s)<br>
+            Punto 2: Parte inferior del ala (aire más lento: ${velocity_below.toFixed(1)} m/s)
+        </p>
+        <div class="formula" style="font-size: 14px; margin: 8px 0;">P₁ + ½ρ(${velocity_above.toFixed(1)})² = P₂ + ½ρ(${velocity_below.toFixed(1)})²</div>
+        <p style="font-size: 12px; margin: 5px 0; color: #e65100;">
+            Reordenando para hallar la diferencia de presiones:
+        </p>
+        <div class="formula" style="font-size: 14px; margin: 8px 0; color: #d32f2f;">ΔP = P₂ - P₁ = ½ρ((${velocity_above.toFixed(1)})² - (${velocity_below.toFixed(1)})²) = ${pressure_diff.toFixed(0)} Pa</div>
+        <p style="font-size: 12px; margin: 5px 0; color: #e65100; font-weight: bold;">
+            Esa diferencia de presiones genera una fuerza hacia arriba: la sustentación (${lift.toFixed(0)} N).
+        </p>
+    `;
+    const wingApplicationDiv = document.querySelector('#calculations-panel > div:nth-child(6)');
+    if (wingApplicationDiv) wingApplicationDiv.innerHTML = wingApplicationHTML;
 
-    // Update efficiency calculation
-    const efficiencyFormula = `L/D = ${lift.toFixed(0)} / ${drag.toFixed(0)} = ${efficiency.toFixed(1)}`;
-    document.getElementById('efficiency-formula').textContent = efficiencyFormula;
+    // Update Practical Example section with actual values
+    const practicalExampleHTML = `
+        <h4 style="margin: 0 0 10px 0; color: #c2185b;">🔢 Ejemplo Práctico</h4>
+        <div style="background: #f8f8f8; padding: 10px; border-radius: 5px; margin: 8px 0;">
+            <div style="font-size: 12px; margin-bottom: 5px;"><strong>Datos actuales de la simulación:</strong></div>
+            <div style="font-size: 12px; margin: 2px 0;">ρ = ${airDensity.toFixed(3)} kg/m³</div>
+            <div style="font-size: 12px; margin: 2px 0;">v₁ = ${velocity_above.toFixed(1)} m/s (sobre el ala)</div>
+            <div style="font-size: 12px; margin: 2px 0;">v₂ = ${velocity_below.toFixed(1)} m/s (bajo el ala)</div>
+        </div>
+        <div class="formula" style="font-size: 14px; margin: 8px 0;">ΔP = ½ × ${airDensity.toFixed(3)} × ((${velocity_above.toFixed(1)})² - (${velocity_below.toFixed(1)})²) = ½ × ${airDensity.toFixed(3)} × (${(velocity_above*velocity_above - velocity_below*velocity_below).toFixed(0)}) = ${pressure_diff.toFixed(0)} Pa</div>
+        <p style="font-size: 12px; margin: 5px 0; color: #c2185b; font-weight: bold;">
+            <strong>Resultado:</strong> La presión es ${pressure_comparison} debajo del ala → fuerza neta hacia arriba (${lift.toFixed(0)} N).
+        </p>
+    `;
+    const practicalExampleDiv = document.querySelector('#calculations-panel > div:nth-child(7)');
+    if (practicalExampleDiv) practicalExampleDiv.innerHTML = practicalExampleHTML;
 
-    let efficiencyExplanation = '';
-    if (efficiency > 20) {
-        efficiencyExplanation = '¡Excelente rendimiento! Similar a planeadores de alto rendimiento. El avión puede volar muy eficientemente.';
-    } else if (efficiency > 12) {
-        efficiencyExplanation = 'Buen rendimiento aerodinámico. Comparable a aviones comerciales modernos.';
-    } else if (efficiency > 8) {
-        efficiencyExplanation = 'Rendimiento aceptable. Se puede mejorar optimizando el perfil alar o reduciendo el peso.';
-    } else {
-        efficiencyExplanation = 'Rendimiento bajo. El arrastre es demasiado alto. Revisa el ángulo de ataque y la velocidad.';
-    }
-    document.getElementById('efficiency-explanation').innerHTML = `<strong>Rendimiento:</strong> ${efficiencyExplanation}`;
+
 }
 
 function updateTextSize() {
@@ -353,52 +366,35 @@ function draw() {
     // Draw complete airplane with lighting effects
     drawCompleteAirplaneWithLighting();
 
-    // Draw Bernoulli pressure visualization (only wing air flows)
+    // Draw Bernoulli pressure visualization (air flows above/below wing)
     drawBernoulliPressureZones();
 
-    // Draw Newton's Third Law visualization
-    drawNewtonsThirdLaw();
-
-    // Draw wing profile with curvature measurements
-    drawWingProfileWithCurvature();
-
-    // Draw pressure distribution graph
-    drawPressureDistributionGraph();
-
-    // Draw Bernoulli equation visualization
-    drawBernoulliEquationVisualization();
-
-    // Draw detailed Bernoulli calculations
-    drawBernoulliCalculations();
-
-    // Draw energy comparison (kinetic vs pressure)
-    drawEnergyComparison();
-
-    // Draw velocity comparison above/below wing
+    // Draw velocity comparison above/below wing (air flows)
     drawVelocityComparison();
-
-    // Draw aerodynamic glossary
-    drawAerodynamicGlossary();
-
-    // Draw numerical examples
-    drawNumericalExamples();
-
-    // Draw interactive questions
-    drawInteractiveQuestions();
-
-    // Draw Bernoulli animations
-    drawBernoulliAnimations();
 
     // Draw force vectors
     drawEnhancedForceVectors(lift, drag, weight);
+
+    // Draw lift/drag ratio indicator (without box)
+    push();
+    translate(width/2, height/2 + 200);
+    fill(255, 255, 0);
+    textAlign(CENTER);
+    textSize(16 * textSizeMultiplier);
+    textStyle(BOLD);
+    let ldRatio = lift / drag;
+    text('L/D: ' + ldRatio.toFixed(2), 0, 0);
+    pop();
 
     // Draw title label with better styling
     drawTitleLabel();
 
     // Draw reference point with glow
     drawReferencePoint();
-    
+
     pop(); // End camera transformation
+
+
 }
 
 function calculateLift() {
@@ -1735,7 +1731,7 @@ function drawPressureLegend() {
     fill(255);
     textAlign(CENTER);
     textSize(12 * textSizeMultiplier);
-    text('Principio de Bernoulli', legendX + 70, legendY + 5);
+    text('Ley de Newton', legendX + 70, legendY + 5);
 
     // Pressure scale
     textAlign(LEFT);
@@ -1835,6 +1831,68 @@ function drawNewtonsThirdLaw() {
     pop();
 }
 
+function drawWingProfileWithCurvature() {
+    push();
+    translate(width/2, height/2);
+    scale(2.5);
+
+    // Wing position
+    let wingX = 40;
+    let wingY = -10;
+
+    // Draw wing profile outline
+    stroke(255);
+    strokeWeight(2);
+    noFill();
+    beginShape();
+    vertex(wingX, wingY);
+    bezierVertex(wingX + 15, wingY - 12, wingX + 50, wingY - 22, wingX + 110, wingY - 18);
+    bezierVertex(wingX + 130, wingY - 13, wingX + 150, wingY - 8, wingX + 170, wingY - 3);
+    bezierVertex(wingX + 150, wingY + 2, wingX + 130, wingY + 7, wingX + 110, wingY + 10);
+    bezierVertex(wingX + 50, wingY + 14, wingX + 15, wingY + 10, wingX, wingY + 4);
+    endShape();
+
+    // Draw curvature visualization - upper surface
+    stroke(100, 255, 100, 200); // Green for upper
+    strokeWeight(1);
+    noFill();
+    beginShape();
+    for (let x = wingX; x <= wingX + 170; x += 2) {
+        let t = map(x, wingX, wingX + 170, 0, 1);
+        // Simplified curvature representation
+        let curvature = sin(t * PI) * 20;
+        vertex(x, wingY - curvature);
+    }
+    endShape();
+
+    // Draw curvature visualization - lower surface
+    stroke(255, 100, 100, 200); // Red for lower
+    beginShape();
+    for (let x = wingX; x <= wingX + 170; x += 2) {
+        let t = map(x, wingX, wingX + 170, 0, 1);
+        let curvature = sin(t * PI) * 15;
+        vertex(x, wingY + curvature);
+    }
+    endShape();
+
+    // Label
+    fill(255, 255, 0);
+    textAlign(CENTER);
+    textSize(12 * textSizeMultiplier);
+    text('Perfil Alar con Curvatura', wingX + 85, wingY - 50);
+
+    // Curvature indicators
+    stroke(255, 255, 0);
+    strokeWeight(1);
+    // Leading edge radius
+    noFill();
+    ellipse(wingX, wingY, 20, 14);
+    // Trailing edge
+    line(wingX + 170, wingY - 3, wingX + 170, wingY + 3);
+
+    pop();
+}
+
 function drawVelocityComparison() {
     push();
     translate(width/2, height/2);
@@ -1914,7 +1972,7 @@ function drawVelocityComparison() {
 function drawAerodynamicGlossary() {
     // Draw aerodynamic terms glossary in bottom right corner
     push();
-    translate(width - 250, height - 200);
+    translate(width - 250, height - 190);
 
     // Background panel
     fill(0, 0, 0, 180);
@@ -1960,9 +2018,9 @@ function drawAerodynamicGlossary() {
 }
 
 function drawNumericalExamples() {
-    // Draw step-by-step numerical examples in bottom left corner
+    // Draw step-by-step numerical examples in bottom center
     push();
-    translate(20, height - 250);
+    translate(420, height - 250);
 
     // Background panel
     fill(0, 0, 0, 180);
@@ -2019,89 +2077,62 @@ function drawNumericalExamples() {
     pop();
 }
 
-function drawInteractiveQuestions() {
-    // Draw interactive questions about flight physics concepts
-    push();
-    translate(width/2 - 200, 50);
-
-    // Background panel
-    fill(0, 0, 0, 180);
-    stroke(255);
-    strokeWeight(1);
-    rect(0, 0, 400, 150, 10);
-
-    // Title
-    fill(255, 255, 0);
-    textAlign(CENTER);
-    textSize(14 * textSizeMultiplier);
-    text('Preguntas Interactivas', 200, 20);
+function updateInteractiveQuestions() {
+    // Update interactive questions in HTML area
+    let questionsDiv = select('#interactive-questions');
+    if (!questionsDiv) return;
 
     // Cycle through questions based on frame count
     let questionIndex = floor(frameCount / 300) % 3; // Change every 5 seconds (60 fps * 5)
 
-    fill(255);
-    textAlign(LEFT);
-    textSize(11 * textSizeMultiplier);
-
-    let yPos = 40;
-    let lineHeight = 18;
+    let html = '<h4 style="color: yellow; text-align: center; margin-top: 0;">Preguntas Interactivas</h4>';
 
     if (questionIndex === 0) {
         // Question about lift and velocity
-        text('¿Qué sucede con la sustentación al aumentar la velocidad?', 10, yPos);
-        yPos += lineHeight * 1.5;
-
         let currentLift = calculateLift(velocity, angleOfAttack, altitude);
         let higherLift = calculateLift(velocity * 1.2, angleOfAttack, altitude);
 
-        text('A) Disminuye', 10, yPos);
-        text('B) Se mantiene igual', 10, yPos + lineHeight);
-        text('C) Aumenta', 10, yPos + lineHeight * 2);
-
-        // Highlight correct answer
-        fill(0, 255, 0);
-        text('C) Aumenta (L ∝ v²)', 10, yPos + lineHeight * 2);
-        fill(255);
-        text('Actual: ' + currentLift.toFixed(0) + ' N → ' + higherLift.toFixed(0) + ' N (+20% vel)', 10, yPos + lineHeight * 3.5);
+        html += '<p>¿Qué sucede con la sustentación al aumentar la velocidad?</p>';
+        html += '<p>A) Disminuye</p>';
+        html += '<p>B) Se mantiene igual</p>';
+        html += '<p style="color: green;">C) Aumenta (L ∝ v²)</p>';
+        html += '<p>Actual: ' + currentLift.toFixed(0) + ' N → ' + higherLift.toFixed(0) + ' N (+20% vel)</p>';
 
     } else if (questionIndex === 1) {
         // Question about Bernoulli principle
-        text('¿Qué explica las diferencias de presión en el ala?', 10, yPos);
-        yPos += lineHeight * 1.5;
-
-        text('A) 1ª Ley de Newton', 10, yPos);
-        text('B) Principio de Bernoulli', 10, yPos + lineHeight);
-        text('C) Ley de gravitación universal', 10, yPos + lineHeight * 2);
-
-        // Highlight correct answer
-        fill(0, 255, 0);
-        text('B) Principio de Bernoulli (P + ½ρv² = cte)', 10, yPos + lineHeight);
-        fill(255);
-        text('Velocidad arriba: ' + (velocity/3.6 * 1.3).toFixed(1) + ' m/s (presión baja)', 10, yPos + lineHeight * 3.5);
+        html += '<p>¿Qué explica las diferencias de presión en el ala?</p>';
+        html += '<p>A) 1ª Ley de Newton</p>';
+        html += '<p style="color: green;">B) Ley de Newton (F = ma)</p>';
+        html += '<p>C) Ley de gravitación universal</p>';
+        html += '<p>Velocidad arriba: ' + (velocity/3.6 * 1.3).toFixed(1) + ' m/s (presión baja)</p>';
 
     } else {
         // Question about Newton's Third Law
-        text('¿Qué ley explica por qué el ala empuja el aire hacia abajo?', 10, yPos);
-        yPos += lineHeight * 1.5;
-
-        text('A) 1ª Ley de Newton', 10, yPos);
-        text('B) 2ª Ley de Newton', 10, yPos + lineHeight);
-        text('C) 3ª Ley de Newton', 10, yPos + lineHeight * 2);
-
-        // Highlight correct answer
-        fill(0, 255, 0);
-        text('C) 3ª Ley de Newton (acción = -reacción)', 10, yPos + lineHeight * 2);
-        fill(255);
-        text('Ala ↓ aire → Aire ↑ ala (sustentación)', 10, yPos + lineHeight * 3.5);
+        html += '<p>¿Qué ley explica por qué el ala empuja el aire hacia abajo?</p>';
+        html += '<p>A) 1ª Ley de Newton</p>';
+        html += '<p>B) 2ª Ley de Newton</p>';
+        html += '<p style="color: green;">C) 3ª Ley de Newton (acción = -reacción)</p>';
+        html += '<p>Ala ↓ aire → Aire ↑ ala (sustentación)</p>';
     }
 
-    pop();
+    questionsDiv.html(html);
+}
+
+function updatePressureDistribution() {
+    // Update pressure distribution values in HTML
+    let velocitySpan = select('#pressure-velocity');
+    let angleSpan = select('#pressure-angle');
+    let liftSpan = select('#pressure-lift');
+
+    if (velocitySpan) velocitySpan.html(velocity.toFixed(0));
+    if (angleSpan) angleSpan.html(angleOfAttack.toFixed(0));
+    if (liftSpan) liftSpan.html(calculateLift(velocity, angleOfAttack, altitude).toFixed(0));
 }
 
 function drawBernoulliAnimations() {
     // Draw explanatory animations of Bernoulli principle
     push();
-    translate(width - 350, 220);
+    translate(width - 340, 50);
 
     // Background panel
     fill(0, 0, 0, 180);
@@ -2203,6 +2234,127 @@ function drawBernoulliAnimations() {
     ellipse(150, 182, 12, 8); // High pressure below
     fill(100, 255, 100, 100);
     ellipse(150, 178, 12, 8); // Low pressure above
+
+    pop();
+}
+
+function drawPressureDistributionGraph() {
+    // Draw pressure distribution graph along the wing chord
+    push();
+    translate(50, height - 300);
+
+    // Background panel
+    fill(0, 0, 0, 180);
+    stroke(255);
+    strokeWeight(1);
+    rect(0, 0, 350, 250, 10);
+
+    // Title
+    fill(255, 255, 0);
+    textAlign(CENTER);
+    textSize(14 * textSizeMultiplier);
+    text('Distribución de Presión', 175, 20);
+
+    // Graph area
+    let graphX = 30;
+    let graphY = 40;
+    let graphWidth = 290;
+    let graphHeight = 160;
+
+    // Draw graph axes
+    stroke(255);
+    strokeWeight(1);
+    line(graphX, graphY, graphX, graphY + graphHeight); // Y axis
+    line(graphX, graphY + graphHeight, graphX + graphWidth, graphY + graphHeight); // X axis
+
+    // Axis labels
+    fill(255);
+    textAlign(CENTER);
+    textSize(10 * textSizeMultiplier);
+    text('Posición a lo largo de la cuerda', graphX + graphWidth/2, graphY + graphHeight + 20);
+    textAlign(RIGHT);
+    text('Presión', graphX - 10, graphY + graphHeight/2);
+
+    // Calculate pressure distribution
+    let numPoints = 20;
+    let upperPressures = [];
+    let lowerPressures = [];
+
+    for (let i = 0; i < numPoints; i++) {
+        let chordPos = i / (numPoints - 1); // 0 to 1 along chord
+
+        // Simplified pressure distribution (Bernoulli effect)
+        // Upper surface: lower pressure (higher velocity)
+        let upperPressure = 1.0 - 0.8 * sin(chordPos * PI); // Lower pressure above
+        // Lower surface: higher pressure (lower velocity)
+        let lowerPressure = 0.8 + 0.4 * sin(chordPos * PI); // Higher pressure below
+
+        upperPressures.push(upperPressure);
+        lowerPressures.push(lowerPressure);
+    }
+
+    // Draw pressure curves
+    strokeWeight(3);
+
+    // Upper surface (blue - low pressure)
+    stroke(100, 150, 255);
+    noFill();
+    beginShape();
+    for (let i = 0; i < numPoints; i++) {
+        let x = graphX + (i / (numPoints - 1)) * graphWidth;
+        let y = graphY + graphHeight - (upperPressures[i] * graphHeight * 0.8);
+        vertex(x, y);
+    }
+    endShape();
+
+    // Lower surface (red - high pressure)
+    stroke(255, 100, 100);
+    beginShape();
+    for (let i = 0; i < numPoints; i++) {
+        let x = graphX + (i / (numPoints - 1)) * graphWidth;
+        let y = graphY + graphHeight - (lowerPressures[i] * graphHeight * 0.8);
+        vertex(x, y);
+    }
+    endShape();
+
+    // Fill area between curves to show pressure difference
+    fill(255, 255, 0, 50);
+    strokeWeight(1);
+    stroke(255, 255, 0, 100);
+    beginShape();
+    // Upper curve
+    for (let i = 0; i < numPoints; i++) {
+        let x = graphX + (i / (numPoints - 1)) * graphWidth;
+        let y = graphY + graphHeight - (upperPressures[i] * graphHeight * 0.8);
+        vertex(x, y);
+    }
+    // Lower curve (reverse)
+    for (let i = numPoints - 1; i >= 0; i--) {
+        let x = graphX + (i / (numPoints - 1)) * graphWidth;
+        let y = graphY + graphHeight - (lowerPressures[i] * graphHeight * 0.8);
+        vertex(x, y);
+    }
+    endShape(CLOSE);
+
+    // Legend
+    fill(255);
+    textAlign(LEFT);
+    textSize(10 * textSizeMultiplier);
+    text('Superficie Superior (Presión Baja)', graphX + 10, graphY + graphHeight + 40);
+    text('Superficie Inferior (Presión Alta)', graphX + 10, graphY + graphHeight + 55);
+
+    // Color indicators
+    fill(100, 150, 255);
+    noStroke();
+    rect(graphX, graphY + graphHeight + 35, 15, 8);
+    fill(255, 100, 100);
+    rect(graphX, graphY + graphHeight + 50, 15, 8);
+
+    // Bernoulli explanation
+    fill(255, 255, 0);
+    textAlign(CENTER);
+    textSize(9 * textSizeMultiplier);
+    text('Principio de Bernoulli: Velocidad ↑ → Presión ↓', 175, graphY + graphHeight + 75);
 
     pop();
 }

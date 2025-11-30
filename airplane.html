@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+erhacrra e<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -151,8 +151,8 @@
 
                 <div class="control-group">
                     <label for="mass">Masa del Avión (kg):</label>
-                    <input type="range" id="mass" min="500" max="2000" value="1000">
-                    <div class="value-display" id="mass-value">1000 kg</div>
+                    <input type="range" id="mass" min="500" max="2000" value="1338">
+                    <div class="value-display" id="mass-value">1338 kg</div>
                 </div>
 
                 <div class="control-group">
@@ -170,88 +170,160 @@
         </div>
 
         <div class="formula-panel" id="calculations-panel">
-            <h3>🧮 Cálculos en Tiempo Real</h3>
+            <h3>🧮 Cálculos en Tiempo Real - Principio de Bernoulli</h3>
 
             <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #28a745;">
-                <h4 style="margin: 0 0 8px 0; color: #155724;">📈 Sustentación (Lift)</h4>
-                <div class="formula" id="lift-formula">L = ½ × 1.225 × 30² × 16.2 × 0.85 = 1,890 N</div>
-                <p id="lift-explanation" style="font-size: 12px; margin: 5px 0; color: #155724;">
-                    <strong>Explicación:</strong> Con velocidad de 30 m/s, densidad del aire de 1.225 kg/m³, área alar de 16.2 m² y coeficiente de sustentación de 0.85, se genera una fuerza de sustentación de 1,890 N.
-                </p>
-            </div>
-
-            <div style="background: #f8d7da; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #dc3545;">
-                <h4 style="margin: 0 0 8px 0; color: #721c24;">📉 Arrastre (Drag)</h4>
-                <div class="formula" id="drag-formula">D = ½ × 1.225 × 30² × 16.2 × 0.05 = 186 N</div>
-                <p id="drag-explanation" style="font-size: 12px; margin: 5px 0; color: #721c24;">
-                    <strong>Explicación:</strong> El arrastre es mucho menor que la sustentación (186 N vs 1,890 N), lo que permite el vuelo eficiente con una relación L/D de 10.2.
-                </p>
-            </div>
-
-            <div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #ffc107;">
-                <h4 style="margin: 0 0 8px 0; color: #856404;">⚖️ Equilibrio de Fuerzas</h4>
-                <div class="formula" id="equilibrium-formula">L = W → 1,890 N = 9,810 N</div>
-                <p id="equilibrium-explanation" style="font-size: 12px; margin: 5px 0; color: #856404;">
-                    <strong>Estado:</strong> <span id="equilibrium-status">La sustentación es menor que el peso. Aumenta la velocidad o el ángulo de ataque para generar más sustentación.</span>
+                <h4 style="margin: 0 0 8px 0; color: #155724;">🌪️ Ecuación de Bernoulli</h4>
+                <div class="formula" id="bernoulli-formula">P + ½ρv² + ρgh = constante</div>
+                <p id="bernoulli-explanation" style="font-size: 12px; margin: 5px 0; color: #155724;">
+                    <strong>Principio:</strong> La suma de presión, energía cinética y potencial se conserva en un fluido en movimiento.
                 </p>
             </div>
 
             <div style="background: #d1ecf1; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #17a2b8;">
-                <h4 style="margin: 0 0 8px 0; color: #0c5460;">🌡️ Efectos de la Altitud</h4>
-                <div class="formula" id="altitude-formula">ρ = 1.225 × e^(-500/8435) = 1.167 kg/m³</div>
-                <p id="altitude-explanation" style="font-size: 12px; margin: 5px 0; color: #0c5460;">
-                    <strong>Impacto:</strong> A 500m de altitud, la densidad del aire es 1.167 kg/m³ (5% menos que al nivel del mar), reduciendo ligeramente la sustentación.
+                <h4 style="margin: 0 0 8px 0; color: #0c5460;">💨 Velocidades del Aire sobre el Ala</h4>
+                <div class="formula" id="velocity-formula">v₁ = <span id="velocity-top">48.0</span> m/s (superior), v₂ = <span id="velocity-bottom">36.0</span> m/s (inferior)</div>
+                <p id="velocity-explanation" style="font-size: 12px; margin: 5px 0; color: #0c5460;">
+                    <strong>Cálculo:</strong> La velocidad superior es mayor debido a la curvatura del perfil aerodinámico (ángulo de ataque: <span id="velocity-angle">5</span>°).
                 </p>
             </div>
 
+            <div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #ffc107;">
+                <h4 style="margin: 0 0 8px 0; color: #856404;">🗜️ Diferencia de Presión (ΔP)</h4>
+                <div class="formula" id="pressure-formula">ΔP = P₂ - P₁ = ½ρ(v₁² - v₂²) = <span id="pressure-diff">1,470</span> Pa</div>
+                <p id="pressure-explanation" style="font-size: 12px; margin: 5px 0; color: #856404;">
+                    <strong>Resultado:</strong> Presión <span id="pressure-comparison">mayor</span> debajo del ala genera fuerza hacia arriba (ρ = <span id="pressure-density">1.167</span> kg/m³).
+                </p>
+            </div>
+
+
+
             <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0; border: 2px solid #6c757d;">
-                <h4 style="margin: 0 0 8px 0; color: #495057;">🎯 Eficiencia Aerodinámica</h4>
-                <div class="formula" id="efficiency-formula">L/D = 1,890 / 186 = 10.2</div>
-                <p id="efficiency-explanation" style="font-size: 12px; margin: 5px 0; color: #495057;">
-                    <strong>Rendimiento:</strong> Excelente relación sustentación/arrastre. Los planeadores típicos tienen L/D entre 20-30, aviones comerciales alrededor de 15-20.
+                <h4 style="margin: 0 0 8px 0; color: #495057;">🧲 Acción-Reacción (3ra Ley de Newton)</h4>
+                <div class="formula" id="newton-formula">F↑ = F↓ (sobre el aire) = <span id="newton-force">23,520</span> N</div>
+                <p id="newton-explanation" style="font-size: 12px; margin: 5px 0; color: #495057;">
+                    <strong>Complementario:</strong> El ala desvía el aire hacia abajo, generando una fuerza igual y opuesta hacia arriba.
+                </p>
+            </div>
+
+            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 5px solid #4caf50;">
+                <h4 style="margin: 0 0 10px 0; color: #2e7d32;">📐 Ecuación General de Bernoulli</h4>
+                <div class="formula" style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">P + ½ρv² + ρgh = constante</div>
+                <p style="font-size: 12px; margin: 5px 0; color: #2e7d32; line-height: 1.4;">
+                    <strong>Donde:</strong><br>
+                    P: presión estática del aire (Pa)<br>
+                    ρ: densidad del aire (kg/m³)<br>
+                    v: velocidad del flujo (m/s)<br>
+                    g: gravedad (9.81 m/s²)<br>
+                    h: altura sobre un punto de referencia (m)
+                </p>
+            </div>
+
+            <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 5px solid #ff9800;">
+                <h4 style="margin: 0 0 10px 0; color: #e65100;">✈️ Aplicación al Ala de un Avión</h4>
+                <p style="font-size: 12px; margin: 5px 0; color: #e65100; line-height: 1.4;">
+                    En un vuelo recto y nivelado (horizontal), se puede suponer que la altura h no cambia significativamente entre la parte superior e inferior del ala. Por lo tanto, el término ρgh se mantiene constante y puede eliminarse de la comparación:
+                </p>
+                <div class="formula" style="font-size: 14px; margin: 8px 0;">P + ½ρv² = constante</div>
+                <p style="font-size: 12px; margin: 5px 0; color: #e65100;">
+                    <strong>Ahora comparamos dos puntos en la superficie del ala:</strong><br>
+                    Punto 1: Parte superior del ala (aire más rápido)<br>
+                    Punto 2: Parte inferior del ala (aire más lento)
+                </p>
+                <div class="formula" style="font-size: 14px; margin: 8px 0;">P₁ + ½ρv₁² = P₂ + ½ρv₂²</div>
+                <p style="font-size: 12px; margin: 5px 0; color: #e65100;">
+                    Reordenando para hallar la diferencia de presiones:
+                </p>
+                <div class="formula" style="font-size: 14px; margin: 8px 0; color: #d32f2f;">ΔP = P₂ - P₁ = ½ρ(v₁² - v₂²)</div>
+                <p style="font-size: 12px; margin: 5px 0; color: #e65100; font-weight: bold;">
+                    Aquí se ve claramente: a mayor velocidad del aire sobre el ala, menor presión en esa región. Esa diferencia de presiones genera una fuerza hacia arriba: la sustentación.
+                </p>
+            </div>
+
+            <div style="background: #fce4ec; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 5px solid #e91e63;">
+                <h4 style="margin: 0 0 10px 0; color: #c2185b;">🔢 Ejemplo Práctico</h4>
+                <div style="background: #f8f8f8; padding: 10px; border-radius: 5px; margin: 8px 0;">
+                    <div style="font-size: 12px; margin-bottom: 5px;"><strong>Datos:</strong></div>
+                    <div style="font-size: 12px; margin: 2px 0;">ρ = 1.225 kg/m³</div>
+                    <div style="font-size: 12px; margin: 2px 0;">v₁ = 80 m/s (sobre el ala)</div>
+                    <div style="font-size: 12px; margin: 2px 0;">v₂ = 60 m/s (bajo el ala)</div>
+                </div>
+                <div class="formula" style="font-size: 14px; margin: 8px 0;">ΔP = ½ × 1.225 × (60² - 80²) = ½ × 1.225 × (-2800) = -1,715 Pa</div>
+                <p style="font-size: 12px; margin: 5px 0; color: #c2185b; font-weight: bold;">
+                    <strong>Resultado:</strong> La presión es 1,715 Pa mayor debajo del ala → fuerza neta hacia arriba.
                 </p>
             </div>
         </div>
 
         <div class="formula-panel" id="formulas-panel">
-            <h3>📐 Fórmulas Físicas</h3>
-            <div class="formula">L = ½ × ρ × v² × S × Cl</div>
-            <p><small>Sustentación: Densidad del aire × Velocidad² × Área × Coeficiente de sustentación</small></p>
+            <h3>📐 Información Aerodinámica Interactiva</h3>
 
-            <div class="formula">D = ½ × ρ × v² × S × Cd</div>
-            <p><small>Arrastre: Densidad del aire × Velocidad² × Área × Coeficiente de arrastre</small></p>
+            <!-- Interactive Questions -->
+            <div id="interactive-questions" style="margin-bottom: 20px; padding: 15px; background-color: rgba(0,0,0,0.8); border-radius: 10px; color: white; font-family: Arial, sans-serif;"></div>
 
-            <div class="formula">W = m × g</div>
-            <p><small>Peso: Masa × Gravedad (9.81 m/s²)</small></p>
-
-            <div class="formula">ρ = ρ₀ × e^(-h/H)</div>
-            <p><small>Densidad del aire: Disminuye con la altitud (H = 8435m)</small></p>
-        </div>
-
-        <div class="info-panel" id="bernoulli-panel">
-            <h3>🌪️ Principio de Bernoulli</h3>
-            <div style="margin-bottom: 10px;">
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <div style="width: 20px; height: 20px; background: linear-gradient(to right, #ff6464, #6495ff); border-radius: 50%; margin-right: 10px;"></div>
+            <!-- Bernoulli Animations -->
+            <div style="margin-bottom: 20px; padding: 15px; background-color: rgba(0,0,0,0.8); border-radius: 10px; color: white;">
+                <h4 style="color: yellow; margin-top: 0;">🌪️ Animación de Bernoulli y Venturi</h4>
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="width: 30px; height: 30px; background: linear-gradient(to right, #ff6464, #6495ff); border-radius: 50%; margin-right: 15px;"></div>
                     <div>
                         <strong style="color: #ff6464;">Presión Alta</strong><br>
-                        <small>(Flujo Lento)</small>
+                        <small>Flujo lento debajo del ala</small>
                     </div>
                 </div>
-                <div style="display: flex; align-items: center;">
-                    <div style="width: 20px; height: 20px; background: linear-gradient(to right, #6495ff, #64b5ff); border-radius: 50%; margin-right: 10px;"></div>
+                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                    <div style="width: 30px; height: 30px; background: linear-gradient(to right, #6495ff, #64b5ff); border-radius: 50%; margin-right: 15px;"></div>
                     <div>
                         <strong style="color: #6495ff;">Presión Baja</strong><br>
-                        <small>(Flujo Rápido)</small>
+                        <small>Flujo rápido arriba del ala</small>
+                    </div>
+                </div>
+                <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; text-align: center; color: black;">
+                    P + ½ρv² = constante
+                </div>
+                <p style="margin-top: 10px; font-size: 12px;">
+                    <em>La presión disminuye donde la velocidad aumenta, creando sustentación.</em>
+                </p>
+            </div>
+
+            <!-- Pressure Distribution -->
+            <div style="margin-bottom: 20px; padding: 15px; background-color: rgba(0,0,0,0.8); border-radius: 10px; color: white;">
+                <h4 style="color: yellow; margin-top: 0;">📊 Distribución de Presión</h4>
+                <div style="background: linear-gradient(to right, #ff6464 0%, #ffff64 50%, #6495ff 100%); height: 40px; border-radius: 5px; margin: 10px 0; position: relative;">
+                    <div style="position: absolute; top: -25px; left: 0; color: #ff6464; font-weight: bold;">Alta</div>
+                    <div style="position: absolute; top: -25px; left: 45%; color: #ffff64; font-weight: bold;">Media</div>
+                    <div style="position: absolute; top: -25px; right: 0; color: #6495ff; font-weight: bold;">Baja</div>
+                </div>
+                <p style="font-size: 12px; margin: 5px 0;">
+                    <strong>Parámetros actuales:</strong> Velocidad: <span id="pressure-velocity">30</span> m/s, Ángulo: <span id="pressure-angle">5</span>°
+                </p>
+                <p style="font-size: 12px; margin: 5px 0;">
+                    <strong>Cálculo de Sustentación:</strong> L = ½ × ρ × v² × S × Cl = <span id="pressure-lift">1,890</span> N
+                </p>
+            </div>
+
+
+
+            <!-- Aerodynamic Glossary -->
+            <div style="margin-bottom: 20px; padding: 15px; background-color: rgba(0,0,0,0.8); border-radius: 10px; color: white;">
+                <h4 style="color: yellow; margin-top: 0;">📖 Glosario Aerodinámico</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; color: black;">
+                        <strong>Sustentación:</strong><br>
+                        <small>Fuerza perpendicular al flujo de aire que mantiene el avión en el aire</small>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; color: black;">
+                        <strong>Arrastre:</strong><br>
+                        <small>Fuerza paralela al flujo que se opone al movimiento</small>
+                    </div>
+                    <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; color: black;">
+                        <strong>Coeficiente de Sustentación:</strong><br>
+                        <small>Medida de la eficiencia de un ala para generar sustentación</small>
                     </div>
                 </div>
             </div>
-            <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; text-align: center;">
-                P + ½ρv² + ρgh = constante
-            </div>
-            <p style="margin-top: 10px; font-size: 12px; color: #666;">
-                <em>La presión disminuye donde la velocidad del aire aumenta, creando sustentación.</em>
-            </p>
+
+
         </div>
 
         <a href="index.html" class="back-link">← Volver al Menú Principal</a>
